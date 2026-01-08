@@ -1,0 +1,26 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"materials": {
+		"value": "Materials",
+		"name": "Name",
+		"article": "Article",
+		"manufacturer": "Manufacturer",
+		"gsm": "GSM",
+		"width": "Width",
+		"remaining": "Remaining",
+		"edited": "Edited:",
+		"image": "Image",
+		"edit": "Edit",
+		"delete": "Delete",
+		"empty": "No materials found.",
+		"add_material": "Add new material",
+		"edit_material": "Edit material {title}",
+		"description_placeholder": "Football jersey on F02 material",
+		"name_placeholder": "Football jersey",
+		"errors": {
+			"required": "Name and article are required.",
+			"something_went_wrong": "An error occurred while trying to save the material.",
+			"update_failed": "Failed to update the material."
+		}
+	}
+}

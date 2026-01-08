@@ -1,0 +1,23 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"products": {
+		"value": "Produkti",
+		"search": "Meklēt...",
+		"name": "Nosaukums",
+		"description": "Apraksts",
+		"cost": "Pašizmaksa",
+		"edited": "Labots",
+		"image": "Attēls",
+		"edit": "Rediģēt",
+		"delete": "Dzēst",
+		"empty": "Neviens produkts netika atrasts.",
+		"add_product": "Pievienot jaunu produktu",
+		"edit_product": "Rediģēt produktu {title}",
+		"description_placeholder": "Futbola krekls uz F02 auduma",
+		"name_placeholder": "Futbola krekls",
+		"errors": {
+			"creation_failed": "Neizdevās izveidot produktu.",
+			"update_failed": "Neizdevās atjaunināt produktu."
+		}
+	}
+}

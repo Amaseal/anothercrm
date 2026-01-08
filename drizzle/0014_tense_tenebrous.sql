@@ -1,0 +1,2 @@
+ALTER TABLE "tabs" ALTER COLUMN "group_id" DROP NOT NULL;--> statement-breakpoint
+ALTER TABLE "tabs" ADD CONSTRAINT "shared_tabs_require_group" CHECK (("tabs"."user_id" IS NOT NULL) OR ("tabs"."group_id" IS NOT NULL));

@@ -1,0 +1,16 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"groups": {
+		"value": "Groups",
+		"manage": "Manage groups",
+		"empty": "No groups available",
+		"reorder": "Reorder",
+		"title": "Title",
+		"delete": "Delete",
+		"edit": "Edit",
+		"name": "Name for language: {locale}",
+		"new_group": "New group",
+		"name_placeholder": "Enter name for {locale} language",
+		"name_info": "The name will be displayed for clients in their selected language."
+	}
+}

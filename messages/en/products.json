@@ -1,0 +1,26 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+
+	"products": {
+		"value": "Products",
+		"name": "Name",
+		"article": "Article",
+		"manufacturer": "Manufacturer",
+		"cost": "Cost",
+		"edited": "Edited",
+		"image": "Image",
+		"add": "Add",
+		"edit": "Edit",
+		"delete": "Delete",
+		"empty": "No products found.",
+		"add_product": "Add new product",
+		"description": "Description",
+		"description_placeholder": "Football jersey made from F02 fabric",
+		"name_placeholder": "Football jersey",
+		"edit_product": "Edit product {title}",
+		"errors": {
+			"creation_failed": "Failed to create product.",
+			"update_failed": "Failed to update product."
+		}
+	}
+}

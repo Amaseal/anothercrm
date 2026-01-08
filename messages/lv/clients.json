@@ -1,0 +1,40 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"clients": {
+		"value": "Klienti",
+		"search": "Meklēt...",
+		"name": "Nosaukums",
+		"name_placeholder": "Jānis Bērziņš",
+		"email": "E-pasts",
+		"email_placeholder": "janis@gmail.com",
+		"phone": "Tālrunis",
+		"phone_placeholder": "+371 23456789",
+		"description": "Apraksts",
+		"description_placeholder": "Komanda, vai kompānija, ko parasti pasūta...",
+		"address": "Adrese",
+		"address_placeholder": "Brīvības iela 100-20, Rīga, LV-1010",
+		"registration_number": "Reģistrācijas numurs",
+		"registration_number_placeholder": "40103283879",
+		"vat_number": "PVN numurs",
+		"vat_number_placeholder": "LV40103283879",
+		"bank": "Banka",
+		"bank_placeholder": "Ievadiet bankas nosaukumu",
+		"swift": "SWIFT",
+		"swift_placeholder": "Ievadiet SWIFT kodu",
+		"bank_account": "Bankas konts",
+		"bank_account_placeholder": "Ievadiet bankas konta numuru",
+		"type": "Tips",
+		"type_placeholder": "Izvēlieties klienta tipu",
+		"total_ordered": "Kopā pasūtīts",
+		"edit": "Rediģēt",
+		"delete": "Dzēst",
+		"empty": "Neviens klients netika atrasts.",
+		"add_client": "Pievienot jaunu klientu",
+		"edit_client": "Rediģēt klientu {name}",
+		"errors": {
+			"name_required": "Nosaukums ir obligāts.",
+			"contacts_invalid": "E=pasts vai tālruņa numurs ir obligāts.",
+			"something_went_wrong": "Radās kļūda."
+		}
+	}
+}

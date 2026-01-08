@@ -1,0 +1,12 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"menu": {
+		"dashboard": "Sākums",
+		"projects": "Projekti",
+		"done": "Pabeigtie",
+		"clients": "Klienti",
+		"fabrics": "Audumi",
+		"products": "Produkti",
+		"files": "Faili"
+	}
+}

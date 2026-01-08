@@ -1,0 +1,20 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"groups": {
+		"value": "Grupas",
+		"manage": "Pārvaldīt grupas",
+		"empty": "Nav pieejamu grupu",
+		"reorder": "Pārkārtot",
+		"title": "Nosaukums",
+		"delete": "Dzēst",
+		"edit": "Rediģēt",
+		"name": "Nosaukums valodai: {locale}",
+		"name_placeholder": "Ievadiet nosaukumu {locale} valodai",
+		"name_info": "Nosaukums tiks parādīts klientiem viņu izvēlētajā valodā.",
+		"new_group": "Jauna grupa",
+		"errors": {
+			"required": "Nosaukums ir obligāts visām valodām.",
+			"something_went_wrong": "Radās kļūda, mēģinot saglabāt grupu."
+		}
+	}
+}

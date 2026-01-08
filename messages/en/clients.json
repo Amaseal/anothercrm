@@ -1,0 +1,41 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"clients": {
+		"value": "Clients",
+		"search": "Search...",
+		"name": "Name",
+		"name_placeholder": "John Doe",
+		"email": "Email",
+		"email_placeholder": "john@example.com",
+		"phone": "Phone",
+		"phone_placeholder": "+371 23456789",
+		"description": "Description",
+		"description_placeholder": "Enter client description",
+		"address": "Address",
+		"address_placeholder": "123 Main St, City, Country",
+		"registration_number": "Registration Number",
+		"registration_number_placeholder": "123456789",
+		"vat_number": "VAT Number",
+		"vat_number_placeholder": "LV123456789",
+		"bank": "Bank",
+		"bank_placeholder": "Enter bank name",
+		"swift": "SWIFT",
+		"swift_placeholder": "Enter SWIFT code",
+		"bank_account": "Bank Account",
+		"bank_account_placeholder": "Enter bank account number",
+		"type": "Type",
+		"type_placeholder": "Select client type",
+		"total_ordered": "Total Ordered",
+		"add": "Add",
+		"edit": "Edit",
+		"delete": "Delete",
+		"empty": "No clients found.",
+		"add_client": "Add new client",
+		"edit_client": "Edit client {name}",
+		"errors": {
+			"name_required": "Name is required.",
+			"contacts_invalid": "Name or phone is required.",
+			"something_went_wrong": "Something went wrong."
+		}
+	}
+}

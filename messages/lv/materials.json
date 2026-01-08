@@ -1,0 +1,26 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"materials": {
+		"value": "Audumi",
+		"name": "Nosaukums",
+		"article": "Artikuls",
+		"manufacturer": "Ražotājs",
+		"gsm": "GSM",
+		"width": "Platums",
+		"remaining": "Atlikums",
+		"edited": "Labots",
+		"image": "Attēls",
+		"edit": "Rediģēt",
+		"delete": "Dzēst",
+		"empty": "Neviens audums netika atrasts.",
+		"add_material": "Pievienot jaunu audumu",
+		"description_placeholder": "Futbola krekls uz F02 auduma",
+		"name_placeholder": "Futbola krekls",
+		"edit_material": "Labot audumu {title}",
+		"errors": {
+			"required": "nosaukums un artikuls ir obligāts.",
+			"something_went_wrong": "Radās kļūda, mēģinot saglabāt audumu.",
+			"update_failed": "Neizdevās atjaunināt audumu."
+		}
+	}
+}

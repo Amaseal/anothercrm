@@ -1,0 +1,16 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"tabs": {
+		"value": "Tabs",
+		"manage": "Manage tabs",
+		"empty": "No tabs available",
+		"reorder": "Reorder",
+		"add": "Add new tab",
+		"group_placeholder": "Select group",
+		"title": "Title",
+		"delete": "Delete",
+		"edit": "Edit",
+		"color": "Color",
+		"group": "Group"
+	}
+}

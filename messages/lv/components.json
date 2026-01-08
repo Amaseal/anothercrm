@@ -1,0 +1,36 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"components": {
+		"image_dropzone": {
+			"click_to_upload": "Noklikšķiniet, lai augšupielādētu attēlu"
+		},
+		"save": "Saglabāt",
+		"pagination": {
+			"showing": "Rāda {start}-{end} no {total} ierakstiem",
+			"from": "no",
+			"items": "ierakstiem",
+			"last": "Pēdējā lapa",
+			"of": "no",
+			"items_per_page": "Ieraksti: {pageSize}"
+		},
+		"delete_modal": {
+			"delete": "Izdzēst",
+			"cancel": "Atcelt",
+			"message": "Vai tiešām vēlaties dzēst {item}? Šo darbību nevar atsaukt.",
+			"title": "Izdzēst {item}",
+			"error": "Radās kļūda, mēģinot izdzēst {item}."
+		},
+		"user": {
+			"theme": "Izskats",
+			"language": "Valoda",
+			"settings": "Iestatījumi",
+			"logout": "Atslēgties",
+			"light": "Gaišs",
+			"dark": "Tumšs"
+		},
+		"search": "Meklēt...",
+		"add": "Pievienot",
+		"delete": "Dzēst",
+		"edit": "Rediģēt"
+	}
+}

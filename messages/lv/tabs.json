@@ -1,0 +1,16 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"tabs": {
+		"value": "Saraksti",
+		"manage": "Pārvaldīt sarakstus",
+		"empty": "Nav pieejamu sarakstu",
+		"reorder": "Pārkārtot",
+		"add": "Pievienot jaunu sarakstu",
+		"group_placeholder": "Izvēlēties grupu",
+		"title": "Nosaukums",
+		"delete": "Dzēst",
+		"edit": "Rediģēt",
+		"color": "Krāsa",
+		"group": "Grupa"
+	}
+}

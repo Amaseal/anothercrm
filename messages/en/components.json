@@ -1,0 +1,33 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+
+	"components": {
+		"image_dropzone": {
+			"click_to_upload": "Click to upload an image"
+		},
+		"save": "Save",
+		"pagination": {
+			"showing": "Showing {start}-{end} of {total} items",
+			"items_per_page": "Items: {pageSize}"
+		},
+		"delete_modal": {
+			"delete": "Delete",
+			"cancel": "Cancel",
+			"message": "Are you sure you want to delete {item}? This action cannot be undone.",
+			"title": "Delete {item}",
+			"error": "An error occurred while trying to delete {item}."
+		},
+		"user": {
+			"theme": "Theme",
+			"language": "Language",
+			"settings": "Settings",
+			"logout": "Logout",
+			"light": "Light",
+			"dark": "Dark"
+		},
+		"search": "Search...",
+		"add": "Add",
+		"delete": "Delete",
+		"edit": "Edit"
+	}
+}

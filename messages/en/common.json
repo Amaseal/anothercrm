@@ -1,0 +1,12 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"menu": {
+		"dashboard": "Dashboard",
+		"projects": "Projects",
+		"done": "Done",
+		"clients": "Clients",
+		"fabrics": "Fabrics",
+		"products": "Products",
+		"files": "Files"
+	}
+}

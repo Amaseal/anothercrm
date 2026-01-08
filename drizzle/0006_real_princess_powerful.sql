@@ -1,0 +1,1 @@
+ALTER TABLE "materials" RENAME TO "material";
