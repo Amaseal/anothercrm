@@ -2,6 +2,7 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"structure": {
 		"value": "Struktūra",
-		"manage": "Pārvaldīt struktūras"
+		"manage": "Pārvaldīt struktūras",
+		"personal": "Personāls"
 	}
 }

@@ -10,7 +10,10 @@
 	import { getLocale } from '@/paraglide/runtime.js';
 	import { dragHandle, dragHandleZone } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
+	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import FormError from '@/components/form-error.svelte';
+	import { invalidateAll } from '$app/navigation';
 
 	let { data, form } = $props();
 
@@ -18,14 +21,22 @@
 	let expandedGroups = $state<Set<number>>(new Set());
 	let initialized = $state(false);
 
-	// Initialize expanded groups only once on mount
+	// Sync groups when data updates (e.g. after invalidateAll)
 	$effect(() => {
-		if (groups.length > 0 && !initialized) {
-			// Ensure all groups have a tabs array (even if empty)
-			groups = groups.map((g: any) => ({
-				...g,
-				tabs: g.tabs || []
-			}));
+		// Only update if we're not currently dragging (to avoid fighting with dnd-action)
+		// But since invalidateAll happens after drag is done, it should be fine.
+		// We map the new data to the existing groups structure, preserving the 'expandedGroups' state
+		// Note: dragHandleZone mutates items, so we should be careful.
+		// A simple re-init should work for visibility updates.
+
+		// We need to re-map to ensure the tabs array exists, similar to initialization
+		const newGroups = data.tabGroups.map((g: any) => ({
+			...g,
+			tabs: g.tabs || []
+		}));
+		groups = newGroups;
+
+		if (!initialized && groups.length > 0) {
 			expandedGroups = new Set(groups.map((g: any) => g.id));
 			initialized = true;
 		}
@@ -65,6 +76,8 @@
 			method: 'POST',
 			body: formData
 		});
+
+		await invalidateAll();
 	}
 
 	// Handle tab reordering within a group and across groups
@@ -96,23 +109,15 @@
 					const draggedTab = newTabs.find((t: any) => t.id === draggedTabId);
 
 					if (draggedTab) {
-						// Update groups: add to this group, remove from others
-						const updatedGroups = groups.map((g: any, idx: number) => {
-							if (idx === groupIndex) {
-								// Add to target group with updated groupId
-								return {
-									...g,
-									tabs: [...(g.tabs || []), { ...draggedTab, groupId: groupId }]
-								};
-							} else if (g.tabs?.some((t: any) => t.id === draggedTabId)) {
-								// Remove from source group
-								return {
-									...g,
-									tabs: g.tabs.filter((t: any) => t.id !== draggedTabId)
-								};
-							}
-							return g;
-						});
+						// Update groups: update the target group with new tabs (which has correct order)
+						// and ensure the dragged tab has the new groupId
+						const updatedGroups = [...groups];
+						updatedGroups[groupIndex] = {
+							...updatedGroups[groupIndex],
+							tabs: newTabs.map((t: any) =>
+								t.id === draggedTabId ? { ...t, groupId: groupId } : t
+							)
+						};
 
 						groups = updatedGroups;
 
@@ -136,6 +141,8 @@
 							method: 'POST',
 							body: orderFormData
 						});
+
+						await invalidateAll();
 					}
 				} else {
 					// Just reordering within same group
@@ -157,10 +164,34 @@
 							method: 'POST',
 							body: orderFormData
 						});
+
+						await invalidateAll();
 					}
 				}
 			}
 		};
+	}
+	async function toggleVisibility(tabId: number, isVisible: boolean) {
+		// Optimistically update UI
+		if (data.personalTab && data.personalTab.id === tabId) {
+			data.personalTab.isVisible = isVisible;
+		} else {
+			groups = groups.map((g: any) => ({
+				...g,
+				tabs: g.tabs.map((t: any) => (t.id === tabId ? { ...t, isVisible } : t))
+			}));
+		}
+
+		const formData = new FormData();
+		formData.append('tabId', tabId.toString());
+		formData.append('isVisible', isVisible.toString());
+
+		await fetch('?/toggleVisibility', {
+			method: 'POST',
+			body: formData
+		});
+
+		await invalidateAll();
 	}
 </script>
 
@@ -175,6 +206,63 @@
 		</div>
 
 		<div class="space-y-1">
+			<!-- Personal Tab (Fixed at Top) -->
+			{#if initialized && data.personalTab}
+				<div class="mb-2 rounded-md border bg-background p-2">
+					<div class="flex items-center gap-2">
+						<div class="flex h-8 w-8 items-center justify-center rounded bg-muted/50 text-muted-foreground opacity-50">
+							<!-- Fixed icon placeholder -->
+							<div class="h-1 w-1 rounded-full bg-current"></div>
+						</div>
+
+						<div
+							class="h-4 w-4 rounded-full border-2"
+							style="background-color: {data.personalTab.color}"
+							title="Tab color: {data.personalTab.color}"
+						></div>
+
+						<span class="flex-1 font-medium">
+							{getTranslation(data.personalTab.translations)?.name || 'Personal Tab'}
+						</span>
+
+						<!-- Personal Badge -->
+						<span
+							class="rounded bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"
+						>
+							{m['structure.personal']()}
+						</span>
+						
+						{#if data.personalTab.sortOrder !== undefined}
+							<span class="text-xs text-muted-foreground" title="Sort Order">
+								#{data.personalTab.sortOrder}
+							</span>
+						{/if}
+
+						<div class="flex gap-2">
+							<button
+								onclick={() => toggleVisibility(data.personalTab.id, !data.personalTab.isVisible)}
+								class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+								title={data.personalTab.isVisible ? 'Hide tab' : 'Show tab'}
+							>
+								{#if data.personalTab.isVisible}
+									<Eye class="h-4 w-4" />
+								{:else}
+									<EyeOff class="h-4 w-4 text-muted-foreground/50" />
+								{/if}
+							</button>
+
+							<Button
+								href="/projekti/struktura/saraksti/{data.personalTab.id}"
+								variant="ghost"
+								size="icon"
+							>
+								<Pencil class="h-4 w-4" />
+							</Button>
+						</div>
+					</div>
+				</div>
+			{/if}
+
 			<div
 				use:dragHandleZone={{
 					items: groups,
@@ -261,7 +349,7 @@
 													title="Tab color: {tab.color}"
 												></div>
 
-												<span class="flex-1 text-sm">
+												<span class="flex-1 text-sm {tab.isVisible ? '' : 'text-muted-foreground italic'}">
 													{getTranslation(tab.translations)?.name || 'Untitled Tab'}
 												</span>
 
@@ -270,8 +358,24 @@
 														Personal
 													</span>
 												{/if}
+												
+												<span class="mr-2 text-xs text-muted-foreground" title="Sort Order">
+													#{tab.sortOrder}
+												</span>
 
 												<div class="flex gap-1">
+													<button
+														onclick={() => toggleVisibility(tab.id, !tab.isVisible)}
+														class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+														title={tab.isVisible ? 'Hide tab' : 'Show tab'}
+													>
+														{#if tab.isVisible}
+															<Eye class="h-3 w-3" />
+														{:else}
+															<EyeOff class="h-3 w-3 text-muted-foreground/50" />
+														{/if}
+													</button>
+													
 													<Button
 														href="/projekti/struktura/saraksti/{tab.id}"
 														variant="ghost"

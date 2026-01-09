@@ -7,6 +7,7 @@ import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import * as m from '$lib/paraglide/messages';
+import { locales } from '@/paraglide/runtime.js';
 
 export const load: PageServerLoad = async ({ locals, url }) => {
 	const userCount = await db.select().from(table.user).limit(1);
@@ -90,6 +91,33 @@ export const actions = {
 		});
 		try {
 			await db.insert(table.user).values({ id: userId, email, password: passwordHash, name: name }); // Mark the invite code as used
+
+			// Create personal tab
+			const [newTab] = await db
+				.insert(table.tab)
+				.values({
+					userId: userId,
+					sortOrder: 0,
+					color: '#3b82f6' // Default blue
+				})
+				.returning({ id: table.tab.id });
+
+			// Create translations
+			for (const locale of locales) {
+				let tabName = name;
+				if (locale === 'en') {
+					tabName = `${name}'s Tab`;
+				} else if (locale === 'lv') {
+					tabName = `${name} saraksts`;
+				}
+
+				await db.insert(table.tabTranslation).values({
+					tabId: newTab.id,
+					language: locale,
+					name: tabName
+				});
+			}
+
 			if (userCount.length > 0) {
 				await db
 					.update(table.inviteCodes)

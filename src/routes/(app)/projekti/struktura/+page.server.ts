@@ -1,11 +1,30 @@
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { tabGroup, tab } from '@/server/db/schema';
-import { eq } from 'drizzle-orm/sql/expressions/conditions';
+import { tabGroup, tab, userTabPreference } from '@/server/db/schema';
+import { eq, and } from 'drizzle-orm';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
+	// Fetch user preferences if user is logged in
+	const preferences = locals.user
+		? await db.query.userTabPreference.findMany({
+			where: eq(userTabPreference.userId, locals.user.id)
+		})
+		: [];
+
+	// Helper to merge preferences into tabs
+	const enhanceTabs = (tabs: any[]) => {
+		return tabs.map((t) => {
+			const pref = preferences.find((p) => p.tabId === t.id);
+			return {
+				...t,
+				isVisible: pref ? pref.isVisible : true, // Default to true
+				userSortOrder: pref ? pref.sortOrder : null
+			};
+		});
+	};
+
 	// Fetch all tab groups with their nested tabs and translations
-	const tabGroups = await db.query.tabGroup.findMany({
+	const rawTabGroups = await db.query.tabGroup.findMany({
 		orderBy: (tabGroup, { asc }) => [asc(tabGroup.sortOrder)],
 		with: {
 			translations: true,
@@ -19,8 +38,34 @@ export const load: PageServerLoad = async () => {
 		}
 	});
 
+	// Apply preferences to tabs within groups
+	const tabGroups = rawTabGroups.map((group) => ({
+		...group,
+		tabs: enhanceTabs(group.tabs)
+	}));
+
+	let personalTab = null;
+	if (locals.user) {
+		const rawPersonalTab = await db.query.tab.findFirst({
+			where: eq(tab.userId, locals.user.id),
+			with: {
+				translations: true
+			}
+		});
+
+		if (rawPersonalTab) {
+			const pref = preferences.find((p) => p.tabId === rawPersonalTab.id);
+			personalTab = {
+				...rawPersonalTab,
+				isVisible: pref ? pref.isVisible : true,
+				userSortOrder: pref ? pref.sortOrder : null
+			};
+		}
+	}
+
 	return {
-		tabGroups
+		tabGroups,
+		personalTab
 	};
 };
 
@@ -76,6 +121,56 @@ export const actions: Actions = {
 			await db.update(tab).set({ groupId: newGroupIdNum }).where(eq(tab.id, tabIdNum));
 			return { success: true };
 		} catch (error) {
+			return { success: false, message: 'Database error' };
+		}
+	},
+	toggleVisibility: async ({ request, locals }) => {
+		if (!locals.user) {
+			return { success: false, message: 'Unauthorized' };
+		}
+
+		const formData = await request.formData();
+		const tabId = parseInt(formData.get('tabId') as string);
+		const isVisible = formData.get('isVisible') === 'true';
+
+		if (isNaN(tabId)) {
+			return { success: false, message: 'Invalid tab ID' };
+		}
+
+		try {
+			// Check if preference exists
+			const existingPref = await db.query.userTabPreference.findFirst({
+				where: and(
+					eq(userTabPreference.userId, locals.user.id),
+					eq(userTabPreference.tabId, tabId)
+				)
+			});
+
+			if (existingPref) {
+				await db
+					.update(userTabPreference)
+					.set({ isVisible })
+					.where(eq(userTabPreference.id, existingPref.id));
+			} else {
+				// We need to know the current sort order when creating a preference
+				// For now, we'll default sortOrder to 0 or fetch the tab's default
+				// Ideally, userSortOrder should be separate, but schema has it required.
+				// Let's fetch the tab's current sortOrder as a sane default for the user preference
+				const currentTab = await db.query.tab.findFirst({
+					where: eq(tab.id, tabId)
+				});
+
+				await db.insert(userTabPreference).values({
+					userId: locals.user.id,
+					tabId: tabId,
+					isVisible: isVisible,
+					sortOrder: currentTab?.sortOrder || 0
+				});
+			}
+
+			return { success: true };
+		} catch (error) {
+			console.error('Error toggling visibility:', error);
 			return { success: false, message: 'Database error' };
 		}
 	}
