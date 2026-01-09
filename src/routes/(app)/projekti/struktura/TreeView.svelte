@@ -239,17 +239,18 @@
 						{/if}
 
 						<div class="flex gap-2">
-							<button
+							<Button
+							variant="ghost"
+							size="icon"
 								onclick={() => toggleVisibility(data.personalTab.id, !data.personalTab.isVisible)}
-								class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
 								title={data.personalTab.isVisible ? 'Hide tab' : 'Show tab'}
 							>
 								{#if data.personalTab.isVisible}
 									<Eye class="h-4 w-4" />
 								{:else}
-									<EyeOff class="h-4 w-4 text-muted-foreground/50" />
+									<EyeOff class="h-4 w-4" />
 								{/if}
-							</button>
+							</Button>
 
 							<Button
 								href="/projekti/struktura/saraksti/{data.personalTab.id}"
@@ -364,17 +365,19 @@
 												</span>
 
 												<div class="flex gap-1">
-													<button
+													<Button
+														size="icon"
+														variant="ghost"	
+														class="h-8 w-8"
 														onclick={() => toggleVisibility(tab.id, !tab.isVisible)}
-														class="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
 														title={tab.isVisible ? 'Hide tab' : 'Show tab'}
 													>
 														{#if tab.isVisible}
 															<Eye class="h-3 w-3" />
 														{:else}
-															<EyeOff class="h-3 w-3 text-muted-foreground/50" />
+															<EyeOff class="h-3 w-3" />
 														{/if}
-													</button>
+													</Button>
 													
 													<Button
 														href="/projekti/struktura/saraksti/{tab.id}"

@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { tabGroup, tab, userTabPreference } from '@/server/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, or, isNull } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Fetch user preferences if user is logged in
@@ -29,6 +29,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 		with: {
 			translations: true,
 			tabs: {
+				where: (tabs, { or, eq, isNull }) =>
+					locals.user
+						? or(isNull(tabs.userId), eq(tabs.userId, locals.user.id))
+						: isNull(tabs.userId),
 				orderBy: (tab, { asc }) => [asc(tab.sortOrder)],
 				with: {
 					translations: true,

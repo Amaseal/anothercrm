@@ -1,7 +1,7 @@
 import type { LayoutServerLoad } from '../$types';
 import { db } from '$lib/server/db';
-import { userTabPreference } from '@/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { userTabPreference, tab } from '@/server/db/schema';
+import { eq, or, isNull } from 'drizzle-orm';
 
 export const load: LayoutServerLoad = async ({ locals, fetch }) => {
 	const user = locals.user;
@@ -22,6 +22,7 @@ export const load: LayoutServerLoad = async ({ locals, fetch }) => {
 	// Admin users: fetch tabs with translations and tasks
 	if (user?.type === 'admin') {
 		const rawTabs = await db.query.tab.findMany({
+			where: or(isNull(tab.userId), eq(tab.userId, user.id)),
 			with: {
 				translations: true,
 				tasks: true,
@@ -43,11 +44,19 @@ export const load: LayoutServerLoad = async ({ locals, fetch }) => {
 		};
 	}
 
+	if (!user) {
+		return {
+			user: null,
+			tabGroups: []
+		};
+	}
+
 	// Non-admin users: fetch tabGroups with all tasks from tabs in those groups
 	const tabGroups = await db.query.tabGroup.findMany({
 		with: {
 			translations: true,
 			tabs: {
+				where: (tabs, { or, eq, isNull }) => or(isNull(tabs.userId), eq(tabs.userId, user.id)),
 				with: {
 					tasks: true
 				}
