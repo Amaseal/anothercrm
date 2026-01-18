@@ -147,6 +147,33 @@ export const product = pgTable('products', {
 	...timestamps // Includes created_at and updated_at
 });
 
+
+export const taskMaterial = pgTable('taskMaterials', {
+	id: serial('id').primaryKey(),
+	taskId: integer('task_id').notNull().references(() => task.id),
+	materialId: integer('material_id').notNull().references(() => material.id),
+	...timestamps
+});
+
+// TaskProducts
+export const taskProduct = pgTable('taskProducts', {
+	id: serial('id').primaryKey(),
+	taskId: integer('task_id').notNull().references(() => task.id),
+	productId: integer('product_id').notNull().references(() => product.id),
+	count: integer('count').default(1),
+	...timestamps
+});
+
+
+export const materialRelations = relations(material, ({ many }) => ({
+	taskMaterials: many(taskMaterial)
+}));
+
+export const productRelations = relations(product, ({ many }) => ({
+	taskProducts: many(taskProduct)
+}));
+
+
 // ==================== CLIENT MANAGEMENT TABLE ====================
 
 /**

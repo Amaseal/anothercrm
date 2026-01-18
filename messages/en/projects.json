@@ -1,6 +1,29 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"projects": {
-		"value": "Projects"
+		"value": "Projects",
+		"title_label": "Title",
+		"description_label": "Description",
+		"tab_label": "Tab",
+		"client_label": "Client",
+		"assign_user_label": "Assign User",
+		"assign_manager_label": "Assign Manager",
+		"due_date_label": "Due Date",
+		"price_label": "Price",
+		"count_label": "Count",
+		"seamstress_label": "Seamstress",
+		"seamstress_placeholder": "Select seamstress",
+		"materials_label": "Materials",
+		"materials_placeholder": "Select materials",
+		"products_label": "Products",
+		"products_placeholder": "Select products",
+		"preview_label": "Preview",
+		"choose_date": "Choose date",
+		"search_placeholder": "Search...",
+		"no_item_found": "No item found.",
+		"selected_count": "{count} selected",
+		"files_label": "Files",
+		"upload_preview": "Upload Preview",
+		"create_button": "Create Task"
 	}
 }

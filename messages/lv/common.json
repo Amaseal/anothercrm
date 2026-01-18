@@ -8,5 +8,7 @@
 		"fabrics": "Audumi",
 		"products": "Produkti",
 		"files": "Faili"
-	}
+		
+	},
+	"selected_count": "{count} izvēlēti"
 }

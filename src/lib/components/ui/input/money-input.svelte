@@ -103,8 +103,7 @@
 		inputmode="decimal"
 		type="text"
 	/>
-	<span
-		class="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-muted-foreground select-none"
+	<span class="pointer-events-none absolute top-1 left-2 py-1 text-muted-foreground select-none"
 		>{currencySymbol}</span
 	>
 </div>

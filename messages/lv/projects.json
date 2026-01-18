@@ -1,6 +1,29 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"projects": {
-		"value": "Projekti"
+		"value": "Projekti",
+		"title_label": "Nosaukums",
+		"description_label": "Apraksts",
+		"tab_label": "Cilne",
+		"client_label": "Klients",
+		"assign_user_label": "Piešķirt lietotājam",
+		"assign_manager_label": "Piešķirt menedžerim",
+		"due_date_label": "Termiņš",
+		"price_label": "Cena",
+		"count_label": "Skaits",
+		"seamstress_label": "Šuvēja",
+		"seamstress_placeholder": "Izvēlies šuvēju",
+		"materials_label": "Materiāli",
+		"materials_placeholder": "Izvēlies materiālus",
+		"products_label": "Produkti",
+		"products_placeholder": "Izvēlies produktus",
+		"preview_label": "Priekšskats",
+		"choose_date": "Izvēlies datumu",
+		"search_placeholder": "Meklēt...",
+		"no_item_found": "Nekas netika atrasts.",
+		"selected_count": "{count} izvēlēti",
+		"files_label": "Faili",
+		"upload_preview": "Augšupielādēt priekšskatījumu",
+		"create_button": "Izveidot uzdevumu"
 	}
 }

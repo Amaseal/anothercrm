@@ -8,5 +8,7 @@
 		"fabrics": "Fabrics",
 		"products": "Products",
 		"files": "Files"
-	}
+		
+	},
+	"selected_count": "{count} selected"
 }

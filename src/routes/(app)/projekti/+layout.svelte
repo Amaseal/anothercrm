@@ -61,7 +61,7 @@
 			</Button>
 		{/if}
 
-		<Button href="/klienti/pievienot" variant="outline" class="flex items-center gap-2"
+		<Button href="/projekti/pievienot" variant="outline" class="flex items-center gap-2"
 			><Plus />{m['components.add']()}</Button
 		>
 	</div>
