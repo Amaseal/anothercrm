@@ -4,7 +4,7 @@
 	import * as Table from '$lib/components/ui/table/index.js';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
-	import { debounce, toCurrency } from '$lib/utils';
+	import { debounce, toCurrency } from '$lib/utilities';
 	import { goto } from '$app/navigation';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Plus from '@lucide/svelte/icons/plus';

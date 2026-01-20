@@ -5,11 +5,11 @@
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 
-	import { debounce } from '$lib/utils';
+	import { debounce } from '$lib/utilities';
 	import { goto } from '$app/navigation';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { formatDate } from '$lib/utils';
+	import { formatDate } from '$lib/utilities';
 	import { page } from '$app/state';
 	import type { Product } from '$lib/server/db/schema.js';
 	import Pencil from '@lucide/svelte/icons/pencil';

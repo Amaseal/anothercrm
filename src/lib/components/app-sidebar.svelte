@@ -9,6 +9,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import Save from '@lucide/svelte/icons/save';
+	import FileText from '@lucide/svelte/icons/file-text';
 	import Logo from './logo.svelte';
 	import NavUser from './nav-user.svelte';
 
@@ -47,6 +48,11 @@
 			title: m['menu.files'](),
 			url: '/faili',
 			icon: Save
+		},
+		{
+			title: m['menu.invoices'](),
+			url: '/rekini',
+			icon: FileText
 		}
 	];
 

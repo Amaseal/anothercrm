@@ -24,6 +24,8 @@
 		"selected_count": "{count} izvēlēti",
 		"files_label": "Faili",
 		"upload_preview": "Augšupielādēt priekšskatījumu",
-		"create_button": "Izveidot uzdevumu"
+		"create_button": "Izveidot uzdevumu",
+		"add_product": "Pievienot produktu",
+		"total_price": "Kopējā cena"
 	}
 }

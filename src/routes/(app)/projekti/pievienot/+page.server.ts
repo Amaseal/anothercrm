@@ -30,32 +30,68 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, locals }) => {
+		const user = locals.user;
+		if (!user) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		const userId = user.id;
+		
+		// Find user's personal tab
+		const personalTab = await db.query.tab.findFirst({
+			where: (t, { eq, and }) => and(eq(t.userId, userId))
+		});
+
+		if (!personalTab) {
+			return fail(400, { error: 'User does not have a personal tab' });
+		}
+
 		const formData = await request.formData();
 		const title = formData.get('title') as string;
 		const description = formData.get('description') as string;
-		const tabId = formData.get('tabId') ? parseInt(formData.get('tabId') as string) : null;
+		// Tab ID comes from personal tab now
+		const tabId = personalTab.id;
 		const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
 		const assignedToUserId = formData.get('assignedToUserId') as string;
 		const managerId = formData.get('managerId') as string;
 		const endDate = formData.get('endDate') as string;
-		const price = formData.get('price') ? parseInt(formData.get('price') as string) : null;
-		const count = formData.get('count') ? parseInt(formData.get('count') as string) : null;
+
+		
 		const seamstress = formData.get('seamstress') as string;
 		
 		const materialIds = formData.getAll('materials').map(id => parseInt(id as string));
-		const productIds = formData.getAll('products').map(id => parseInt(id as string));
+		const productIds = formData.getAll('productIds').map(id => parseInt(id as string));
+		const productCounts = formData.getAll('productCounts').map(count => parseInt(count as string));
 		
+		// Calculate total count from products
+		let calculatedCount = 0;
+		let calculatedPrice = 0;
+		if (productCounts.length > 0) {
+			calculatedCount = productCounts.reduce((a, b) => a + b, 0);
+
+			if (productIds.length > 0) {
+				const selectedProducts = await db.query.product.findMany({
+					where: (p, { inArray }) => inArray(p.id, productIds)
+				});
+
+				// Create a map for quick lookup
+				const productCostMap = new Map(selectedProducts.map(p => [p.id, p.cost]));
+
+				calculatedPrice = productIds.reduce((total, id, index) => {
+					const cost = productCostMap.get(id) || 0;
+					const count = productCounts[index] || 0;
+					return total + (cost * count);
+				}, 0);
+			}
+		}
+
 		// Files (Not supported by storage yet, logging for now)
 		const files = formData.getAll('files');
 		const preview = formData.get('preview');
 
 		if (!title) {
 			return fail(400, { missing: true, error: 'Title is required' });
-		}
-
-		if (!tabId) {
-			return fail(400, { missing: true, error: 'Tab is required' });
 		}
 
 		try {
@@ -67,8 +103,8 @@ export const actions: Actions = {
 				assignedToUserId: assignedToUserId || null,
 				managerId: managerId || null,
 				endDate,
-				price,
-				count,
+				price: calculatedPrice,
+				count: calculatedCount,
 				seamstress: seamstress || null,
 				preview: preview && (preview as File).size > 0 ? (preview as File).name : null, 
 				isDone: false
@@ -85,13 +121,17 @@ export const actions: Actions = {
 				}
 
 				if (productIds.length > 0) {
-					await db.insert(taskProduct).values(
-						productIds.map(productId => ({
+					const productsToInsert = productIds
+						.map((id, index) => ({
 							taskId: newTask.id,
-							productId,
-							count: 1 // Default count for now
+							productId: id,
+							count: productCounts[index] || 1
 						}))
-					);
+						.filter((p) => p.productId > 0);
+
+					if (productsToInsert.length > 0) {
+						await db.insert(taskProduct).values(productsToInsert);
+					}
 				}
 			}
 

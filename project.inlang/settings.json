@@ -15,7 +15,8 @@
 			"./messages/{locale}/projects.json",
 			"./messages/{locale}/structure.json",
 			"./messages/{locale}/tabs.json",
-			"./messages/{locale}/groups.json"
+			"./messages/{locale}/groups.json",
+			"./messages/{locale}/invoices.json"
 		]
 	},
 	"baseLocale": "en",

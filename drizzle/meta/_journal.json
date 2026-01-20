@@ -113,6 +113,27 @@
       "when": 1768771218398,
       "tag": "0015_curved_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1768854322076,
+      "tag": "0016_stormy_xorn",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1768855602658,
+      "tag": "0017_yellow_luminals",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1768938017960,
+      "tag": "0018_parched_slayback",
+      "breakpoints": true
     }
   ]
 }

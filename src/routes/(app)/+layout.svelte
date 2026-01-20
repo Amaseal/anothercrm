@@ -3,10 +3,14 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import AppSidebar from '$lib/components/app-sidebar.svelte';
 	import background from '$lib/assets/background.svg';
+
+	import { Toaster } from 'svelte-sonner';
+
 	import { ModeWatcher } from 'mode-watcher';
 	let { children, data } = $props();
 </script>
 
+<Toaster />
 <ModeWatcher />
 <Sidebar.Provider
 	style="--sidebar-width: calc(var(--spacing) * 54); --header-height: calc(var(--spacing) * 12); "

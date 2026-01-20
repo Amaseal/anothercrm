@@ -7,7 +7,8 @@
 		"clients": "Klienti",
 		"fabrics": "Audumi",
 		"products": "Produkti",
-		"files": "Faili"
+		"files": "Faili",
+		"invoices": "Rēķini"
 		
 	},
 	"selected_count": "{count} izvēlēti"

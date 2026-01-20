@@ -22,7 +22,7 @@
 		"@eslint/js": "^9.22.0",
 		"@inlang/paraglide-js": "^2.0.0",
 		"@internationalized/date": "^3.10.1",
-		"@lucide/svelte": "^0.561.0",
+		"@lucide/svelte": "^0.562.0",
 		"@oslojs/crypto": "^1.0.1",
 		"@oslojs/encoding": "^1.1.0",
 		"@sveltejs/adapter-auto": "^6.0.0",
@@ -43,12 +43,15 @@
 		"file-selector": "^2.1.2",
 		"globals": "^16.0.0",
 		"js-confetti": "^0.13.1",
+		"jsrepo": "^3.0.11",
 		"prettier": "^3.4.2",
 		"prettier-plugin-svelte": "^3.3.3",
 		"prettier-plugin-tailwindcss": "^0.6.11",
+		"runed": "^0.37.1",
 		"svelte": "^5.0.0",
 		"svelte-check": "^4.0.0",
-		"tailwind-merge": "^3.3.1",
+		"svelte-toolbelt": "^0.10.6",
+		"tailwind-merge": "^3.4.0",
 		"tailwind-variants": "^3.2.2",
 		"tailwindcss": "^4.0.0",
 		"tw-animate-css": "^1.3.8",
@@ -65,7 +68,9 @@
 		"nodemailer": "^7.0.9",
 		"postgres": "^3.4.5",
 		"svelte-dnd-action": "^0.9.67",
-		"svelte-tiptap": "^3.0.1"
+		"svelte-sonner": "^1.0.7",
+		"svelte-tiptap": "^3.0.1",
+		"xlsx": "^0.18.5"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "invoices": {
+    "value": "Rēķini",
+    "number": "Rēķina Nr.",
+    "issue_date": "Izrakstīts",
+    "due_date": "Termiņš",
+    "client": "Klients",
+    "total": "Summa",
+    "status": "Statuss",
+    "importer": "Importētājs",
+    "import_title": "Importēt rēķinus",
+    "import_button": "Importēt",
+    "add_invoice": "Pievienot rēķinu",
+    "edit_invoice": "Rediģēt rēķinu",
+    "delete_invoice_title": "Dzēst rēķinu",
+    "delete_invoice_confirm": "Vai tiešām vēlaties dzēst rēķinu {number}?",
+    "status_draft": "Melnraksts",
+    "status_sent": "Nosūtīts",
+    "status_paid": "Apmaksāts",
+            "status_overdue": "Kavēts",
+    "status_cancelled": "Atcelts",
+    "items": {
+      "nr": "Nr.",
+      "description": "Apraksts",
+      "unit": "Mērv.",
+    "quantity": "Daudzums",
+    "price": "Cena",
+    "amount": "Summa",
+    "add_row": "Pievienot rindu"
+  },
+  "summary": {
+    "subtotal": "Summa bez PVN",
+    "vat": "PVN",
+    "total": "Summa apmaksai"
+  },
+  "notes": "Piezīmes",
+  "supplier": "Piegādātājs",
+  "payer": "Maksātājs"
+}
+}

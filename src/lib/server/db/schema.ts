@@ -7,7 +7,8 @@ import {
 	timestamp, // Timestamp with timezone support
 	pgEnum, // PostgreSQL enum type
 	boolean, // Boolean column type
-	unique // Unique constraint
+	unique, // Unique constraint
+	real
 } from 'drizzle-orm/pg-core';
 import { check } from 'drizzle-orm/pg-core'; // Check constraint for custom validation rules
 import { sql } from 'drizzle-orm/sql/sql'; // Raw SQL template for complex constraints
@@ -64,6 +65,53 @@ export const session = pgTable('session', {
 		.notNull()
 		.references(() => user.id, { onDelete: 'cascade' }), // Links to user table - CASCADE: deletes sessions if user is deleted
 	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull() // Session expiration time
+});
+
+export const companySettings = pgTable('company_settings', {
+	id: serial('id').primaryKey(),
+	name: text('name').notNull(), // Fast Break SIA
+	registrationNumber: text('registration_number').notNull(), // 54103128281
+	vatNumber: text('vat_number').notNull(), // LV54103128281
+	address: text('address').notNull(), // Brīvības iela 19, Ogre, Ogres nov., LV-5001
+	bankName: text('bank_name').notNull(), // Citadele banka AS
+	bankCode: text('bank_code').notNull(), // PARXLV22
+	bankAccount: text('bank_account').notNull(), // LV44 PARX 0022 8121 1000 1
+	email: text('email'),
+	phone: text('phone'),
+	website: text('website'),
+	logo: text('logo'), // Path to company logo
+	isActive: boolean('is_active').default(true).notNull(),
+	...timestamps
+});
+
+// Invoices
+export const invoice = pgTable('invoices', {
+	id: serial('id').primaryKey(),
+	invoiceNumber: text('invoice_number').notNull().unique(), // e.g., "18062025-7k"
+	documentType: text('document_type')
+		.$type<'invoice' | 'delivery_note' | 'invoice_delivery'>()
+		.default('invoice')
+		.notNull(),
+	taskId: integer('task_id').references(() => task.id),	clientId: integer('client_id')
+		.notNull()
+		.references(() => client.id),
+	companyId: integer('company_id').references(() => companySettings.id), // Reference to company settings
+	status: text('status')
+		.$type<'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'>()
+		.default('draft')
+		.notNull(),
+	issueDate: text('issue_date').notNull(), // Date when invoice was issued
+	dueDate: text('due_date').notNull(), // Payment due date (Apmaksas termiņš)
+	paymentTermDays: integer('payment_term_days').default(7), // Default 7 days
+	subtotal: integer('subtotal').notNull().default(0), // Amount in cents before tax
+	taxRate: real('tax_rate').default(21.0), // Tax rate percentage (21% in Latvia)
+	taxAmount: integer('tax_amount').notNull().default(0), // Tax amount in cents
+	total: integer('total').notNull().default(0), // Total amount in cents
+	totalInWords: text('total_in_words'), // Amount in words (Summa vārdiem)
+	currency: text('currency').default('EUR').notNull(), // Currency
+	notes: text('notes'), // Additional notes or terms
+	isElectronic: boolean('is_electronic').default(true).notNull(), // Electronic document flag
+	...timestamps
 });
 
 /**
@@ -585,7 +633,9 @@ export const taskRelations = relations(task, ({ one, many }) => ({
 	}),
 	files: many(file), // All files attached to this task
 	history: many(taskHistory), // Add history relation
-	editSession: one(taskEditSession) // Add current edit session (one-to-one)
+	editSession: one(taskEditSession), // Add current edit session (one-to-one)
+    taskProducts: many(taskProduct),
+    taskMaterials: many(taskMaterial)
 }));
 
 /**
@@ -699,6 +749,65 @@ export const userClientRelations = relations(userClient, ({ one }) => ({
 		fields: [userClient.clientId],
 		references: [client.id]
 	})
+}));
+
+export const invoiceItems = pgTable('invoice_items', {
+    id: serial('id').primaryKey(),
+    invoiceId: integer('invoice_id')
+        .notNull()
+        .references(() => invoice.id, { onDelete: 'cascade' }),
+    description: text('description').notNull(),
+    unit: text('unit'), // e.g., 'gab.', 'st.', 'm'
+    quantity: integer('quantity').notNull().default(1),
+    price: integer('price').notNull(), // in cents
+    total: integer('total').notNull(), // in cents
+    section: text('section'), // Optional grouping/section name
+    ...timestamps
+});
+
+export const taskMaterialsRelations = relations(taskMaterial, ({ one }) => ({
+    task: one(task, {
+        fields: [taskMaterial.taskId],
+        references: [task.id]
+    }),
+    material: one(material, {
+        fields: [taskMaterial.materialId],
+        references: [material.id]
+    })
+}));
+
+export const taskProductRelations = relations(taskProduct, ({ one }) => ({
+	task: one(task, {
+		fields: [taskProduct.taskId],
+		references: [task.id]
+	}),
+	product: one(product, {
+		fields: [taskProduct.productId],
+		references: [product.id]
+	})
+}));
+
+export const invoiceRelations = relations(invoice, ({ one, many }) => ({
+    task: one(task, {
+        fields: [invoice.taskId],
+        references: [task.id]
+    }),
+    client: one(client, {
+        fields: [invoice.clientId],
+        references: [client.id]
+    }),
+    company: one(companySettings, {
+        fields: [invoice.companyId],
+        references: [companySettings.id]
+    }),
+    items: many(invoiceItems)
+}));
+
+export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
+    invoice: one(invoice, {
+        fields: [invoiceItems.invoiceId],
+        references: [invoice.id]
+    })
 }));
 
 // ==================== TYPE EXPORTS ====================

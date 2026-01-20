@@ -14,16 +14,16 @@
 	import { buttonVariants } from '$lib/components/ui/button';
 	import MultiSelect from '$lib/components/multi-select.svelte';
 	import MoneyInput from '@/components/ui/input/money-input.svelte';
+	import ProductList from '../../../../lib/components/product-list.svelte';
+	import * as NumberField from '$lib/components/ui/number-field';
 
 	let { data } = $props();
 
-	let selectedTabId = $state('');
 	let selectedClientId = $state('');
 	let selectedAssigneeId = $state('');
 	let selectedManagerId = $state('');
 	let selectedSeamstress = $state('');
 	let selectedMaterialIds = $state<number[]>([]);
-	let selectedProductIds = $state<number[]>([]);
 
 	// Date Picker State
 	let dateValue = $state<DateValue | undefined>(undefined);
@@ -34,10 +34,7 @@
 	let descriptionContent = $state('');
 
 	// Derived Names
-	let selectedTabName = $derived(
-		data.tabs.find((t) => t.id.toString() === selectedTabId)?.translations[0]?.name ||
-			m['projects.tab_label']()
-	);
+
 	let selectedClientName = $derived(
 		data.clients.find((c) => c.id.toString() === selectedClientId)?.name ||
 			m['projects.client_label']()
@@ -71,7 +68,7 @@
 					</div>
 
 					<div class="grid">
-						<Label>{m['projects.due_date_label']()}</Label>
+						<Label for="endDate">{m['projects.due_date_label']()}</Label>
 						<Popover.Root>
 							<Popover.Trigger
 								class={cn(
@@ -99,32 +96,6 @@
 						</Popover.Root>
 						<input type="hidden" name="endDate" value={dateValue ? dateValue.toString() : ''} />
 					</div>
-
-					<div class="grid">
-						<Label for="count">{m['projects.count_label']()}</Label>
-						<Input type="number" id="count" name="count" placeholder="1" />
-					</div>
-				</div>
-
-				<!-- Row 2: Responsible, Seamstress, Price -->
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-					<div class="grid">
-						<Label>{m['projects.assign_user_label']()}</Label>
-						<input type="hidden" name="assignedToUserId" value={selectedAssigneeId} />
-						<Select.Root type="single" bind:value={selectedAssigneeId}>
-							<Select.Trigger class="w-full">
-								{selectedAssigneeName}
-							</Select.Trigger>
-							<Select.Content>
-								{#each data.users as user}
-									<Select.Item value={user.id} label={user.name}>
-										{user.name}
-									</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-
 					<div class="grid w-full">
 						<Label>{m['projects.seamstress_label']()}</Label>
 						<input type="hidden" name="seamstress" value={selectedSeamstress} />
@@ -141,32 +112,10 @@
 							</Select.Content>
 						</Select.Root>
 					</div>
-
-					<div class="grid">
-						<Label for="price">{m['projects.price_label']()}</Label>
-						<MoneyInput id="price" name="price" placeholder="0.00" />
-					</div>
 				</div>
 
-				<!-- Row 3: Tab, Client, Manager -->
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-					<div class="grid">
-						<Label>{m['projects.tab_label']()}</Label>
-						<input type="hidden" name="tabId" value={selectedTabId} />
-						<Select.Root type="single" bind:value={selectedTabId}>
-							<Select.Trigger class="w-full">
-								{selectedTabName}
-							</Select.Trigger>
-							<Select.Content>
-								{#each data.tabs as tab}
-									<Select.Item value={tab.id.toString()} label={tab.translations[0]?.name}>
-										{tab.translations[0]?.name}
-									</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-
+				<!-- Row 3: Client, Manager -->
+				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
 					<div class="grid">
 						<Label>{m['projects.client_label']()}</Label>
 						<input type="hidden" name="clientId" value={selectedClientId} />
@@ -219,22 +168,14 @@
 						{/each}
 					</div>
 
-					<!-- Products -->
-					<div class="grid">
-						<Label>{m['projects.products_label']()}</Label>
-						<MultiSelect
-							options={data.products.map((p) => ({ value: p.id, label: p.title }))}
-							bind:value={selectedProductIds}
-							placeholder={m['projects.products_placeholder']()}
-						/>
-						{#each selectedProductIds as id}
-							<input type="hidden" name="products" value={id} />
-						{/each}
-					</div>
 					<div class="grid">
 						<Label for="files">{m['projects.files_label']()}</Label>
 						<Input id="files" type="file" name="files" multiple />
 					</div>
+				</div>
+				<!-- Products -->
+				<div class="grid">
+					<ProductList products={data.products} />
 				</div>
 			</div>
 			<div class="w-1/2">

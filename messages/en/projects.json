@@ -24,6 +24,8 @@
 		"selected_count": "{count} selected",
 		"files_label": "Files",
 		"upload_preview": "Upload Preview",
-		"create_button": "Create Task"
+		"create_button": "Create Task",
+		"add_product": "Add Product",
+		"total_price": "Total Price"
 	}
 }
