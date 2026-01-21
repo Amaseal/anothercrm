@@ -1,6 +1,6 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { toCurrency } from '$lib/utils';
+	import { toCurrency } from '$lib/utilities';
 
 	import type { Task } from '$lib/server/db/schema';
 	import { Button } from './ui/button';

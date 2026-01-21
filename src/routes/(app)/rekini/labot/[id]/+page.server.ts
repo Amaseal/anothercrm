@@ -20,52 +20,54 @@ export const load: PageServerLoad = async ({ params }) => {
     }
 
     // Fetch clients for dropdown
-	const clients = await db.query.client.findMany({
-		orderBy: desc(client.id)
-	});
-    
+    const clients = await db.query.client.findMany({
+        orderBy: desc(client.id)
+    });
+
     // Fetch products
     const products = await db.query.product.findMany();
-    
+
     // Fetch company settings
     const company = await db.query.companySettings.findFirst();
 
     // Fetch tasks
-	const tasks = await db.query.task.findMany({
-		with: {
-			client: true
-		},
-		orderBy: desc(task.id),
+    const tasks = await db.query.task.findMany({
+        with: {
+            client: true
+        },
+        orderBy: desc(task.id),
         limit: 100
-	});
+    });
 
-	return {
+    return {
         item,
-		clients,
-		tasks,
+        clients,
+        tasks,
         products,
         company
-	};
+    };
 };
 
 export const actions: Actions = {
-	default: async ({ request, params }) => {
-		const formData = await request.formData();
+    default: async ({ request, params }) => {
+        const formData = await request.formData();
         const invoiceId = Number(params.id);
-        
-		const taskId = formData.get('taskId') ? parseInt(formData.get('taskId') as string) : null;
-		const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
-        
+
+        const taskId = formData.get('taskId') ? parseInt(formData.get('taskId') as string) : null;
+        const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
+
         // Handle new client creation if needed (though usually distinct for edit)
         // ... Assuming for now we pick from existing or just use the ID provided.
         // If we want to support "New Client" in edit mode, copy logic from create.
-        
-		const issueDate = formData.get('issueDate') as string;
-		const dueDate = formData.get('dueDate') as string;
+
+        const issueDate = formData.get('issueDate') as string;
+        const dueDate = formData.get('dueDate') as string;
         const notes = formData.get('notes') as string;
         // Status might be editable, or inferred. Let's keep it if passed
         const status = formData.get('status') as "draft" | "sent" | "paid" | "overdue" | "cancelled" || 'draft';
-        
+
+        const language = (formData.get('language') as string) || 'lv';
+
         const itemsRaw = formData.get('items');
         let items: any[] = [];
         try {
@@ -73,7 +75,7 @@ export const actions: Actions = {
         } catch (e) {
             return fail(400, { message: 'Invalid items data' });
         }
-        
+
         if (!clientId) return fail(400, { message: 'Client is required' });
         if (items.length === 0) return fail(400, { message: 'At least one item is required' });
 
@@ -93,11 +95,12 @@ export const actions: Actions = {
             };
         });
 
-        const taxRate = 21.0; 
+        const rawTaxRate = parseFloat(formData.get('vatRate') as string);
+        const taxRate = isNaN(rawTaxRate) ? 21.0 : rawTaxRate;
         const taxAmount = Math.round(subtotal * (taxRate / 100));
         const total = subtotal + taxAmount;
 
-		try {
+        try {
             // Get existing invoice to handle totalOrdered changes
             const existingInvoice = await db.query.invoice.findFirst({
                 where: eq(invoice.id, invoiceId)
@@ -106,13 +109,13 @@ export const actions: Actions = {
             if (existingInvoice) {
                 // If client changed
                 if (existingInvoice.clientId !== clientId) {
-                     // Subtract from old client
-                     await db.update(client)
+                    // Subtract from old client
+                    await db.update(client)
                         .set({ totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) - ${existingInvoice.total}` })
                         .where(eq(client.id, existingInvoice.clientId));
-                     
-                     // Add to new client
-                     await db.update(client)
+
+                    // Add to new client
+                    await db.update(client)
                         .set({ totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) + ${total}` })
                         .where(eq(client.id, clientId));
                 } else {
@@ -127,7 +130,7 @@ export const actions: Actions = {
             }
 
             // Update Invoice
-			await db.update(invoice)
+            await db.update(invoice)
                 .set({
                     taskId,
                     clientId,
@@ -138,13 +141,14 @@ export const actions: Actions = {
                     taxRate,
                     taxAmount,
                     total,
-                    notes
+                    notes,
+                    language
                 })
                 .where(eq(invoice.id, invoiceId));
-            
+
             // Handle Items: Delete all and re-insert
             await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
-            
+
             if (processedItems.length > 0) {
                 await db.insert(invoiceItems).values(
                     processedItems.map((item: any) => ({
@@ -154,11 +158,11 @@ export const actions: Actions = {
                 );
             }
 
-		} catch (e) {
-			console.error(e);
-			return fail(500, { message: 'Failed to update invoice' });
-		}
+        } catch (e) {
+            console.error(e);
+            return fail(500, { message: 'Failed to update invoice' });
+        }
 
-		return redirect(303, '/rekini');
-	}
+        return redirect(303, '/rekini');
+    }
 };

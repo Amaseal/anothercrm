@@ -134,6 +134,13 @@
       "when": 1768938017960,
       "tag": "0018_parched_slayback",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1768985987732,
+      "tag": "0019_square_mad_thinker",
+      "breakpoints": true
     }
   ]
 }

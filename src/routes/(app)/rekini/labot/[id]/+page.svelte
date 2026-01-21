@@ -14,6 +14,8 @@
 	import ChevronsUpDown from '@lucide/svelte/icons/chevrons-up-down';
 	import FormError from '$lib/components/form-error.svelte';
 	import { toCurrency } from '$lib/utilities';
+	import FastBreakLogo from '$lib/components/fastbreak-logo.svelte';
+	import * as m from '$lib/paraglide/messages';
 
 	let { data, form } = $props();
 	const { company, clients, products, item: invoice } = data;
@@ -37,8 +39,10 @@
 
 	// Derived Calculations
 	let subtotal = $derived(items.reduce((acc, item) => acc + item.quantity * item.price, 0));
-	let taxRate = 21;
-	let taxAmount = $derived(subtotal * (taxRate / 100));
+	let vatRate = $state(invoice.taxRate ?? 21);
+    let language = $state(invoice.language ?? 'lv');
+
+	let taxAmount = $derived(subtotal * (vatRate / 100));
 	let total = $derived(subtotal + taxAmount);
 
 	function addItem() {
@@ -89,15 +93,15 @@
 </script>
 
 <svelte:head>
-	<title>Edit Invoice {invoice.invoiceNumber}</title>
+	<title>{m['invoices.edit_invoice']()}</title>
 </svelte:head>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
 	<div class="max-h-[90vh] w-full max-w-[70vw] overflow-scroll rounded-lg">
 		<div class="min-h-screen bg-gray-100 p-8">
 			<div class="mx-auto mb-4 flex items-center justify-between print:hidden">
-				<h2 class="text-xl font-bold text-gray-700">Edit Invoice {invoice.invoiceNumber}</h2>
-				<a href="/rekini" class="text-sm text-gray-500 hover:underline">Cancel</a>
+				<h2 class="text-xl font-bold text-gray-700">{m['invoices.edit_invoice']()}</h2>
+				<a href="/rekini" class="text-sm text-gray-500 hover:underline">{m['components.delete_modal.cancel']()}</a>
 			</div>
 
 			<!-- Paper Container -->
@@ -115,30 +119,24 @@
 					<!-- 1. Header Row -->
 					<div class="mb-8 flex items-start justify-between">
 						<!-- Logo -->
+					
 						<div class="w-1/2">
-							{#if company?.logo}
-								<div class="text-3xl font-black tracking-tighter uppercase italic">
-									{company.name}
-								</div>
-							{:else}
-								<div class="text-3xl font-black tracking-tighter uppercase italic">
-									{company?.name ?? 'Company Name'}
-								</div>
-							{/if}
+							<FastBreakLogo />
 						</div>
 
 						<!-- Invoice Meta Table -->
 						<div class="flex w-1/2 flex-col items-end">
 							<h1 class="mb-2 text-xl font-bold">Rēķins/Pavadzīme</h1>
-							<table class="w-full max-w-[300px] border-collapse border border-black text-sm">
+							<table class="w-full max-w-[400px] border-collapse border border-black text-sm">
 								<tbody>
 									<tr>
 										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">Datums:</td>
-										<td class="border border-black px-0 py-0">
+										<td class="border border-black px-0 py-0" dir="rtl">
 											<input
+												
 												type="date"
 												name="issueDate"
-												class="w-full border-none bg-transparent px-2 py-0.5 text-right text-sm focus:ring-0"
+												class="w-full border-none bg-transparent px-4 pl-6 py-0.5 text-end text-sm focus:ring-0 relative [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
 												value={formatDateInput(invoice.issueDate)}
 												required
 											/>
@@ -159,10 +157,41 @@
 										>
 										<td class="border border-black px-0 py-0">
 											<input
+												dir="rtl"
 												type="date"
 												name="dueDate"
-												class="w-full border-none bg-transparent px-2 py-0.5 text-right text-sm focus:ring-0"
+												class="w-full border-none bg-transparent px-2 pl-6 py-0.5 text-right text-sm focus:ring-0 relative [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
 												value={formatDateInput(invoice.dueDate)}
+												required
+											/>
+										</td>
+									</tr>
+                                    <tr>
+										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
+											>Language:</td
+										>
+										<td class="border border-black px-0 py-0">
+											<select
+                                                name="language"
+                                                bind:value={language}
+                                                class="w-full border-none bg-transparent px-1 py-0.5 text-right text-sm focus:ring-0 appearance-none"
+                                            >
+                                                <option value="lv">Latviešu</option>
+                                                <option value="en">English</option>
+                                            </select>
+										</td>
+									</tr>
+                                     <tr>
+										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
+											>VAT (%):</td
+										>
+										<td class="border border-black px-0 py-0">
+											<input
+												type="number"
+                                                step="0.1"
+												name="vatRate"
+                                                bind:value={vatRate}
+												class="w-full border-none bg-transparent px-2 py-0.5 text-right text-sm focus:ring-0"
 												required
 											/>
 										</td>
@@ -175,28 +204,28 @@
 					<!-- 2. Supplier (Piegādātājs) -->
 					<div class="mb-6">
 						<div class="flex">
-							<div class="w-32 font-bold">Piegādātājs</div>
+							<div class="w-32 font-bold">{m['invoices.supplier']()}</div>
 							<div class="font-bold">{company?.name}</div>
 						</div>
 						<div class="flex text-sm">
-							<div class="w-32">Reģ.Nr.</div>
+							<div class="w-32">{m['clients.registration_number']()}</div>
 							<div>{company?.registrationNumber}</div>
 						</div>
 						<div class="flex text-sm">
-							<div class="w-32">PVN Nr.</div>
+							<div class="w-32">{m['clients.vat_number']()}</div>
 							<div>{company?.vatNumber}</div>
 						</div>
 						<div class="flex text-sm">
-							<div class="w-32">Adrese</div>
+							<div class="w-32">{m['clients.address']()}</div>
 							<div>{company?.address}</div>
 						</div>
 					</div>
 
 					<!-- 3. Client (Maksātājs) - EDITABLE -->
-					<div class="mb-8 rounded border border-dashed border-gray-300 bg-slate-50/50 p-4">
+					<div class="mb-8">
 						<div class="mb-2 flex items-center justify-between">
-							<div class="flex items-center gap-2">
-								<div class="w-32 font-bold">Maksātājs</div>
+							<div class="flex items-center">
+								<div class="w-32 font-bold">{m['invoices.payer']()}</div>
 
 								{#if !isNewClient}
 									<Popover.Root bind:open={clientOpen}>
@@ -329,12 +358,24 @@
 					<table class="mb-4 w-full border-collapse border border-black bg-white">
 						<thead>
 							<tr class="bg-gray-50 text-sm">
-								<th class="w-10 border border-black px-2 py-1 text-center italic">Nr.</th>
-								<th class="border border-black px-2 py-1 text-left italic">Nosaukums</th>
-								<th class="w-24 border border-black px-2 py-1 text-center italic">Mērvienība</th>
-								<th class="w-20 border border-black px-2 py-1 text-center italic">Daudzums</th>
-								<th class="w-24 border border-black px-2 py-1 text-center italic">Cena €</th>
-								<th class="w-24 border border-black px-2 py-1 text-center italic">Summa €</th>
+								<th class="w-10 border border-black px-2 py-1 text-center italic"
+									>{m['invoices.items.nr']()}</th
+								>
+								<th class="border border-black px-2 py-1 text-left italic"
+									>{m['invoices.items.description']()}</th
+								>
+								<th class="w-24 border border-black px-2 py-1 text-center italic"
+									>{m['invoices.items.unit']()}</th
+								>
+								<th class="w-20 border border-black px-2 py-1 text-center italic"
+									>{m['invoices.items.quantity']()}</th
+								>
+								<th class="w-24 border border-black px-2 py-1 text-center italic"
+									>{m['invoices.items.price']()} €</th
+								>
+								<th class="w-24 border border-black px-2 py-1 text-center italic"
+									>{m['invoices.items.amount']()} €</th
+								>
 								<th
 									class="w-8 border border-t-0 border-r-0 border-b-0 border-l-0 border-black bg-transparent"
 								></th>
@@ -402,45 +443,50 @@
 						class="mb-6 w-full border-dashed"
 						onclick={addItem}
 					>
-						<Plus size="14" class="mr-2" /> Add Row
+						<Plus size="14" class="mr-2" /> {m['invoices.items.add_row']()}
 					</Button>
-					<div class="mb-4">
-						<Label class="mb-1 block text-sm font-bold">Darījuma apraksts (Notes):</Label>
+
+					<div class="flex gap-4">
+					<div class="mb-4 w-full">
+						<Label class="mb-1 block text-sm font-bold">{m['invoices.notes']()}:</Label>
 						<Textarea
 							name="notes"
 							placeholder="Optional notes..."
 							class="h-16 resize-none text-sm"
-							value={invoice.notes ?? ''}
+							value={m['invoices.notes']()}
 						/>
 					</div>
 					<!-- 5. Totals -->
 					<div class="mb-6 flex flex-col items-end text-sm font-bold">
+						<Label class="mb-1 block text-sm font-bold">{m['invoices.total']()}:</Label>
 						<div
-							class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
+							class="flex w-64 justify-between border-r border-b border-l border-t border-black bg-white px-2"
 						>
-							<span>Kopā</span>
+							<span>{m['invoices.total']()}</span>
 							<span>{formatMoney(subtotal)}</span>
 						</div>
 						<div
 							class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
 						>
-							<span>PVN {taxRate}%</span>
+							<span>{m['invoices.summary.vat']()} {vatRate}%</span>
 							<span>{formatMoney(taxAmount)}</span>
 						</div>
 						<div
 							class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
 						>
-							<span>Summa apmaksai EUR</span>
+							<span>{m['invoices.summary.total']()} EUR</span>
 							<span>{formatMoney(total)}</span>
 						</div>
 					</div>
+					</div>
+
 
 					<!-- Footer / Submit Area -->
 					<div class="mt-12 flex justify-end gap-4 border-t pt-6 print:hidden">
 						<!-- Hidden Task Linker -->
 						<input type="hidden" name="items" value={JSON.stringify(items)} />
 
-						<Button href="/rekini" variant="outline">Cancel</Button>
+						<Button href="/rekini" variant="outline">{m['components.delete_modal.cancel']()}</Button>
 						<Button type="submit" size="lg" class="px-8"
 							>{invoice.status === 'draft' ? 'Update Draft' : 'Update Invoice'}</Button
 						>

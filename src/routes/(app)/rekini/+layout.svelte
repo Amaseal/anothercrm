@@ -95,6 +95,36 @@
 		children?: () => any;
 	} = $props();
 
+		import { generatePdf } from '$lib/pdf';
+
+
+	async function handleDownload(invoice: any) {
+        try {
+            // Fetch full invoice data including items and company if not present
+            const res = await fetch(`/api/invoices/${invoice.id}`);
+            if (!res.ok) throw new Error('Failed to fetch invoice data');
+            const fullInvoice = await res.json();
+            
+            // The API should return { invoice, items, company }
+            const pdfData = {
+                ...fullInvoice.invoice,
+                items: fullInvoice.items,
+                company: fullInvoice.company,
+                 // Ensure language is set
+                language: fullInvoice.invoice.language || 'lv',
+                vatRate: fullInvoice.invoice.taxRate || 21
+            };
+
+            generatePdf(pdfData).download(`invoice-${invoice.invoiceNumber}.pdf`);
+        } catch (e) {
+            console.error(e);
+            toast.error('Failed to generate PDF');
+        }
+	}
+
+
+
+
 	// Initialize state from server data
 	let currentPage = $state(data.pagination.page);
 	let pageSize = $state(data.pagination.pageSize);
@@ -279,8 +309,9 @@
 									{/if}
 								</span>
 							</Table.Cell>
+
 							<Table.Cell class="text-center">
-								<Button href="/rekini/{item.id}/pdf" variant="ghost" size="icon" target="_blank"
+								<Button onclick={() => handleDownload(item)} variant="ghost" size="icon"
 									><FileText size="16" /></Button
 								>
 							</Table.Cell>

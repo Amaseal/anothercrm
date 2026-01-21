@@ -92,7 +92,7 @@ export const invoice = pgTable('invoices', {
 		.$type<'invoice' | 'delivery_note' | 'invoice_delivery'>()
 		.default('invoice')
 		.notNull(),
-	taskId: integer('task_id').references(() => task.id),	clientId: integer('client_id')
+	taskId: integer('task_id').references(() => task.id), clientId: integer('client_id')
 		.notNull()
 		.references(() => client.id),
 	companyId: integer('company_id').references(() => companySettings.id), // Reference to company settings
@@ -110,6 +110,7 @@ export const invoice = pgTable('invoices', {
 	totalInWords: text('total_in_words'), // Amount in words (Summa vārdiem)
 	currency: text('currency').default('EUR').notNull(), // Currency
 	notes: text('notes'), // Additional notes or terms
+	language: text('language').default('lv').notNull(), // Language for the invoice PDF (lv/en)
 	isElectronic: boolean('is_electronic').default(true).notNull(), // Electronic document flag
 	...timestamps
 });
@@ -247,6 +248,7 @@ export const client = pgTable(
 		bankCode: text('bank_code'), // Bank routing/SWIFT code
 		bankAccount: text('bank_account'), // Bank account number
 		type: clientTypeEnum('type').default('BTC').notNull(), // Client type: defaults to B2C
+		vatRate: real('vat_rate').default(21.0).notNull(), // Custom VAT rate for this client (default 21%)
 		totalOrdered: integer('total_ordered'), // Lifetime order total (optional tracking)
 		...timestamps // Includes created_at and updated_at
 	},
@@ -634,8 +636,8 @@ export const taskRelations = relations(task, ({ one, many }) => ({
 	files: many(file), // All files attached to this task
 	history: many(taskHistory), // Add history relation
 	editSession: one(taskEditSession), // Add current edit session (one-to-one)
-    taskProducts: many(taskProduct),
-    taskMaterials: many(taskMaterial)
+	taskProducts: many(taskProduct),
+	taskMaterials: many(taskMaterial)
 }));
 
 /**
@@ -752,28 +754,28 @@ export const userClientRelations = relations(userClient, ({ one }) => ({
 }));
 
 export const invoiceItems = pgTable('invoice_items', {
-    id: serial('id').primaryKey(),
-    invoiceId: integer('invoice_id')
-        .notNull()
-        .references(() => invoice.id, { onDelete: 'cascade' }),
-    description: text('description').notNull(),
-    unit: text('unit'), // e.g., 'gab.', 'st.', 'm'
-    quantity: integer('quantity').notNull().default(1),
-    price: integer('price').notNull(), // in cents
-    total: integer('total').notNull(), // in cents
-    section: text('section'), // Optional grouping/section name
-    ...timestamps
+	id: serial('id').primaryKey(),
+	invoiceId: integer('invoice_id')
+		.notNull()
+		.references(() => invoice.id, { onDelete: 'cascade' }),
+	description: text('description').notNull(),
+	unit: text('unit'), // e.g., 'gab.', 'st.', 'm'
+	quantity: integer('quantity').notNull().default(1),
+	price: integer('price').notNull(), // in cents
+	total: integer('total').notNull(), // in cents
+	section: text('section'), // Optional grouping/section name
+	...timestamps
 });
 
 export const taskMaterialsRelations = relations(taskMaterial, ({ one }) => ({
-    task: one(task, {
-        fields: [taskMaterial.taskId],
-        references: [task.id]
-    }),
-    material: one(material, {
-        fields: [taskMaterial.materialId],
-        references: [material.id]
-    })
+	task: one(task, {
+		fields: [taskMaterial.taskId],
+		references: [task.id]
+	}),
+	material: one(material, {
+		fields: [taskMaterial.materialId],
+		references: [material.id]
+	})
 }));
 
 export const taskProductRelations = relations(taskProduct, ({ one }) => ({
@@ -788,26 +790,26 @@ export const taskProductRelations = relations(taskProduct, ({ one }) => ({
 }));
 
 export const invoiceRelations = relations(invoice, ({ one, many }) => ({
-    task: one(task, {
-        fields: [invoice.taskId],
-        references: [task.id]
-    }),
-    client: one(client, {
-        fields: [invoice.clientId],
-        references: [client.id]
-    }),
-    company: one(companySettings, {
-        fields: [invoice.companyId],
-        references: [companySettings.id]
-    }),
-    items: many(invoiceItems)
+	task: one(task, {
+		fields: [invoice.taskId],
+		references: [task.id]
+	}),
+	client: one(client, {
+		fields: [invoice.clientId],
+		references: [client.id]
+	}),
+	company: one(companySettings, {
+		fields: [invoice.companyId],
+		references: [companySettings.id]
+	}),
+	items: many(invoiceItems)
 }));
 
 export const invoiceItemsRelations = relations(invoiceItems, ({ one }) => ({
-    invoice: one(invoice, {
-        fields: [invoiceItems.invoiceId],
-        references: [invoice.id]
-    })
+	invoice: one(invoice, {
+		fields: [invoiceItems.invoiceId],
+		references: [invoice.id]
+	})
 }));
 
 // ==================== TYPE EXPORTS ====================
