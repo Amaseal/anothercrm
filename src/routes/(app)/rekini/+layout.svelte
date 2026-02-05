@@ -95,35 +95,31 @@
 		children?: () => any;
 	} = $props();
 
-		import { generatePdf } from '$lib/pdf';
-
+	import { generatePdf } from '$lib/pdf';
 
 	async function handleDownload(invoice: any) {
-        try {
-            // Fetch full invoice data including items and company if not present
-            const res = await fetch(`/api/invoices/${invoice.id}`);
-            if (!res.ok) throw new Error('Failed to fetch invoice data');
-            const fullInvoice = await res.json();
-            
-            // The API should return { invoice, items, company }
-            const pdfData = {
-                ...fullInvoice.invoice,
-                items: fullInvoice.items,
-                company: fullInvoice.company,
-                 // Ensure language is set
-                language: fullInvoice.invoice.language || 'lv',
-                vatRate: fullInvoice.invoice.taxRate || 21
-            };
+		try {
+			// Fetch full invoice data including items and company if not present
+			const res = await fetch(`/api/invoices/${invoice.id}`);
+			if (!res.ok) throw new Error('Failed to fetch invoice data');
+			const fullInvoice = await res.json();
 
-            generatePdf(pdfData).download(`invoice-${invoice.invoiceNumber}.pdf`);
-        } catch (e) {
-            console.error(e);
-            toast.error('Failed to generate PDF');
-        }
+			// The API should return { invoice, items, company }
+			const pdfData = {
+				...fullInvoice.invoice,
+				items: fullInvoice.items,
+				company: fullInvoice.company,
+				// Ensure language is set
+				language: fullInvoice.invoice.language || 'lv',
+				vatRate: fullInvoice.invoice.taxRate || 21
+			};
+
+			generatePdf(pdfData).download(`invoice-${invoice.invoiceNumber}.pdf`);
+		} catch (e) {
+			console.error(e);
+			toast.error('Failed to generate PDF');
+		}
 	}
-
-
-
 
 	// Initialize state from server data
 	let currentPage = $state(data.pagination.page);
@@ -330,7 +326,7 @@
 									href="/rekini/izdzest/{item.id}"
 									variant="ghost"
 									size="icon"
-									class="text-destructive hover:text-destructive"><Trash2 size="16" /></Button
+									class="hover:bg-red-100 hover:text-red-600"><Trash2 size="16" /></Button
 								>
 							</Table.Cell>
 						</Table.Row>

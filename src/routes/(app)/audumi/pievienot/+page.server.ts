@@ -1,10 +1,12 @@
 import { db } from '$lib/server/db';
-import { material } from '$lib/server/db/schema';
+import { material, file } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
+import { stat } from 'fs/promises';
+import { join } from 'path';
 import * as m from '$lib/paraglide/messages';
 
-export const load = async () => {};
+export const load = async () => { };
 
 export const actions: Actions = {
 	default: async ({ request }) => {
@@ -31,6 +33,24 @@ export const actions: Actions = {
 				remaining,
 				image
 			});
+
+			if (image) {
+				try {
+					const filename = image.split('/').pop() || image;
+					const filePath = join('uploads', filename);
+					const fileStat = await stat(filePath);
+
+					await db.insert(file).values({
+						filename: filename,
+						downloadUrl: image,
+						size: fileStat.size,
+						taskId: null,
+						created_at: new Date()
+					});
+				} catch (e) {
+					console.error('Failed to create file record for material image:', e);
+				}
+			}
 		} catch (error) {
 			return fail(500, { message: m['materials.errors.something_went_wrong']() });
 		}

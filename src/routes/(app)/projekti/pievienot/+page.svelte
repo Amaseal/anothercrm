@@ -7,15 +7,16 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
-	import { CalendarIcon } from '@lucide/svelte';
+	import { CalendarIcon, Save, X } from '@lucide/svelte';
 	import { DateFormatter, type DateValue, getLocalTimeZone, today } from '@internationalized/date';
 	import Tiptap from '$lib/components/tiptap.svelte';
 	import { cn } from '$lib/utils';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import MultiSelect from '$lib/components/multi-select.svelte';
-	import MoneyInput from '@/components/ui/input/money-input.svelte';
 	import ProductList from '../../../../lib/components/product-list.svelte';
-	import * as NumberField from '$lib/components/ui/number-field';
+	import FileUpload from '@/components/file-upload.svelte';
+	import ClientSelect from '$lib/components/client-select.svelte';
+	import ImagePreviewInput from '@/components/image-preview-input.svelte';
 
 	let { data } = $props();
 
@@ -33,8 +34,10 @@
 	// Tiptap Content
 	let descriptionContent = $state('');
 
-	// Derived Names
+	// Total Price from ProductList
+	let totalPrice = $state(0);
 
+	// Derived Names
 	let selectedClientName = $derived(
 		data.clients.find((c) => c.id.toString() === selectedClientId)?.name ||
 			m['projects.client_label']()
@@ -53,147 +56,204 @@
 		{ value: 'Lielvārde', label: 'Lielvārde' },
 		{ value: 'Pagrabs', label: 'Pagrabs' }
 	];
+
+	function formatPrice(priceInCents: number): string {
+		return (priceInCents / 100).toFixed(2);
+	}
 </script>
 
-<div class="container mx-auto max-h-screen overflow-y-auto py-10">
-	<h1 class="mb-6 text-3xl font-bold">{m['projects.value']()} - {m['projects.create_button']()}</h1>
+<!-- Modal Overlay -->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+	<!-- Inner Modal Container -->
+	<div
+		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
+	>
+		<form method="POST" use:enhance enctype="multipart/form-data" class="flex h-full flex-col">
+			<!-- Sticky Header inside Modal -->
+			<div class="flex items-center gap-4 border-b bg-background px-6 py-4">
+				<!-- Title -->
+				<div class="flex-1">
+					<Input
+						id="title"
+						name="title"
+						placeholder={m['projects.title_label']()}
+						class="text-lg font-semibold"
+						required
+					/>
+				</div>
 
-	<form method="POST" use:enhance enctype="multipart/form-data" class="mx-auto space-y-6">
-		<div class="flex gap-6">
-			<div class="grid w-1/2 gap-4">
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-					<div class="grid">
-						<Label for="title">{m['projects.title_label']()}</Label>
-						<Input id="title" name="title" placeholder={m['projects.title_label']()} required />
+				<!-- Client -->
+				<div class="w-64">
+					<input type="hidden" name="clientId" value={selectedClientId} />
+					<ClientSelect bind:value={selectedClientId} clients={data.clients} />
+				</div>
+
+				<!-- Due Date -->
+				<div class="w-auto">
+					<Popover.Root>
+						<Popover.Trigger
+							class={cn(
+								buttonVariants({ variant: 'outline' }),
+								'w-[240px] justify-start pl-4 text-left font-normal',
+								!dateValue && 'text-muted-foreground'
+							)}
+						>
+							{dateValue
+								? df.format(dateValue.toDate(getLocalTimeZone()))
+								: m['projects.choose_date']()}
+							<CalendarIcon class="ml-auto size-4 opacity-50" />
+						</Popover.Trigger>
+						<Popover.Content class="w-auto p-0" side="bottom">
+							<Calendar
+								type="single"
+								value={dateValue}
+								bind:placeholder={datePlaceholder}
+								minValue={today(getLocalTimeZone())}
+								onValueChange={(v) => {
+									dateValue = v;
+								}}
+							/>
+						</Popover.Content>
+					</Popover.Root>
+					<input type="hidden" name="endDate" value={dateValue ? dateValue.toString() : ''} />
+				</div>
+
+				<!-- Save Button -->
+				<Button type="submit" size="sm">
+					<Save class="mr-2 size-4" />
+					Saglabāt
+				</Button>
+
+				<!-- Close Button -->
+				<Button
+					variant="ghost"
+					size="icon"
+					href="/projekti"
+					class="ml-2 text-muted-foreground hover:text-foreground"
+				>
+					<X class="size-5" />
+					<span class="sr-only">Close</span>
+				</Button>
+			</div>
+
+			<!-- Scrollable Content -->
+			<div class="custom-scroll flex-1 overflow-y-auto p-6">
+				<!-- SECTION 1: Description & Products (Products moved here) -->
+				<div class="grid grid-cols-12 items-stretch gap-6">
+					<!-- Left (65%) - Description -->
+					<!-- Flex col to allow internal growth -->
+					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
+						<Label>{m['projects.description_label']()}</Label>
+						<div class="min-h-[400px] flex-1 rounded-md border p-2">
+							<!-- Tiptap needs to take full height of parent -->
+							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" />
+							<input type="hidden" name="description" value={descriptionContent} />
+						</div>
 					</div>
 
-					<div class="grid">
-						<Label for="endDate">{m['projects.due_date_label']()}</Label>
-						<Popover.Root>
-							<Popover.Trigger
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'w-full justify-start pl-4 text-left font-normal',
-									!dateValue && 'text-muted-foreground'
-								)}
-							>
-								{dateValue
-									? df.format(dateValue.toDate(getLocalTimeZone()))
-									: m['projects.choose_date']()}
-								<CalendarIcon class="ml-auto size-4 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0" side="top">
-								<Calendar
-									type="single"
-									value={dateValue}
-									bind:placeholder={datePlaceholder}
-									minValue={today(getLocalTimeZone())}
-									onValueChange={(v) => {
-										dateValue = v;
-									}}
+					<!-- Right (35%) - Assignment & Products -->
+					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
+						<!-- Assignment Controls -->
+						<div class="space-y-4">
+							<!-- Manager -->
+							<div class="grid gap-2">
+								<Label>{m['projects.assign_manager_label']()}</Label>
+								<input type="hidden" name="createdById" value={selectedManagerId} />
+								<Select.Root type="single" bind:value={selectedManagerId}>
+									<Select.Trigger class="w-full">
+										{selectedManagerName}
+									</Select.Trigger>
+									<Select.Content>
+										{#each data.users as user}
+											<Select.Item value={user.id} label={user.name}>
+												{user.name}
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+							</div>
+
+							<!-- Seamstress -->
+							<div class="grid gap-2">
+								<Label>{m['projects.seamstress_label']()}</Label>
+								<input type="hidden" name="seamstress" value={selectedSeamstress} />
+								<Select.Root type="single" bind:value={selectedSeamstress}>
+									<Select.Trigger class="w-full">
+										{selectedSeamstress || m['projects.seamstress_placeholder']()}
+									</Select.Trigger>
+									<Select.Content>
+										{#each seamstresses as s}
+											<Select.Item value={s.value} label={s.label}>
+												{s.label}
+											</Select.Item>
+										{/each}
+									</Select.Content>
+								</Select.Root>
+							</div>
+
+							<!-- Materials -->
+							<div class="grid gap-2">
+								<Label>{m['projects.materials_label']()}</Label>
+								<MultiSelect
+									options={data.materials.map((i) => ({
+										value: i.id,
+										label: `${i.title} (${i.remaining})`
+									}))}
+									bind:value={selectedMaterialIds}
+									placeholder={m['projects.materials_placeholder']()}
 								/>
-							</Popover.Content>
-						</Popover.Root>
-						<input type="hidden" name="endDate" value={dateValue ? dateValue.toString() : ''} />
-					</div>
-					<div class="grid w-full">
-						<Label>{m['projects.seamstress_label']()}</Label>
-						<input type="hidden" name="seamstress" value={selectedSeamstress} />
-						<Select.Root type="single" bind:value={selectedSeamstress}>
-							<Select.Trigger class="w-full">
-								{selectedSeamstress || m['projects.seamstress_placeholder']()}
-							</Select.Trigger>
-							<Select.Content>
-								{#each seamstresses as s}
-									<Select.Item value={s.value} label={s.label}>
-										{s.label}
-									</Select.Item>
+								{#each selectedMaterialIds as id}
+									<input type="hidden" name="materials" value={id} />
 								{/each}
-							</Select.Content>
-						</Select.Root>
+							</div>
+						</div>
+
+						<!-- Products List (Moved from Execution section) -->
+						<div class="flex-1">
+							<ProductList products={data.products} bind:totalPrice />
+						</div>
 					</div>
 				</div>
 
-				<!-- Row 3: Client, Manager -->
-				<div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-					<div class="grid">
-						<Label>{m['projects.client_label']()}</Label>
-						<input type="hidden" name="clientId" value={selectedClientId} />
-						<Select.Root type="single" bind:value={selectedClientId}>
-							<Select.Trigger class="w-full">
-								{selectedClientName}
-							</Select.Trigger>
-							<Select.Content class="max-h-[200px] overflow-y-auto">
-								{#each data.clients as client}
-									<Select.Item value={client.id.toString()} label={client.name}>
-										{client.name}
-									</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
+				<!-- Separator/Heading for Execution -->
+				<div class="my-6 border-t"></div>
+
+				<!-- SECTION 2: Execution (Preview & Files) -->
+				<div class="grid grid-cols-12 items-stretch gap-6">
+					<!-- Left (65%) - Large Visual Reference -->
+					<div class="col-span-12 lg:col-span-8">
+						<div class="h-full min-h-[400px]">
+							<ImagePreviewInput
+								id="preview"
+								name="preview"
+								label={m['projects.preview_label']()}
+								class="h-full w-full object-contain"
+							/>
+						</div>
 					</div>
 
-					<div class="grid">
-						<Label>{m['projects.assign_manager_label']()}</Label>
-						<input type="hidden" name="managerId" value={selectedManagerId} />
-						<Select.Root type="single" bind:value={selectedManagerId}>
-							<Select.Trigger class="w-full">
-								{selectedManagerName}
-							</Select.Trigger>
-							<Select.Content>
-								{#each data.users as user}
-									<Select.Item value={user.id} label={user.name}>
-										{user.name}
-									</Select.Item>
-								{/each}
-							</Select.Content>
-						</Select.Root>
-					</div>
-				</div>
-
-				<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-					<!-- Materials -->
-					<div class="grid">
-						<Label>{m['projects.materials_label']()}</Label>
-						<MultiSelect
-							options={data.materials.map((m) => ({
-								value: m.id,
-								label: `${m.title} (${m.remaining})`
-							}))}
-							bind:value={selectedMaterialIds}
-							placeholder={m['projects.materials_placeholder']()}
-						/>
-						{#each selectedMaterialIds as id}
-							<input type="hidden" name="materials" value={id} />
-						{/each}
-					</div>
-
-					<div class="grid">
-						<Label for="files">{m['projects.files_label']()}</Label>
-						<Input id="files" type="file" name="files" multiple />
-					</div>
-				</div>
-				<!-- Products -->
-				<div class="grid">
-					<ProductList products={data.products} />
-				</div>
-			</div>
-			<div class="w-1/2">
-				<div class="grid">
-					<Label>{m['projects.description_label']()}</Label>
-					<div class="min-h-[200px] rounded-md border p-2">
-						<Tiptap bind:value={descriptionContent} class="min-h-[200px]" />
-						<input type="hidden" name="description" value={descriptionContent} />
+					<!-- Right (35%) - Files (Moved here) -->
+					<div class="col-span-12 lg:col-span-4">
+						<div class="grid gap-2">
+							<Label for="files">{m['projects.files_label']()}</Label>
+							<FileUpload />
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
 
-		<div class="grid">
-			<Label for="preview">{m['projects.preview_label']()}</Label>
-			<Input id="preview" type="file" name="preview" accept="image/*" />
-		</div>
+			<!-- Sticky Footer inside Modal -->
+			<div
+				class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"
+			>
+				<div class="text-xl font-bold">
+					{m['projects.total_price']()}: €{formatPrice(totalPrice)}
+				</div>
 
-		<Button type="submit" class="w-full">{m['projects.create_button']()}</Button>
-	</form>
+				<Button type="submit" size="lg">
+					{m['projects.create_button']()}
+				</Button>
+			</div>
+		</form>
+	</div>
 </div>

@@ -168,10 +168,14 @@
 							</Table.Cell>
 
 							<Table.Cell class="text-right">
-								<Button href="/produkti/labot/{item.id}" variant="outline"><Pencil /></Button>
+								<Button href="/produkti/labot/{item.id}" variant="ghost"><Pencil /></Button>
 							</Table.Cell>
 							<Table.Cell class="text-right">
-								<Button href="/produkti/izdzest/{item.id}" variant="destructive"><Trash2 /></Button>
+								<Button
+									href="/produkti/izdzest/{item.id}"
+									variant="ghost"
+									class="hover:bg-red-100 hover:text-red-600"><Trash2 /></Button
+								>
 							</Table.Cell>
 						</Table.Row>
 					{/each}

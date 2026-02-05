@@ -9,6 +9,7 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import Columns3Cog from '@lucide/svelte/icons/columns-3-cog';
 	import * as m from '$lib/paraglide/messages';
+	import List from '$lib/components/list.svelte';
 
 	let { data, children } = $props();
 
@@ -38,6 +39,34 @@
 
 		goto(url.toString(), { replaceState: true });
 	}
+	import { onMount } from 'svelte';
+	import { invalidateAll } from '$app/navigation';
+	import { browser } from '$app/environment';
+
+	// Handle unified data structure (columns)
+	let tabsToRender = $derived(data.columns || []);
+
+	onMount(() => {
+		if (browser && data.user) {
+			const eventSource = new EventSource('/api/events');
+
+			eventSource.onmessage = (event) => {
+				const data = JSON.parse(event.data);
+				if (data.type === 'create' || data.type === 'update' || data.type === 'delete') {
+					// Invalidate all to reload data from server (simplest "performant enough" approach for now)
+					// Optimally we'd update the store directly, but with complex mapping logic in load(),
+					// reloading is safer to ensure consistency.
+					invalidateAll();
+				}
+			};
+
+			return () => {
+				eventSource.close();
+			};
+		}
+	});
+
+	// ... (rest of search logic)
 </script>
 
 <header
@@ -66,4 +95,11 @@
 		>
 	</div>
 </header>
+
+<div class="flex h-[calc(100vh-110px)] gap-4 overflow-x-auto pb-2">
+	{#each tabsToRender as item}
+		<List tab={item} />
+	{/each}
+</div>
+
 {@render children?.()}

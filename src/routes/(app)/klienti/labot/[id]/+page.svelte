@@ -57,7 +57,7 @@
 						<div class="flex-1">
 							<Label>{m['clients.type']()}</Label>
 							<Select.Root type="single" name="type" bind:value>
-								<Select.Trigger class="mb-3 w-full bg-background">
+								<Select.Trigger class="w-full bg-background">
 									{triggerContent}
 								</Select.Trigger>
 								<Select.Content>

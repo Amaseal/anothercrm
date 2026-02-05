@@ -20,6 +20,13 @@
 			"title": "Izdzēst {item}",
 			"error": "Radās kļūda, mēģinot izdzēst {item}."
 		},
+		"done_modal": {
+			"confirm": "Pabeigt",
+			"cancel": "Atcelt",
+			"message": "Vai tiešām vēlaties atzīmēt {item} kā pabeigtu? Pievienotie faili tiks dzēsti.",
+			"title": "Pabeigt {item}",
+			"error": "Radās kļūda, mēģinot pabeigt {item}."
+		},
 		"user": {
 			"theme": "Izskats",
 			"language": "Valoda",
@@ -30,7 +37,12 @@
 		},
 		"search": "Meklēt...",
 		"add": "Pievienot",
+		"cancel": "Atcelt",
 		"delete": "Dzēst",
-		"edit": "Rediģēt"
+		"edit": "Rediģēt",
+		"file_dropzone": {
+			"click_to_upload": "Noklikšķini vai nomet failus šeit",
+			"click_drop_paste": "Noklikšķini, nomet vai ielīmē attēlu šeit"
+		}
 	}
 }

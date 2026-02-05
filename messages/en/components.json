@@ -17,6 +17,13 @@
 			"title": "Delete {item}",
 			"error": "An error occurred while trying to delete {item}."
 		},
+		"done_modal": {
+			"confirm": "Complete",
+			"cancel": "Cancel",
+			"message": "Are you sure you want to mark {item} as done? Attached files will be deleted.",
+			"title": "Complete {item}",
+			"error": "An error occurred while trying to complete {item}."
+		},
 		"user": {
 			"theme": "Theme",
 			"language": "Language",
@@ -27,7 +34,12 @@
 		},
 		"search": "Search...",
 		"add": "Add",
+		"cancel": "Cancel",
 		"delete": "Delete",
-		"edit": "Edit"
+		"edit": "Edit",
+		"file_dropzone": {
+			"click_to_upload": "Click or drop files here",
+			"click_drop_paste": "Click, drop or paste image here"
+		}
 	}
 }

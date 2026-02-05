@@ -175,30 +175,6 @@
 		currentItem = item;
 		imageModalOpen = true;
 	}
-
-	// Pagination functions
-	function goToPage(page: number) {
-		if (page >= 0 && page < data.pagination.totalPages) {
-			updateUrlAndNavigate({ page });
-		}
-	}
-
-	function goToFirstPage() {
-		goToPage(0);
-	}
-
-	function goToLastPage() {
-		goToPage(Math.max(0, data.pagination.totalPages - 1));
-	}
-
-	function handlePageSizeChange(event: Event) {
-		const target = event.target as HTMLSelectElement;
-		const newPageSize = parseInt(target.value);
-		updateUrlAndNavigate({
-			pageSize: newPageSize,
-			page: 0 // Reset to first page when changing page size
-		});
-	}
 </script>
 
 {@render children?.()}
@@ -389,10 +365,14 @@
 								</button>
 							</Table.Cell>
 							<Table.Cell class="text-center">
-								<Button href="/audumi/labot/{item.id}" variant="outline"><Pencil /></Button>
+								<Button href="/audumi/labot/{item.id}" variant="ghost"><Pencil /></Button>
 							</Table.Cell>
 							<Table.Cell class="text-center">
-								<Button href="/audumi/izdzest/{item.id}" variant="destructive"><Trash2 /></Button>
+								<Button
+									href="/audumi/izdzest/{item.id}"
+									variant="ghost"
+									class="hover:bg-red-100 hover:text-red-600"><Trash2 /></Button
+								>
 							</Table.Cell>
 						</Table.Row>
 					{/each}

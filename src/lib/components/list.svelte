@@ -6,6 +6,7 @@
 	import { Button } from './ui/button';
 	import Plus from '@lucide/svelte/icons/plus';
 	import GripVertical from '@lucide/svelte/icons/grip-vertical';
+	import ProductCard from './product-card.svelte';
 
 	import { dndzone, dragHandleZone, dragHandle } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
@@ -21,15 +22,13 @@
 </script>
 
 <Card.Root
-	class=" relative flex h-full w-[260px] flex-shrink-0 flex-col gap-0 bg-background/70  p-1"
+	class=" relative flex h-full w-[240px] flex-shrink-0 flex-col gap-0 bg-background/70 py-2"
 >
-	<Card.Header class="justify-streatch flex flex-col gap-2 p-1">
+	<Card.Header class="justify-streatch flex flex-col gap-2 p-0">
 		<div class="flex w-full items-center gap-2">
-			<Card.Title class="text-base"
-				>{tab?.translations.find((t) => t.language === getLocale())?.name || ''}</Card.Title
-			>
+			<Card.Title class="p-2 text-base">{tab?.name || ''}</Card.Title>
 		</div>
-		<hr class=" w-full border-2" style="border-color: {tab?.color || '#ffffff'}" />
+		<hr class=" mb-2 w-full border-2" style="border-color: {tab?.color || '#ffffff'}" />
 	</Card.Header>
 	<Card.Content class="custom-scroll  h-full  overflow-y-auto p-1">
 		<div
@@ -54,7 +53,7 @@
 			{:else}
 				{#each tab?.tasks || [] as task (task.id)}
 					<div animate:flip={{ duration: 300 }} class=" active:outline-none">
-						<!-- <ProjectCard {task} container={tab?.id?.toString() || ''} {createUrlWithParams} /> -->
+						<ProductCard {task} />
 					</div>
 				{/each}
 			{/if}

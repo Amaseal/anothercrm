@@ -436,7 +436,7 @@ export const task = pgTable('tasks', {
 		.references(() => tab.id, { onDelete: 'restrict' }), // RESTRICT: Cannot delete tab with tasks
 	clientId: integer('client_id').references(() => client.id, { onDelete: 'set null' }), // SET NULL: Task survives client deletion
 	assignedToUserId: text('user_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
-	managerId: text('manager_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
+	createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
 	seamstress: text('seamstress'), // Name of seamstress (stored as text, not FK)
 	count: integer('count'), // Quantity/count for this task (optional)
 	endDate: text('end_date'), // Due date (stored as text) (optional)
@@ -627,11 +627,11 @@ export const taskRelations = relations(task, ({ one, many }) => ({
 		references: [user.id],
 		relationName: 'assignedTasks' // Named relation to distinguish from managedTasks
 	}),
-	manager: one(user, {
+	creator: one(user, {
 		// Optional manager assignment
-		fields: [task.managerId],
+		fields: [task.createdById],
 		references: [user.id],
-		relationName: 'managedTasks' // Named relation to distinguish from assignedTasks
+		relationName: 'createdTasks' // Named relation to distinguish from assignedTasks
 	}),
 	files: many(file), // All files attached to this task
 	history: many(taskHistory), // Add history relation
@@ -724,7 +724,7 @@ export const clientRelations = relations(client, ({ many }) => ({
  */
 export const userRelations = relations(user, ({ many, one }) => ({
 	assignedTasks: many(task, { relationName: 'assignedTasks' }), // Tasks assigned TO this user
-	managedTasks: many(task, { relationName: 'managedTasks' }), // Tasks MANAGED BY this user
+	createdTasks: many(task, { relationName: 'createdTasks' }), // Tasks MANAGED BY this user
 	personalTab: one(tab, {
 		// User's personal tab (optional)
 		fields: [user.id],

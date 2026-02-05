@@ -17,11 +17,19 @@
 		cost: number;
 	}
 
-	let { products } = $props<{ products: Product[] }>();
+	let {
+		products,
+		totalPrice = $bindable(0),
+		initialEntries = []
+	} = $props<{
+		products: Product[];
+		totalPrice?: number;
+		initialEntries?: { productId: number; count: number; isOpen: boolean }[];
+	}>();
 
-	let entries = $state<{ productId: number; count: number; isOpen: boolean }[]>([
-		{ productId: 0, count: 1, isOpen: false }
-	]);
+	let entries = $state<{ productId: number; count: number; isOpen: boolean }[]>(
+		initialEntries.length > 0 ? initialEntries : [{ productId: 0, count: 1, isOpen: false }]
+	);
 	let searchQueries = $state<Record<number, string>>({});
 
 	function getSearchQuery(index: number): string {
@@ -83,7 +91,11 @@
 		}, 0);
 	}
 
-	let totalPrice = $derived(calculateTotalPrice());
+	let calculatedTotal = $derived(calculateTotalPrice());
+
+	$effect(() => {
+		totalPrice = calculatedTotal;
+	});
 
 	function formatPrice(priceInCents: number): string {
 		return (priceInCents / 100).toFixed(2);
@@ -196,7 +208,7 @@
 
 	<div class="flex items-center justify-between pt-2">
 		<div class="text-sm font-medium">
-			{m['projects.total_price']()}: €{formatPrice(totalPrice)}
+			{m['projects.total_price']()}: €{formatPrice(calculatedTotal)}
 		</div>
 		<Button type="button" variant="outline" onclick={addEntry}>
 			{m['projects.add_product']()}

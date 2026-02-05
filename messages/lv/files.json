@@ -1,0 +1,29 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"files": {
+	"title": "Faili",
+	"name": "Nosaukums",
+	"size": "Izmērs",
+	"created": "Izveidots",
+	"status": "Statuss",
+	"usage": "Lietojums",
+	"actions": "Darbības",
+	"empty": "Nav failu",
+	"delete": "Dzēst",
+	"orphaned": "Bārenis",
+	"used": "Izmantots",
+	"db_only": "Tikai DB",
+	"fs_only": "Tikai fails",
+	"both": "Sinhronizēts",
+	"search": "Meklēt...",
+	"confirm_delete": "Vai tiešām vēlaties dzēst šo failu?",
+	"delete_success": "Fails veiksmīgi izdzēsts",
+	"delete_error": "Kļūda dzēšot failu",
+	"type": "Tips",
+	"preview": "Priekšskatījums",
+	"used_by_task": "Uzdevums",
+	"used_by_material": "Audums",
+	"used_by_company": "Uzņēmums",
+    "used_by_task_preview": "Uzdevuma priekšskatījums"
+	}
+}
