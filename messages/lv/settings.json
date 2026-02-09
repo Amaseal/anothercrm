@@ -1,0 +1,25 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"settings": {
+		"title": "Iestatījumi",
+		"profile_settings": "Profila iestatījumi",
+		"profile_description": "Atjaunojiet savu personisko informāciju.",
+		"name": "Vārds",
+		"email": "E-pasts",
+		"new_password": "Jauna parole",
+		"confirm_password": "Apstiprināt paroli",
+		"passwords_do_not_match": "Paroles nesakrīt.",
+		"system_settings": "Sistēmas iestatījumi",
+		"system_settings_description": "Konfigurējiet ārējās integrācijas un sistēmas iestatījumus.",
+		"nextcloud_url": "Nextcloud URL",
+		"nextcloud_username": "Nextcloud lietotājvārds",
+		"nextcloud_password": "Nextcloud parole",
+		"invite_codes": "Ielūgumu kodi",
+		"invite_codes_description": "Ģenerēt ielūgumu kodus jauniem lietotājiem.",
+		"role": "Loma",
+		"generate_code": "Ģenerēt kodu",
+		"company_info": "Uzņēmuma informācija",
+		"company_info_description": "Atjaunojiet sava uzņēmuma informāciju.",
+    	"menu_link": "Iestatījumi"
+	}
+}

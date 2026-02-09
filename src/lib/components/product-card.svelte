@@ -10,16 +10,20 @@
 		Trash,
 		Building2,
 		UserPlus,
-		Pencil
+		Pencil,
+		GripVertical
 	} from '@lucide/svelte';
+
 	import { Button } from '$lib/components/ui/button';
 	import BreadcrumbItem from './ui/breadcrumb/breadcrumb-item.svelte';
+	import { Card } from './ui/card';
 
 	let {
 		task,
 		class: className,
 		onEdit,
-		onDelete
+		onDelete,
+		dragHandleAction
 	} = $props<{
 		task: {
 			title: string;
@@ -35,6 +39,7 @@
 		class?: string;
 		onEdit?: () => void;
 		onDelete?: () => void;
+		dragHandleAction?: any;
 	}>();
 
 	const formatCurrency = (cents: number | null) => {
@@ -71,60 +76,69 @@
 	const activeDuration = $derived(task.createdAt ? getActiveDuration(task.createdAt) : '');
 </script>
 
-<div
+<Card
 	class={cn(
-		'flex w-full max-w-sm flex-col gap-3 rounded-xl border border-gray-100 bg-white p-5 shadow-sm transition-shadow hover:shadow-md',
+		'flex w-full max-w-sm flex-col gap-3 rounded-xl border  p-5 shadow-sm transition-shadow hover:shadow-md',
 		className
 	)}
 >
 	<!-- Title Section -->
-	<div class="flex items-start justify-between">
-		<h3 class="line-clamp-2 text-lg leading-tight font-semibold text-gray-900">{task.title}</h3>
+	<div class="flex items-start justify-between gap-2">
+		{#if dragHandleAction}
+			<div
+				use:dragHandleAction
+				data-drag-handle="true"
+				class="mt-1 cursor-grab active:cursor-grabbing"
+			>
+				<GripVertical class="h-5 w-5 " />
+			</div>
+		{/if}
+		<h3 class="line-clamp-2 text-lg leading-tight font-semibold">{task.title}</h3>
 		<!-- Optional Priority Icon could go here -->
 	</div>
 
 	<!-- Price and Created Date -->
 	<div class="flex items-center justify-between text-sm">
-		<span class="font-medium text-gray-500">{formatCurrency(task.price)}</span>
-		<span class="text-gray-400">{formatDate(task.createdAt)}</span>
+		<span class="font-medium">{formatCurrency(task.price)}</span>
+		<span class="">{formatDate(task.createdAt)}</span>
 	</div>
 
 	<!-- Details List -->
 	<div class="mt-1 flex flex-col gap-2">
 		<!-- Deadline -->
 		{#if task.endDate}
-			<div class="flex items-center gap-2 text-sm text-gray-600">
-				<Clock class="h-4 w-4 shrink-0 text-gray-400" />
+			<div class="flex items-center gap-2 text-sm">
+				<Clock class="h-4 w-4 shrink-0 " />
 				<span>Jānodod: {formatDate(task.endDate)}</span>
 			</div>
 		{/if}
 
 		<!-- Active Duration -->
-		<div class="flex items-center gap-2 text-sm text-gray-600">
-			<Hourglass class="h-4 w-4 shrink-0 text-gray-400" />
+		<div class="flex items-center gap-2 text-sm">
+			<Hourglass class="h-4 w-4 shrink-0 " />
 			<span>Aktīvs: {activeDuration}</span>
 		</div>
 
 		<!-- Manager -->
 		{#if task.creator}
-			<div class="flex items-center gap-2 text-sm font-medium text-gray-900">
-				<User class="h-4 w-4 shrink-0 text-gray-500" />
+			<div class="flex items-center gap-2 text-sm font-medium">
+				<User class="h-4 w-4 shrink-0 " />
 				<span>Atbildīgs: {task.creator.name}</span>
 			</div>
 		{/if}
 
 		<!-- Client -->
 		{#if task.client}
-			<div class="flex items-center gap-2 text-sm text-gray-600">
-				<Building2 class="h-4 w-4 shrink-0 text-gray-400" />
+			<div class="flex items-center gap-2 text-sm">
+				<Building2 class="h-4 w-4 shrink-0 " />
 				<span>Klients: {task.client.name}</span>
 			</div>
 		{/if}
 
 		<!-- Creator/Assignee (if different or user wants to see it) -->
 		{#if task.assignedToUser}
-			<div class="flex items-center gap-2 text-sm text-gray-600">
-				<UserPlus class="h-4 w-4 shrink-0 text-gray-400" />
+			<div class="flex items-center gap-2 text-sm">
+				<UserPlus class="h-4 w-4 shrink-0 " />
 				<span>Izpildītājs: {task.assignedToUser.name}</span>
 			</div>
 		{/if}
@@ -158,4 +172,4 @@
 			</Button>
 		</div>
 	</div>
-</div>
+</Card>

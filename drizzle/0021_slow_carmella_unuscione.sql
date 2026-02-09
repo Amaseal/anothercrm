@@ -1,0 +1,2 @@
+ALTER TABLE "invite_codes" ADD COLUMN "client_id" integer;--> statement-breakpoint
+ALTER TABLE "invite_codes" ADD CONSTRAINT "invite_codes_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;

@@ -140,17 +140,6 @@
 			<div class="custom-scroll flex-1 overflow-y-auto p-6">
 				<!-- SECTION 1: Description & Products (Products moved here) -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
-					<!-- Left (65%) - Description -->
-					<!-- Flex col to allow internal growth -->
-					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
-						<Label>{m['projects.description_label']()}</Label>
-						<div class="min-h-[400px] flex-1 rounded-md border p-2">
-							<!-- Tiptap needs to take full height of parent -->
-							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" />
-							<input type="hidden" name="description" value={descriptionContent} />
-						</div>
-					</div>
-
 					<!-- Right (35%) - Assignment & Products -->
 					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
 						<!-- Assignment Controls -->
@@ -213,6 +202,16 @@
 							<ProductList products={data.products} bind:totalPrice />
 						</div>
 					</div>
+					<!-- Left (65%) - Description -->
+					<!-- Flex col to allow internal growth -->
+					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
+						<Label>{m['projects.description_label']()}</Label>
+						<div class="min-h-[400px] flex-1 rounded-md border p-2">
+							<!-- Tiptap needs to take full height of parent -->
+							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" />
+							<input type="hidden" name="description" value={descriptionContent} />
+						</div>
+					</div>
 				</div>
 
 				<!-- Separator/Heading for Execution -->
@@ -220,6 +219,13 @@
 
 				<!-- SECTION 2: Execution (Preview & Files) -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
+					<!-- Right (35%) - Files (Moved here) -->
+					<div class="col-span-12 lg:col-span-4">
+						<div class="grid gap-2">
+							<Label for="files">{m['projects.files_label']()}</Label>
+							<FileUpload />
+						</div>
+					</div>
 					<!-- Left (65%) - Large Visual Reference -->
 					<div class="col-span-12 lg:col-span-8">
 						<div class="h-full min-h-[400px]">
@@ -229,14 +235,6 @@
 								label={m['projects.preview_label']()}
 								class="h-full w-full object-contain"
 							/>
-						</div>
-					</div>
-
-					<!-- Right (35%) - Files (Moved here) -->
-					<div class="col-span-12 lg:col-span-4">
-						<div class="grid gap-2">
-							<Label for="files">{m['projects.files_label']()}</Label>
-							<FileUpload />
 						</div>
 					</div>
 				</div>

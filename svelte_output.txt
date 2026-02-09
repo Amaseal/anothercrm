@@ -1,0 +1,224 @@
+Loading svelte-check in workspace: c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie
+Getting Svelte diagnostics...
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\..\lib\server\queries\projekti.ts[39m:287:13
+[31mError[39m: Argument of type 'SQL<unknown> | undefined' is not assignable to parameter of type 'SQL<unknown>'.
+  Type 'undefined' is not assignable to type 'SQL<unknown>'. 
+[36m        filterConditions.push(
+            [35mor(
+                sql`${task.title} LIKE ${searchTerm}`,
+                sql`${task.description} LIKE ${searchTerm}`
+            )[36m
+        );[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\..\lib\components\ui\sidebar\sidebar-trigger.svelte[39m:20:7
+[31mError[39m: Expression produces a union type that is too complex to represent. (ts)
+[36m
+<Butto[35mn
+	data-sidebar="trigger"
+	data-slot="sidebar-trigger"
+	variant="ghost"
+	size="icon"
+	class={cn("size-7", className)}
+	type="button"
+	onclick={(e) => {
+		onclick?.(e);
+		sidebar.toggle();
+	}}
+	{...restProps[36m}
+>[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\..\lib\components\ui\sidebar\sidebar-trigger.svelte[39m:20:7
+[31mError[39m: Type '{ variant: "link" | "default" | "secondary" | "destructive" | "outline" | "ghost"; size: "default" | "sm" | "lg" | "icon"; loading?: boolean | undefined; "data-slot": string; onClickPromise?: ((e: MouseEvent & { ...; }) => Promise<...>) | undefined; ... 446 more ...; onclick: (e: MouseEvent & { ...; }) => void; } | ...' is not assignable to type 'ButtonProps | undefined'.
+  Type '{ variant: "link" | "default" | "secondary" | "destructive" | "outline" | "ghost"; size: "default" | "sm" | "lg" | "icon"; loading?: boolean | undefined; "data-slot": string; onClickPromise?: ((e: MouseEvent & { ...; }) => Promise<...>) | undefined; ... 441 more ...; onclick: (e: MouseEvent & { ...; }) => void; }' is not assignable to type 'ButtonProps | undefined'.
+    Type '{ variant: "link" | "default" | "secondary" | "destructive" | "outline" | "ghost"; size: "default" | "sm" | "lg" | "icon"; loading?: boolean | undefined; "data-slot": string; onClickPromise?: ((e: MouseEvent & { ...; }) => Promise<...>) | undefined; ... 441 more ...; onclick: (e: MouseEvent & { ...; }) => void; }' is not assignable to type 'ButtonElementProps'.
+      Type '{ variant: "link" | "default" | "secondary" | "destructive" | "outline" | "ghost"; size: "default" | "sm" | "lg" | "icon"; loading?: boolean | undefined; "data-slot": string; onClickPromise?: ((e: MouseEvent & { ...; }) => Promise<...>) | undefined; ... 441 more ...; onclick: (e: MouseEvent & { ...; }) => void; }' is not assignable to type 'Omit<Omit<HTMLButtonAttributes, "type" | "href">, "children">'.
+        Types of property 'onclose' are incompatible.
+          Type 'EventHandler<Event, HTMLAnchorElement> | null | undefined' is not assignable to type 'EventHandler<Event, HTMLButtonElement> | null | undefined'.
+            Type 'EventHandler<Event, HTMLAnchorElement>' is not assignable to type 'EventHandler<Event, HTMLButtonElement>'.
+              Type 'HTMLButtonElement' is missing the following properties from type 'HTMLAnchorElement': charset, coords, download, hreflang, and 19 more. (ts)
+[36m
+<Butto[35m[36mn
+	data-sidebar="trigger"[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\clients\search\+server.ts[39m:6:10
+[31mError[39m: Module '"$lib/utils"' has no exported member 'normalizeLatvianText'. 
+[36mimport { client } from '$lib/server/db/schema';
+import { [35mnormalizeLatvianText[36m } from '$lib/utils';[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\nextcloud\conversations\+server.ts[39m:24:16
+[31mError[39m: Property 'nextcloud_username' does not exist on type '{ name: string; id: string; email: string; password: string; type: "admin" | "client"; }'. 
+[36m	// Check if user has Nextcloud credentials configured
+	if (!fullUser.[35mnextcloud_username[36m || !fullUser.nextcloud_password) {
+		return json([39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\nextcloud\conversations\+server.ts[39m:24:48
+[31mError[39m: Property 'nextcloud_password' does not exist on type '{ name: string; id: string; email: string; password: string; type: "admin" | "client"; }'. 
+[36m	// Check if user has Nextcloud credentials configured
+	if (!fullUser.nextcloud_username || !fullUser.[35mnextcloud_password[36m) {
+		return json([39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\nextcloud\conversations\+server.ts[39m:43:16
+[31mError[39m: Property 'nextcloud_username' does not exist on type '{ name: string; id: string; email: string; password: string; type: "admin" | "client"; }'. 
+[36m		const auth = Buffer.from(
+			`${fullUser.[35mnextcloud_username[36m}:${fullUser.nextcloud_password}`
+		).toString('base64');[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\nextcloud\conversations\+server.ts[39m:43:47
+[31mError[39m: Property 'nextcloud_password' does not exist on type '{ name: string; id: string; email: string; password: string; type: "admin" | "client"; }'. 
+[36m		const auth = Buffer.from(
+			`${fullUser.nextcloud_username}:${fullUser.[35mnextcloud_password[36m}`
+		).toString('base64');[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\nextcloud\share-project\+server.ts[39m:24:16
+[31mError[39m: Property 'nextcloud_username' does not exist on type '{ name: string; id: string; email: string; password: string; type: "admin" | "client"; }'. 
+[36m	// Check if user has Nextcloud credentials configured
+	if (!fullUser.[35mnextcloud_username[36m || !fullUser.nextcloud_password) {
+		return json([39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\nextcloud\share-project\+server.ts[39m:24:48
+[31mError[39m: Property 'nextcloud_password' does not exist on type '{ name: string; id: string; email: string; password: string; type: "admin" | "client"; }'. 
+[36m	// Check if user has Nextcloud credentials configured
+	if (!fullUser.nextcloud_username || !fullUser.[35mnextcloud_password[36m) {
+		return json([39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\nextcloud\share-project\+server.ts[39m:59:16
+[31mError[39m: Property 'nextcloud_username' does not exist on type '{ name: string; id: string; email: string; password: string; type: "admin" | "client"; }'. 
+[36m		const auth = Buffer.from(
+			`${fullUser.[35mnextcloud_username[36m}:${fullUser.nextcloud_password}`
+		).toString('base64');[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\nextcloud\share-project\+server.ts[39m:59:47
+[31mError[39m: Property 'nextcloud_password' does not exist on type '{ name: string; id: string; email: string; password: string; type: "admin" | "client"; }'. 
+[36m		const auth = Buffer.from(
+			`${fullUser.nextcloud_username}:${fullUser.[35mnextcloud_password[36m}`
+		).toString('base64');[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\notifications\+server.ts[39m:2:38
+[31mError[39m: Cannot find module '$lib/server/notifications' or its corresponding type declarations. 
+[36mimport { json } from '@sveltejs/kit';
+import { getUserNotifications } from [35m'$lib/server/notifications'[36m;
+import type { RequestHandler } from './$types';[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\api\notifications\read\+server.ts[39m:2:65
+[31mError[39m: Cannot find module '$lib/server/notifications' or its corresponding type declarations. 
+[36mimport { json } from '@sveltejs/kit';
+import { markNotificationAsRead, markNotificationsAsRead } from [35m'$lib/server/notifications'[36m;
+import type { RequestHandler } from './$types';[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\demo\lucia\login\+page.server.ts[39m:32:74
+[31mError[39m: Property 'username' does not exist on type 'PgTableWithColumns<{ name: "user"; schema: undefined; columns: { id: PgColumn<{ name: "id"; tableName: "user"; dataType: "string"; columnType: "PgText"; data: string; driverParam: string; notNull: true; hasDefault: false; isPrimaryKey: true; ... 5 more ...; generated: undefined; }, {}, {}>; email: PgColumn<...>; pas...'. 
+[36m
+		const results = await db.select().from(table.user).where(eq(table.user.[35musername[36m, username));[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\demo\lucia\login\+page.server.ts[39m:39:51
+[31mError[39m: Property 'passwordHash' does not exist on type '{ id: string; email: string; password: string; name: string; type: "admin" | "client"; }'. Did you mean 'password'? 
+[36m
+		const validPassword = await verify(existingUser.[35mpasswordHash[36m, password, {
+			memoryCost: 19456,[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\demo\lucia\login\+page.server.ts[39m:77:32
+[31mError[39m: No overload matches this call.
+  Overload 1 of 2, '(value: { name: string | SQL<unknown> | Placeholder<string, any>; id: string | SQL<unknown> | Placeholder<string, any>; email: string | SQL<unknown> | Placeholder<string, any>; password: string | ... 1 more ... | Placeholder<...>; type?: "admin" | ... 3 more ... | undefined; }): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'username' does not exist in type '{ name: string | SQL<unknown> | Placeholder<string, any>; id: string | SQL<unknown> | Placeholder<string, any>; email: string | SQL<unknown> | Placeholder<string, any>; password: string | ... 1 more ... | Placeholder<...>; type?: "admin" | ... 3 more ... | undefined; }'.
+  Overload 2 of 2, '(values: { name: string | SQL<unknown> | Placeholder<string, any>; id: string | SQL<unknown> | Placeholder<string, any>; email: string | SQL<unknown> | Placeholder<string, any>; password: string | ... 1 more ... | Placeholder<...>; type?: "admin" | ... 3 more ... | undefined; }[]): PgInsertBase<...>', gave the following error.
+    Object literal may only specify known properties, and 'id' does not exist in type '{ name: string | SQL<unknown> | Placeholder<string, any>; id: string | SQL<unknown> | Placeholder<string, any>; email: string | SQL<unknown> | Placeholder<string, any>; password: string | ... 1 more ... | Placeholder<...>; type?: "admin" | ... 3 more ... | undefined; }[]'. 
+[36m		try {
+			await db.insert(table.user).[35mvalues[36m({ id: userId, username, passwordHash });[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:102:38
+[31mError[39m: Element implicitly has an 'any' type because expression of type '"completed_tasks.value"' can't be used to index type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'.
+  Property 'completed_tasks.value' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. (ts)
+[36m		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
+		<h1 class="text-base font-medium">{[35mm['completed_tasks.value'][36m()}</h1>
+		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:120:9
+[31mError[39m: Element implicitly has an 'any' type because expression of type '"completed_tasks.title"' can't be used to index type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'.
+  Property 'completed_tasks.title' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. (ts)
+[36m						<div class="flex items-center gap-1">
+							{[35mm['completed_tasks.title'][36m()}
+							{#if sortColumn === 'title'}[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:132:19
+[31mError[39m: Element implicitly has an 'any' type because expression of type '"completed_tasks.client"' can't be used to index type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'.
+  Property 'completed_tasks.client' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. (ts)
+[36m					</Table.Head>
+					<Table.Head>{[35mm['completed_tasks.client'][36m()}</Table.Head>
+					<Table.Head class="cursor-pointer" onclick={() => handleSort('price')}>[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:135:9
+[31mError[39m: Element implicitly has an 'any' type because expression of type '"completed_tasks.price"' can't be used to index type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'.
+  Property 'completed_tasks.price' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. (ts)
+[36m						<div class="flex items-center gap-1">
+							{[35mm['completed_tasks.price'][36m()}
+							{#if sortColumn === 'price'}[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:149:9
+[31mError[39m: Element implicitly has an 'any' type because expression of type '"completed_tasks.end_date"' can't be used to index type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'.
+  Property 'completed_tasks.end_date' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. (ts)
+[36m						<div class="flex items-center gap-1">
+							{[35mm['completed_tasks.end_date'][36m()}
+							{#if sortColumn === 'endDate'}[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:161:19
+[31mError[39m: Element implicitly has an 'any' type because expression of type '"completed_tasks.assigned_to"' can't be used to index type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'.
+  Property 'completed_tasks.assigned_to' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. (ts)
+[36m					</Table.Head>
+					<Table.Head>{[35mm['completed_tasks.assigned_to'][36m()}</Table.Head>
+					<Table.Head class="w-12 text-center">{m['components.view']()}</Table.Head>[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:162:46
+[31mError[39m: Property 'components.view' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. Did you mean 'components.save'? (ts)
+[36m					<Table.Head>{m['completed_tasks.assigned_to']()}</Table.Head>
+					<Table.Head class="w-12 text-center">{m[[35m'components.view'[36m]()}</Table.Head>
+					<Table.Head class="w-12 text-center">{m['components.delete']()}</Table.Head>[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:170:10
+[31mError[39m: Element implicitly has an 'any' type because expression of type '"completed_tasks.empty"' can't be used to index type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'.
+  Property 'completed_tasks.empty' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. (ts)
+[36m						<Table.Cell colspan={7} class="py-6 text-center"
+							>{[35mm['completed_tasks.empty'][36m()}</Table.Cell
+						>[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+layout.svelte[39m:179:32
+[31mError[39m: Argument of type 'string | null' is not assignable to parameter of type 'string | number | Date'.
+  Type 'null' is not assignable to type 'string | number | Date'. (ts)
+[36m							<Table.Cell>{toCurrency(item.price || 0)} òÂì</Table.Cell>
+							<Table.Cell>{formatDate([35mitem.endDate[36m) || '-'}</Table.Cell>
+							<Table.Cell>{item.assignedToUser?.name || '-'}</Table.Cell>[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m+page.svelte[39m:6:10
+[31mError[39m: Element implicitly has an 'any' type because expression of type '"completed_tasks.value"' can't be used to index type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'.
+  Property 'completed_tasks.value' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages")'. (js)
+[36m<svelte:head>
+	<title>{[35mm['completed_tasks.value'][36m()}</title>
+</svelte:head>[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\projekti\labot\[id]\+page.svelte[39m:45:42
+[33mWarn[39m: This reference only captures the initial value of `dateValue`. Did you mean to reference it inside a derived instead?
+https://svelte.dev/e/state_referenced_locally (svelte)
+[36m	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
+	let datePlaceholder = $state<DateValue>([35mdateValue[36m || today(getLocalTimeZone()));[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\rekini\izdzest\[id]\+page.svelte[39m:5:16
+[31mError[39m: Module '"../../+layout.svelte"' has no exported member 'InvoiceWithRelations'. Did you mean to use 'import InvoiceWithRelations from "../../+layout.svelte"' instead? (ts)
+[36m	import * as Card from '$lib/components/ui/card/index.js';
+	import type { [35mInvoiceWithRelations[36m } from '../../+layout.svelte'; // Reuse type or just use simplistic one logic
+	import X from '@lucide/svelte/icons/x';[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\demo\lucia\+page.svelte[39m:8:20
+[31mError[39m: Property 'username' does not exist on type '{ id: string; email: string; name: string; type: "admin" | "client"; }'. (ts)
+[36m
+<h1>Hi, {data.user.[35musername[36m}!</h1>
+<p>Your user ID is {data.user.id}.</p>[39m
+
+c:\Users\freel\Documents\majaslapas\anothercrm\src\routes\(app)\pabeigtie\[32m..\..\demo\paraglide\+page.svelte[39m:8:8
+[31mError[39m: Property 'hello_world' does not exist on type 'typeof import("c:/Users/freel/Documents/majaslapas/anothercrm/src/lib/paraglide/messages/_index")'. (ts)
+[36m
+<h1>{m.[35mhello_world[36m({ name: 'SvelteKit User' })}</h1>
+<div>[39m
+
+====================================
+[31msvelte-check found 30 errors and 1 warning in 14 files
+[39m

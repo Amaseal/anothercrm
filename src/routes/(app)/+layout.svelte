@@ -11,7 +11,7 @@
 </script>
 
 <Toaster />
-<ModeWatcher />
+<ModeWatcher track={false} defaultMode="light" lightClassNames={['light']} />
 <Sidebar.Provider
 	style="--sidebar-width: calc(var(--spacing) * 54); --header-height: calc(var(--spacing) * 12); "
 >

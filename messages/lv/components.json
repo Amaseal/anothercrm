@@ -5,6 +5,8 @@
 			"click_to_upload": "Noklikšķiniet, lai augšupielādētu attēlu"
 		},
 		"save": "Saglabāt",
+		"saved_successfully": "Saglabāts veiksmīgi",
+		"copy_link": "Kopēt saiti",
 		"pagination": {
 			"showing": "Rāda {start}-{end} no {total} ierakstiem",
 			"from": "no",
@@ -43,6 +45,11 @@
 		"file_dropzone": {
 			"click_to_upload": "Noklikšķini vai nomet failus šeit",
 			"click_drop_paste": "Noklikšķini, nomet vai ielīmē attēlu šeit"
+		},
+		"filter": {
+			"default": "Noklusējuma",
+			"show_all": "Rādīt visu",
+			"view": "Skatījums"
 		}
 	}
 }

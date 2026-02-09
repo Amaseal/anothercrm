@@ -10,6 +10,8 @@
 	import Columns3Cog from '@lucide/svelte/icons/columns-3-cog';
 	import * as m from '$lib/paraglide/messages';
 	import List from '$lib/components/list.svelte';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import { dragScroll } from '$lib/actions/drag-scroll';
 
 	let { data, children } = $props();
 
@@ -22,7 +24,7 @@
 	};
 
 	const debouncedSearch = debounce((value: string) => {
-		updateUrlAndNavigate({ search: value, page: 0 });
+		updateUrlAndNavigate({ search: value });
 	}, 1200);
 
 	function updateUrlAndNavigate(params: Record<string, any>) {
@@ -85,6 +87,23 @@
 			oninput={handleSearchInput}
 		/>
 		{#if data.user?.type === 'admin'}
+			<div class="w-[180px]">
+				<Select.Root
+					type="single"
+					value={page.url.searchParams.get('view') ?? 'default'}
+					onValueChange={(v) => updateUrlAndNavigate({ view: v === 'default' ? null : v })}
+				>
+					<Select.Trigger>
+						{page.url.searchParams.get('view') === 'all'
+							? m['components.filter.show_all']()
+							: m['components.filter.default']()}
+					</Select.Trigger>
+					<Select.Content>
+						<Select.Item value="default">{m['components.filter.default']()}</Select.Item>
+						<Select.Item value="all">{m['components.filter.show_all']()}</Select.Item>
+					</Select.Content>
+				</Select.Root>
+			</div>
 			<Button href="/projekti/struktura" variant="outline" class="ml-auto flex items-center gap-2">
 				<Columns3Cog />
 			</Button>
@@ -96,7 +115,7 @@
 	</div>
 </header>
 
-<div class="flex h-[calc(100vh-110px)] gap-4 overflow-x-auto pb-2">
+<div class="custom-scroll flex h-[calc(100vh-110px)] gap-4 overflow-x-auto pb-2" use:dragScroll>
 	{#each tabsToRender as item}
 		<List tab={item} />
 	{/each}

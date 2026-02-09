@@ -56,7 +56,6 @@ export const actions: Actions = {
 		const tabId = personalTab.id;
 		const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
 		const assignedToUserId = formData.get('assignedToUserId') as string;
-		const createdById = formData.get('createdById') as string;
 		const endDate = formData.get('endDate') as string;
 
 
@@ -113,9 +112,8 @@ export const actions: Actions = {
 				description,
 				tabId,
 				clientId,
-				clientId,
 				assignedToUserId: assignedToUserId || null,
-				createdById: createdById || null,
+				createdById: userId,
 				endDate,
 				price: calculatedPrice,
 				count: calculatedCount,
@@ -125,13 +123,16 @@ export const actions: Actions = {
 			}).returning();
 
 			if (newTask) {
-				if (materialIds.length > 0) {
-					await db.insert(taskMaterial).values(
-						materialIds.map(materialId => ({
-							taskId: newTask.id,
-							materialId
-						}))
-					);
+				// Filter out invalid material IDs and check length
+				const materialsToInsert = materialIds
+					.filter((id) => !isNaN(id) && id > 0)
+					.map((materialId) => ({
+						taskId: newTask.id,
+						materialId
+					}));
+
+				if (materialsToInsert.length > 0) {
+					await db.insert(taskMaterial).values(materialsToInsert);
 				}
 
 				if (productIds.length > 0) {
@@ -143,7 +144,9 @@ export const actions: Actions = {
 						}))
 						.filter((p) => p.productId > 0);
 
-					await db.insert(taskProduct).values(productsToInsert);
+					if (productsToInsert.length > 0) {
+						await db.insert(taskProduct).values(productsToInsert);
+					}
 				}
 			}
 
@@ -160,34 +163,33 @@ export const actions: Actions = {
 			// Dynamic import to avoid circular dep issues during init if any, though here it's fine.
 			const { taskEvents } = await import('$lib/server/events');
 			taskEvents.emitTaskUpdate(fullTask, 'create');
-		}
 
 			// Handle File Uploads
 			const filesJson = formData.get('files');
-		if (typeof filesJson === 'string') {
-			try {
-				const uploadedFiles = JSON.parse(filesJson);
-				if (Array.isArray(uploadedFiles) && uploadedFiles.length > 0) {
-					await db.insert(file).values(
-						uploadedFiles.map((f: any) => ({
-							filename: f.name,
-							downloadUrl: f.path,
-							size: f.size || 0,
-							taskId: newTask.id,
-							created_at: new Date()
-						}))
-					);
+			if (typeof filesJson === 'string') {
+				try {
+					const uploadedFiles = JSON.parse(filesJson);
+					if (Array.isArray(uploadedFiles) && uploadedFiles.length > 0) {
+						await db.insert(file).values(
+							uploadedFiles.map((f: any) => ({
+								filename: f.name,
+								downloadUrl: f.path,
+								size: f.size || 0,
+								taskId: newTask.id,
+								created_at: new Date()
+							}))
+						);
+					}
+				} catch (e) {
+					console.error('Failed to parse uploaded files JSON', e);
 				}
-			} catch (e) {
-				console.error('Failed to parse uploaded files JSON', e);
 			}
+
+		} catch (err) {
+			console.error(err);
+			return fail(500, { error: 'Failed to create task' });
 		}
 
-	} catch(err) {
-		console.error(err);
-		return fail(500, { error: 'Failed to create task' });
-	}
-
 		throw redirect(303, '/projekti'); // Redirect to projects list
-}
+	}
 };

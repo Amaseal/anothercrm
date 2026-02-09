@@ -1,0 +1,13 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"completed_tasks": {
+		"value": "Completed Tasks",
+		"title": "Title",
+		"client": "Client",
+		"price": "Price",
+		"end_date": "End Date",
+		"assigned_to": "Assigned To",
+		"empty": "No completed tasks found.",
+        "view": "View"
+	}
+}

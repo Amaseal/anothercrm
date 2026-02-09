@@ -125,7 +125,8 @@ export const inviteCodes = pgTable('invite_codes', {
 	code: text('code').notNull().unique(), // The actual invite code (must be unique)
 	expiresAt: text('expires_at').notNull(), // When this code expires (stored as text)
 	used: boolean('used').notNull().default(false), // Whether the code has been redeemed
-	codeFor: userRoleEnum('type').notNull().default('client') // What type of user this code creates
+	codeFor: userRoleEnum('type').notNull().default('client'), // What type of user this code creates
+	clientId: integer('client_id').references(() => client.id, { onDelete: 'cascade' }) // Optional: Link to specific client (if role is client)
 });
 
 /**

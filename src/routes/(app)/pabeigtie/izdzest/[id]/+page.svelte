@@ -5,13 +5,11 @@
 	import X from '@lucide/svelte/icons/x';
 	import * as m from '$lib/paraglide/messages';
 	import FormError from '$lib/components/form-error.svelte';
-	import type { PageData, ActionData } from './$types';
-
-	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let { data, form }: { data: { item: { name: string } }; form: { message: string } } = $props();
 </script>
 
 <svelte:head>
-	<title>{m['components.done_modal.title']({ item: data.item.title })}</title>
+	<title>{m['components.delete_modal.title']({ item: data.item.name })}</title>
 </svelte:head>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -19,12 +17,12 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full max-w-md gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/projekti"
-					class="absolute top-6 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+					href="/pabeigtie"
+					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
 				>
 				<h2 class="text-lg font-semibold">
-					{m['components.done_modal.message']({ item: data.item?.title })}
+					{m['components.delete_modal.message']({ item: data.item?.name })}
 				</h2>
 			</Card.Header>
 			<Card.Content class="p-6 pb-2">
@@ -33,10 +31,12 @@
 				{/if}
 				<form method="POST" use:enhance>
 					<div class="flex items-center justify-end gap-2">
-						<Button href="/projekti" variant="secondary"
-							>{m['components.done_modal.cancel']()}</Button
+						<Button href="/pabeigtie" variant="outline"
+							>{m['components.delete_modal.cancel']()}</Button
 						>
-						<Button type="submit" variant="default">{m['components.done_modal.confirm']()}</Button>
+						<Button type="submit" variant="destructive"
+							>{m['components.delete_modal.delete']()}</Button
+						>
 					</div>
 				</form>
 			</Card.Content>

@@ -1,0 +1,25 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"settings": {	
+		"title": "Settings",
+		"profile_settings": "Profile Settings",
+		"profile_description": "Update your personal information.",
+		"name": "Name",
+		"email": "Email",
+		"new_password": "New Password",
+		"confirm_password": "Confirm Password",
+		"passwords_do_not_match": "Passwords do not match.",
+		"system_settings": "System Settings",
+		"system_settings_description": "Configure external integrations and system-wide settings.",
+		"nextcloud_url": "Nextcloud URL",
+		"nextcloud_username": "Nextcloud Username",
+		"nextcloud_password": "Nextcloud Password",
+		"invite_codes": "Invite Codes",
+		"invite_codes_description": "Generate invite codes for new users.",
+		"role": "Role",
+		"generate_code": "Generate Code",
+		"company_info": "Company Information",
+		"company_info_description": "Update your company details.",
+    	"menu_link": "Settings"
+	}
+}

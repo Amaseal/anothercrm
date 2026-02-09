@@ -111,7 +111,7 @@
 
 				<!-- Settings & Account -->
 				<DropdownMenu.Item>
-					<a href="/settings" class="flex items-center gap-2">
+					<a href="/iestatijumi" class="flex items-center gap-2">
 						<SettingsIcon class="mr-2 h-4 w-4" />
 						<span>{m['components.user.settings']()}</span></a
 					>

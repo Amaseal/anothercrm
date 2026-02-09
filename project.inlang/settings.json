@@ -17,7 +17,10 @@
 			"./messages/{locale}/tabs.json",
 			"./messages/{locale}/groups.json",
 			"./messages/{locale}/invoices.json",
-			"./messages/{locale}/files.json"
+			"./messages/{locale}/completed.json",
+			"./messages/{locale}/files.json",
+			"./messages/{locale}/settings.json",
+			"./messages/{locale}/roles.json"
 		]
 	},
 	"baseLocale": "en",

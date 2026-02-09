@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { task, userTabPreference, tabGroup, tab, user, client } from '$lib/server/db/schema';
-import { eq, or, and, isNull, inArray, notInArray, desc } from 'drizzle-orm';
+import { eq, or, and, isNull, inArray, notInArray, desc, asc, count, sql, ilike } from 'drizzle-orm';
 
 export interface ProjectBoardColumn {
     id: number;
@@ -22,7 +22,9 @@ export async function getHiddenTabIds(userId: string): Promise<Set<number>> {
 
 export async function getProjectBoardData(
     currentUser: { id: string; type: 'admin' | 'client' },
-    locale: string
+    locale: string,
+    showAll: boolean = false,
+    search?: string
 ) {
     // 1. Fetch User's Personal Tab ID
     const personalTab = await db.query.tab.findFirst({
@@ -40,7 +42,7 @@ export async function getProjectBoardData(
         title: true,
         price: true,
         endDate: true,
-        createdAt: true,
+        created_at: true,
         tabId: true,
         clientId: true,
         assignedToUserId: true,
@@ -59,34 +61,61 @@ export async function getProjectBoardData(
     let tasks;
 
     if (currentUser.type === 'admin') {
-        const clientUsers = await db.query.user.findMany({
-            where: eq(user.type, 'client'),
-            columns: { id: true }
-        });
-        const clientIds = clientUsers.map(u => u.id);
+        if (showAll) {
+            // Admin "Show All" - Fetch all active tasks (not done)
+            tasks = await db.query.task.findMany({
+                where: (t, { eq, or, isNull, and, ilike }) => {
+                    const conditions = [or(eq(t.isDone, false), isNull(t.isDone))];
+                    if (search) conditions.push(ilike(t.title, `%${search}%`));
+                    return and(...conditions);
+                },
+                with: taskRelations,
+                columns: taskColumns
+            });
+        } else {
+            const clientUsers = await db.query.user.findMany({
+                where: eq(user.type, 'client'),
+                columns: { id: true }
+            });
+            const clientIds = clientUsers.map(u => u.id);
 
+            tasks = await db.query.task.findMany({
+                where: (t, { or, eq, inArray, and, ilike, isNull }) => {
+                    const baseConditions = [
+                        eq(t.createdById, currentUser.id),
+                        eq(t.assignedToUserId, currentUser.id)
+                    ];
+                    if (clientIds.length > 0) {
+                        baseConditions.push(inArray(t.createdById, clientIds));
+                    }
+
+                    const conditions = [
+                        or(...baseConditions),
+                        or(eq(t.isDone, false), isNull(t.isDone))
+                    ];
+                    if (search) conditions.push(ilike(t.title, `%${search}%`));
+
+                    return and(...conditions);
+                },
+                with: taskRelations,
+                columns: taskColumns
+            });
+        }
+    } else {
+        // Client: Fetch Created By Me OR Assigned To Me
         tasks = await db.query.task.findMany({
-            where: (t, { or, eq, inArray }) => {
-                const conditions = [
+            where: (t, { or, eq, and, ilike, isNull }) => {
+                const baseConditions = [
                     eq(t.createdById, currentUser.id),
                     eq(t.assignedToUserId, currentUser.id)
                 ];
-                if (clientIds.length > 0) {
-                    conditions.push(inArray(t.createdById, clientIds));
-                }
-                return or(...conditions);
+                const conditions = [
+                    or(...baseConditions),
+                    or(eq(t.isDone, false), isNull(t.isDone))
+                ];
+                if (search) conditions.push(ilike(t.title, `%${search}%`));
+                return and(...conditions);
             },
-            with: taskRelations,
-            columns: taskColumns
-        });
-    } else {
-        // Client: Fetch Created By Me OR Assigned To Me
-        // Review says: "Clients... See only their tasks (created by them, and/or assigned-to if you allow that)"
-        tasks = await db.query.task.findMany({
-            where: (t, { or, eq }) => or(
-                eq(t.createdById, currentUser.id),
-                eq(t.assignedToUserId, currentUser.id)
-            ),
             with: taskRelations,
             columns: taskColumns
         });
@@ -146,31 +175,67 @@ export async function getProjectBoardData(
             else targetId = 0; // Fallback
         } else {
             // Admin Logic
-            // Check if it's a "Client Intake" task
-            // "Client-created tasks must appear in... personal tab... unless assigned to manager"
-            // "Remaped to personal collumn only if they are not asigned to other users"
 
-            const clientOptions = isClientCreated(t);
-            const isUnassigned = !t.assignedToUserId;
+            if (showAll) {
+                // Show All Mode: Don't hide based on hiddenTabIds
+                // Just map to their tabId
+                // But what about client created tasks?
+                // User request: "let you see all tasks and all collumns... even those you didnt create"
+                // Implication is we see them WHERE THEY ARE.
+                // Ideally we just respect t.tabId.
 
-            if (clientOptions && isUnassigned) {
-                // Remap to Personal (Inbox)
-                if (personalTabId) targetId = personalTabId;
-                else targetId = 0;
+                // However, "defaults stay as they are" implies special logic for default view is KEPT.
+                // For "Show All", we likely just want straight mapping.
+                // But wait, "client-created tasks" logic was: "Remaped to personal collumn only if they are not asigned to other users"
+                // If I "Show All", maybe I still want to see that remapping? 
+                // Or maybe I want to see them in their "native" tab (which might be null/0/invalid if they are client created)?
+
+                // Client created tasks often don't HAVE a real tabId assigned yet, or it's just some default.
+                // If `t.tabId` is null/undefined, `targetId` is ...?
+
+                // Let's assume for "Show All", we mostly want to respect the raw data, BUT...
+                // If a task is "unassigned client task", it conceptually "lives" in the Inbox (Personal Tab).
+                // So remapping logic for unassigned client tasks probably still applies visually.
+
+                const clientOptions = isClientCreated(t);
+                const isUnassigned = !t.assignedToUserId;
+
+                if (clientOptions && isUnassigned) {
+                    if (personalTabId) targetId = personalTabId;
+                    else targetId = 0;
+                }
+                // NO hiddenTabIds check here.
             } else {
-                // Regular Task -> Check Visibility
-                if (hiddenTabIds.has(t.tabId)) {
-                    // Hidden
-                    return;
+                // Default Admin Logic
+                // Check if it's a "Client Intake" task
+                // "Client-created tasks must appear in... personal tab... unless assigned to manager"
+                // "Remaped to personal collumn only if they are not asigned to other users"
+
+                const clientOptions = isClientCreated(t);
+                const isUnassigned = !t.assignedToUserId;
+
+                if (clientOptions && isUnassigned) {
+                    // Remap to Personal (Inbox)
+                    if (personalTabId) targetId = personalTabId;
+                    else targetId = 0;
+                } else {
+                    // Regular Task -> Check Visibility
+                    if (hiddenTabIds.has(t.tabId)) {
+                        // Hidden
+                        return;
+                    }
                 }
             }
         }
 
+        // Map created_at to createdAt for frontend component
+        const taskWithCreatedAt = { ...t, createdAt: t.created_at };
+
         if ((personalTabId && targetId === personalTabId) || targetId === 0) {
-            personalColumn.tasks.push(t);
+            personalColumn.tasks.push(taskWithCreatedAt);
         } else {
             if (!tasksMap.has(targetId)) tasksMap.set(targetId, []);
-            tasksMap.get(targetId)?.push(t);
+            tasksMap.get(targetId)?.push(taskWithCreatedAt);
         }
     });
 
@@ -181,7 +246,7 @@ export async function getProjectBoardData(
         // Admin: Flatten tabs
         tabGroupsData.forEach(group => {
             group.tabs.forEach(tab => {
-                if (hiddenTabIds.has(tab.id)) return; // Skip hidden tabs
+                if (!showAll && hiddenTabIds.has(tab.id)) return; // Skip hidden tabs ONLY if not showAll
                 if (tab.id === personalTabId) return; // Skip personal tab (already added)
 
                 const trans = tab.translations.find(tr => tr.language === locale) || tab.translations[0];
@@ -209,5 +274,67 @@ export async function getProjectBoardData(
     return {
         columns,
         user: currentUser
+    };
+}
+
+export async function getCompletedTasks(
+    page: number = 0,
+    pageSize: number = 50,
+    search: string = '',
+    sortColumn: string = 'endDate',
+    sortDirection: 'asc' | 'desc' = 'desc'
+) {
+    const offset = page * pageSize;
+    const filterConditions = [];
+    filterConditions.push(eq(task.isDone, true));
+
+    if (search) {
+        const searchTerm = `%${search}%`;
+        filterConditions.push(
+            or(
+                ilike(task.title, searchTerm),
+                ilike(task.description, searchTerm),
+                sql`${task.price}::text LIKE ${searchTerm}`
+            )
+        );
+    }
+
+    const [{ value: totalCount }] = await db
+        .select({ value: count() })
+        .from(task)
+        .where(and(...filterConditions));
+
+    const sortableColumns = {
+        title: task.title,
+        price: task.price,
+        endDate: task.endDate,
+        createdAt: task.created_at
+    };
+
+    const columnToSort = sortableColumns[sortColumn as keyof typeof sortableColumns] || task.endDate;
+
+    const tasks = await db.query.task.findMany({
+        where: and(...filterConditions),
+        orderBy: sortDirection === 'asc' ? asc(columnToSort) : desc(columnToSort),
+        limit: pageSize,
+        offset: offset,
+        with: {
+            client: true,
+            assignedToUser: true,
+            creator: true
+        }
+    });
+
+    return {
+        tasks,
+        pagination: {
+            page,
+            pageSize,
+            totalCount,
+            totalPages: Math.ceil(totalCount / pageSize),
+            search,
+            sortColumn,
+            sortDirection
+        }
     };
 }

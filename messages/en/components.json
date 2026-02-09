@@ -1,11 +1,12 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-
 	"components": {
 		"image_dropzone": {
 			"click_to_upload": "Click to upload an image"
 		},
 		"save": "Save",
+		"saved_successfully": "Saved successfully",
+		"copy_link": "Copy Link",
 		"pagination": {
 			"showing": "Showing {start}-{end} of {total} items",
 			"items_per_page": "Items: {pageSize}"
@@ -40,6 +41,11 @@
 		"file_dropzone": {
 			"click_to_upload": "Click or drop files here",
 			"click_drop_paste": "Click, drop or paste image here"
+		},
+		"filter": {
+			"default": "Default",
+			"show_all": "Show All",
+			"view": "View"
 		}
 	}
 }

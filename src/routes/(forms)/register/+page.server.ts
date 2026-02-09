@@ -116,6 +116,15 @@ export const actions = {
 					language: locale,
 					name: tabName
 				});
+
+			}
+
+			// If the invite code has a clientId, link the user to that client
+			if (validInviteCode[0].clientId) {
+				await db.insert(table.userClient).values({
+					userId: userId,
+					clientId: validInviteCode[0].clientId
+				});
 			}
 
 			if (userCount.length > 0) {

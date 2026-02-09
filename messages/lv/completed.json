@@ -1,0 +1,13 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"completed_tasks": {
+		"value": "Pabeigtie darbi",
+		"title": "Nosaukums",
+		"client": "Klients",
+		"price": "Cena",
+		"end_date": "Termiņš",
+		"assigned_to": "Piešķirts",
+		"empty": "Nav atrasti pabeigti darbi.",
+        "view": "Skatīt"
+	}
+}

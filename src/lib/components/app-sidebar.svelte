@@ -26,7 +26,7 @@
 		},
 		{
 			title: m['menu.done'](),
-			url: '/pabeigts',
+			url: '/pabeigtie',
 			icon: Check
 		},
 		{
