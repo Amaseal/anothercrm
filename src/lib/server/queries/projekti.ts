@@ -209,14 +209,18 @@ export async function getProjectBoardData(
                 // Default Admin Logic
                 const clientOptions = isClientCreated(t);
                 const isUnassigned = !t.assignedToUserId;
+                const isAssignedToMe = t.assignedToUserId === currentUser.id;
+                const isHidden = hiddenTabIds.has(t.tabId);
+                const isOrphan = !tabToGroupMap.has(t.tabId);
 
-                if (clientOptions && isUnassigned) {
+                if ((clientOptions && isUnassigned) || (isAssignedToMe && (isHidden || isOrphan))) {
                     // Remap to Personal (Inbox)
+                    // We remap if it's an unassigned client task OR if it's assigned to me but in a hidden tab
                     if (personalTabId) targetId = personalTabId;
                     else targetId = 0;
                 } else {
                     // Regular Task -> Check Visibility
-                    if (hiddenTabIds.has(t.tabId)) {
+                    if (isHidden) {
                         return; // Hidden
                     }
                 }
