@@ -15,11 +15,7 @@
 	import { locales, getLocale } from '@/paraglide/runtime.js';
 	import { invalidateAll } from '$app/navigation';
 
-	let { tab } = $props();
-
-	const getLanguageName = (code: string) => {
-		return new Intl.DisplayNames([getLocale()], { type: 'language' }).of(code) || code;
-	};
+	let { tab, data } = $props();
 
 	let items = $state(tab?.tasks || []);
 
@@ -33,17 +29,6 @@
 
 	async function handleDndFinalize(e: CustomEvent<DndEvent<any>>) {
 		items = e.detail.items as Task[];
-
-		// Find the item that was dropped (if needed) or just detect if it's a cross-column move
-		// For simple "move to another column", we need to know the taskId and the new tabId.
-		// Actually, svelte-dnd-action updates the items list.
-		// We can detect if a task was added to this list from another list.
-		// However, svelte-dnd-action triggers finalize on both source and target.
-		// On target, we want to call the API.
-
-		// Check if the dropped item is new to this list or just reordered
-		// But since we aren't persisting reorder, we only care about moving between tabs.
-		// We can check if any item in the new list has a different tabId than current tab.id
 
 		const movedTask = items.find((t: { tabId: any }) => t.tabId !== tab.id);
 
@@ -59,18 +44,6 @@
 				});
 
 				if (response.ok) {
-					// Ideally invalidate to refetch data, simpler for now
-					// invalidateAll(); // Optional: might cause flicker if we are already updating state.
-					// actually we should let the server update loop handling propagate via SSE or invalidation
-					// but for immediate UI feedback we already updated `items`.
-					// However, `tab.tasks` is derived from data. props.
-					// If we don't invalidate, `tab.tasks` might revert or stay old until next load.
-					// So invalidateAll is good.
-					// But wait, if we invalidate, the parent component re-renders and passes new `tab` prop.
-					// Our `$effect` will update `items`.
-					// So yes, invalidateAll() is correct.
-					// To avoid double invalidation if SSE is also triggering, maybe debounce or check.
-					// But simple is better for now.
 					invalidateAll();
 				} else {
 					console.error('Failed to move task');

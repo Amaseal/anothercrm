@@ -4,7 +4,7 @@ import { eq, desc } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ url }) => {
     const clients = await db.query.client.findMany({
         orderBy: [desc(client.created_at)]
     });
@@ -21,7 +21,21 @@ export const load: PageServerLoad = async () => {
     // Fetch products for the item description combobox
     const products = await db.query.product.findMany();
 
-    return { clients, tasks, company, products };
+    const taskId = url.searchParams.get('taskId');
+    let prefillTask = null;
+    if (taskId) {
+        prefillTask = await db.query.task.findFirst({
+            where: eq(task.id, parseInt(taskId)),
+            with: {
+                client: true,
+                taskProducts: {
+                    with: { product: true }
+                }
+            }
+        });
+    }
+
+    return { clients, tasks, company, products, prefillTask };
 };
 
 export const actions: Actions = {

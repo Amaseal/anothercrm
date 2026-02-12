@@ -1,0 +1,14 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "product_card": {
+  "deadline": "Jānodod",
+  "active": "Aktīvs",
+  "created_by": "Izveidoja",
+  "client": "Klients",
+  "assignee": "Izpildītājs",
+  "month_singular": "mēnesis",
+  "month_plural": "mēnešus",
+  "day_singular": "diena",
+  "day_plural": "dienas"
+  }
+}

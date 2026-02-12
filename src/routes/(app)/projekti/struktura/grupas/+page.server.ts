@@ -26,7 +26,8 @@ export const actions: Actions = {
 			const [newGroup] = await db
 				.insert(tabGroup)
 				.values({
-					sortOrder: nextSortOrder
+					sortOrder: nextSortOrder,
+					color: (formData.get('color') as string) || '#ffffff'
 				})
 				.returning();
 

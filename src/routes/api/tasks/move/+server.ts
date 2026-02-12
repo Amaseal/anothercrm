@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { task } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { taskEvents } from '$lib/server/events';
 
 export const POST = async ({ request, locals }) => {
     if (!locals.user) {
@@ -25,9 +26,14 @@ export const POST = async ({ request, locals }) => {
             .set({ tabId: targetTabId })
             .where(eq(task.id, taskId));
 
-        // Trigger an event for SSE if needed, though +layout.svelte listens to general updates.
-        // We might want to broadcast this move so other clients see it instantly.
-        // For now, the client that made the move will invalidate.
+        // Fetch updated task for SSE
+        const updatedTask = await db.query.task.findFirst({
+            where: eq(task.id, taskId)
+        });
+
+        if (updatedTask) {
+            taskEvents.emitTaskUpdate(updatedTask, 'update');
+        }
 
         return json({ success: true });
     } catch (error) {

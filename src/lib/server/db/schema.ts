@@ -274,6 +274,7 @@ export const client = pgTable(
 export const tabGroup = pgTable('tab_groups', {
 	id: serial('id').primaryKey(), // Auto-incrementing group ID
 	sortOrder: integer('sort_order').notNull().default(0), // Display order (lower numbers first)
+	color: text('color').notNull().default('#FFFFFF'), // Visual color
 	...timestamps // Includes created_at and updated_at
 });
 
@@ -436,7 +437,7 @@ export const task = pgTable('tasks', {
 		.notNull()
 		.references(() => tab.id, { onDelete: 'restrict' }), // RESTRICT: Cannot delete tab with tasks
 	clientId: integer('client_id').references(() => client.id, { onDelete: 'set null' }), // SET NULL: Task survives client deletion
-	assignedToUserId: text('user_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
+	assignedToUserId: text('assigned_to_user_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
 	createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
 	seamstress: text('seamstress'), // Name of seamstress (stored as text, not FK)
 	count: integer('count'), // Quantity/count for this task (optional)

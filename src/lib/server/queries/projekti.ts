@@ -136,7 +136,7 @@ export async function getProjectBoardData(
     });
 
     const columns: ProjectBoardColumn[] = [];
-    const tasksMap = new Map<number, any[]>(); // tabId -> tasks
+    const tasksMap = new Map<number, any[]>(); // tabId (or groupId for clients) -> tasks
 
     // Init Personal Column
     let personalColumn: ProjectBoardColumn;
@@ -163,39 +163,40 @@ export async function getProjectBoardData(
 
     const isClientCreated = (t: any) => t.creator?.type === 'client';
 
+    // Helper: Map Tab ID to Group ID
+    const tabToGroupMap = new Map<number, number>();
+    tabGroupsData.forEach(g => {
+        g.tabs.forEach(t => {
+            tabToGroupMap.set(t.id, g.id);
+        });
+    });
+
     // Distribute Tasks
     tasks.forEach(t => {
         let targetId = t.tabId;
 
         if (currentUser.type === 'client') {
-            // Client: Always Personal Tab basically?
-            // "These tasks naturally live in the client’s personal tab"
-            // If we just map to personalTabId, they all show up there.
-            if (personalTabId) targetId = personalTabId;
-            else targetId = 0; // Fallback
+            // Client Logic:
+            // 1. If task is in a known group, map to that GROUP ID.
+            // 2. If task is not in a group (e.g. personal tab), it goes to Personal Column.
+
+            const groupId = tabToGroupMap.get(t.tabId);
+
+            if (groupId) {
+                targetId = groupId; // Map to Group
+            } else {
+                // Not in a group -> Personal / Inbox
+                if (personalTabId) targetId = personalTabId;
+                else targetId = 0;
+            }
+
         } else {
             // Admin Logic
-
             if (showAll) {
-                // Show All Mode: Don't hide based on hiddenTabIds
-                // Just map to their tabId
-                // But what about client created tasks?
-                // User request: "let you see all tasks and all collumns... even those you didnt create"
-                // Implication is we see them WHERE THEY ARE.
-                // Ideally we just respect t.tabId.
-
-                // However, "defaults stay as they are" implies special logic for default view is KEPT.
-                // For "Show All", we likely just want straight mapping.
-                // But wait, "client-created tasks" logic was: "Remaped to personal collumn only if they are not asigned to other users"
-                // If I "Show All", maybe I still want to see that remapping? 
-                // Or maybe I want to see them in their "native" tab (which might be null/0/invalid if they are client created)?
-
-                // Client created tasks often don't HAVE a real tabId assigned yet, or it's just some default.
-                // If `t.tabId` is null/undefined, `targetId` is ...?
-
-                // Let's assume for "Show All", we mostly want to respect the raw data, BUT...
-                // If a task is "unassigned client task", it conceptually "lives" in the Inbox (Personal Tab).
-                // So remapping logic for unassigned client tasks probably still applies visually.
+                // Show All Mode: Respect raw tabId
+                // "Show All" generally just shows everything where it is.
+                // Logic for unassigned client tasks mapping to Inbox?
+                // Let's keep it consistent: logic says "client created... remapped to personal... ONLY if not assigned"
 
                 const clientOptions = isClientCreated(t);
                 const isUnassigned = !t.assignedToUserId;
@@ -204,13 +205,8 @@ export async function getProjectBoardData(
                     if (personalTabId) targetId = personalTabId;
                     else targetId = 0;
                 }
-                // NO hiddenTabIds check here.
             } else {
                 // Default Admin Logic
-                // Check if it's a "Client Intake" task
-                // "Client-created tasks must appear in... personal tab... unless assigned to manager"
-                // "Remaped to personal collumn only if they are not asigned to other users"
-
                 const clientOptions = isClientCreated(t);
                 const isUnassigned = !t.assignedToUserId;
 
@@ -221,8 +217,7 @@ export async function getProjectBoardData(
                 } else {
                     // Regular Task -> Check Visibility
                     if (hiddenTabIds.has(t.tabId)) {
-                        // Hidden
-                        return;
+                        return; // Hidden
                     }
                 }
             }
@@ -265,8 +260,8 @@ export async function getProjectBoardData(
             columns.push({
                 id: group.id,
                 name: trans?.name || 'Unnamed Group',
-                color: '#ffffff', // Default
-                tasks: [] // Clients only see tasks in personal tab
+                color: group.color,
+                tasks: tasksMap.get(group.id) || [] // Now pulling from the map!
             });
         });
     }

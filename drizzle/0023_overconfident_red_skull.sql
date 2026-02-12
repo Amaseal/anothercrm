@@ -1,0 +1,1 @@
+ALTER TABLE "tab_groups" ADD COLUMN "color" text DEFAULT '#FFFFFF' NOT NULL;

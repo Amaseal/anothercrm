@@ -1,0 +1,15 @@
+{
+  "$schema": "https://inlang.com/schema/inlang-message-format",
+  "product_card": {
+    "deadline": "Deadline",
+    "active": "Active",
+    "created_by": "Created by",
+    "client": "Client",
+    "assignee": "Assignee",
+    "month_singular": "month",
+    "month_plural": "months",
+    "day_singular": "day",
+    "day_plural": "days"
+  }
+
+}

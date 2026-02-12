@@ -7,7 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
-	import { CalendarIcon, Save, X } from '@lucide/svelte';
+	import { CalendarIcon, Save, X, Printer } from '@lucide/svelte';
 	import { DateFormatter, type DateValue, getLocalTimeZone, today } from '@internationalized/date';
 	import Tiptap from '$lib/components/tiptap.svelte';
 	import { cn } from '$lib/utils';
@@ -18,9 +18,18 @@
 	import ClientSelect from '$lib/components/client-select.svelte';
 	import ImagePreviewInput from '@/components/image-preview-input.svelte';
 
+	import { isClient } from '$lib/stores/user';
+
 	let { data } = $props();
 
 	let selectedClientId = $state('');
+
+	$effect(() => {
+		if (data.userClientId) {
+			selectedClientId = data.userClientId.toString();
+		}
+	});
+
 	let selectedAssigneeId = $state('');
 	let selectedManagerId = $state('');
 	let selectedSeamstress = $state('');
@@ -60,10 +69,34 @@
 	function formatPrice(priceInCents: number): string {
 		return (priceInCents / 100).toFixed(2);
 	}
+
+	import ProjectPrintView from '$lib/components/project-print-view.svelte';
 </script>
 
+<ProjectPrintView
+	title={m['projects.title_label']()}
+	clientName={selectedClientName}
+	{dateValue}
+	managerName={selectedManagerName}
+	assigneeName={selectedAssigneeName}
+	seamstress={selectedSeamstress}
+	materials={data.materials
+		.filter((m) => selectedMaterialIds.includes(m.id))
+		.map((m) => `${m.title} (${m.remaining})`)}
+	products={data.products.map((p) => ({
+		name: p.title,
+		count: 0,
+		price: p.cost
+	}))}
+	description={descriptionContent}
+	previewUrl={undefined}
+	{totalPrice}
+/>
+
 <!-- Modal Overlay -->
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+<div
+	class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:hidden"
+>
 	<!-- Inner Modal Container -->
 	<div
 		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
@@ -85,7 +118,7 @@
 				<!-- Client -->
 				<div class="w-64">
 					<input type="hidden" name="clientId" value={selectedClientId} />
-					<ClientSelect bind:value={selectedClientId} clients={data.clients} />
+					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={$isClient} />
 				</div>
 
 				<!-- Due Date -->
@@ -144,13 +177,13 @@
 					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
 						<!-- Assignment Controls -->
 						<div class="space-y-4">
-							<!-- Manager -->
+							<!-- Assignee -->
 							<div class="grid gap-2">
-								<Label>{m['projects.assign_manager_label']()}</Label>
-								<input type="hidden" name="createdById" value={selectedManagerId} />
-								<Select.Root type="single" bind:value={selectedManagerId}>
+								<Label>{m['projects.assign_user_label']()}</Label>
+								<input type="hidden" name="assignedToUserId" value={selectedAssigneeId} />
+								<Select.Root type="single" bind:value={selectedAssigneeId}>
 									<Select.Trigger class="w-full">
-										{selectedManagerName}
+										{selectedAssigneeName || m['projects.assign_user_label']()}
 									</Select.Trigger>
 									<Select.Content>
 										{#each data.users as user}
@@ -247,10 +280,22 @@
 				<div class="text-xl font-bold">
 					{m['projects.total_price']()}: €{formatPrice(totalPrice)}
 				</div>
+				<div class="flex items-center gap-4">
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						class="print:hidden"
+						onclick={() => window.print()}
+					>
+						<Printer class="size-4" />
+						<span class="sr-only">Print</span>
+					</Button>
 
-				<Button type="submit" size="lg">
-					{m['projects.create_button']()}
-				</Button>
+					<Button type="submit" size="lg">
+						{m['projects.create_button']()}
+					</Button>
+				</div>
 			</div>
 		</form>
 	</div>

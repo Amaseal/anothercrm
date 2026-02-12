@@ -6,7 +6,7 @@ import { join } from 'path';
 import type { Actions, PageServerLoad } from './$types';
 import { eq, and, inArray } from 'drizzle-orm';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
     const taskId = Number(params.id);
 
     // Fetch required data for dropdowns
@@ -19,8 +19,16 @@ export const load: PageServerLoad = async ({ params }) => {
     const item = await db.query.task.findFirst({
         where: eq(task.id, taskId),
         with: {
-            taskMaterials: true,
-            taskProducts: true,
+            taskMaterials: {
+                with: {
+                    material: true
+                }
+            },
+            taskProducts: {
+                with: {
+                    product: true
+                }
+            },
             files: true
         }
     });
@@ -29,12 +37,32 @@ export const load: PageServerLoad = async ({ params }) => {
         throw redirect(303, '/projekti');
     }
 
+    let userClientId: number | null = null;
+    if (locals.user && locals.user.type === 'client') {
+        const { userClient } = await import('$lib/server/db/schema');
+        const result = await db
+            .select({ clientId: userClient.clientId })
+            .from(userClient)
+            .where(eq(userClient.userId, locals.user.id))
+            .limit(1);
+
+        if (result.length > 0) {
+            userClientId = result[0].clientId;
+        }
+    }
+
+    // Debug logging
+    console.log('DEBUG LOAD TASK:', taskId);
+    console.log('createdById:', item.createdById);
+    console.log('assignedToUserId:', item.assignedToUserId);
+
     return {
         item,
         clients,
         users,
         materials,
-        products
+        products,
+        userClientId
     };
 };
 
@@ -116,7 +144,6 @@ export const actions: Actions = {
                 description,
                 clientId,
                 assignedToUserId: assignedToUserId || null,
-                createdById: createdById || null,
                 endDate,
                 price: calculatedPrice,
                 count: calculatedCount,

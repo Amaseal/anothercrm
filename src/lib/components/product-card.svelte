@@ -4,25 +4,23 @@
 		Clock,
 		Hourglass,
 		User,
-		Printer,
-		MessageSquare,
 		Check,
 		Trash,
 		Building2,
 		UserPlus,
 		Pencil,
-		GripVertical
+		GripVertical,
+		Link
 	} from '@lucide/svelte';
+	import * as m from '$lib/paraglide/messages.js';
 
 	import { Button } from '$lib/components/ui/button';
-	import BreadcrumbItem from './ui/breadcrumb/breadcrumb-item.svelte';
 	import { Card } from './ui/card';
+	import { isClient, user } from '$lib/stores/user';
 
 	let {
 		task,
 		class: className,
-		onEdit,
-		onDelete,
 		dragHandleAction
 	} = $props<{
 		task: {
@@ -32,13 +30,10 @@
 			createdAt: Date | string;
 			client?: { name: string } | null;
 			assignedToUser?: { name: string } | null;
-			// Creator might be different from assignedToUser, but based on schema we likely map one of these.
-			// If creator is separate, we'd need that data. I'll assume we show what we have.
-			creator?: { name: string } | null;
+			createdById?: string | null;
+			creator?: { name: string; type?: string } | null;
 		};
 		class?: string;
-		onEdit?: () => void;
-		onDelete?: () => void;
 		dragHandleAction?: any;
 	}>();
 
@@ -64,8 +59,14 @@
 		const months = Math.floor(diffDays / 30);
 		const days = diffDays % 30;
 
-		const monthStr = months % 10 === 1 && months !== 11 ? 'mēnesis' : 'mēnešus';
-		const dayStr = days % 10 === 1 && days !== 11 ? 'diena' : 'dienas';
+		const monthStr =
+			months % 10 === 1 && months !== 11
+				? m['product_card.month_singular']()
+				: m['product_card.month_plural']();
+		const dayStr =
+			days % 10 === 1 && days !== 11
+				? m['product_card.day_singular']()
+				: m['product_card.day_plural']();
 
 		if (months > 0) {
 			return `${months} ${monthStr}, ${days} ${dayStr}`;
@@ -74,17 +75,21 @@
 	};
 
 	const activeDuration = $derived(task.createdAt ? getActiveDuration(task.createdAt) : '');
+
+	let copied = $state(false);
 </script>
 
 <Card
 	class={cn(
-		'flex w-full max-w-sm flex-col gap-3 rounded-xl border  p-5 shadow-sm transition-shadow hover:shadow-md',
+		'flex w-full max-w-sm flex-col gap-3 rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md',
+		task.creator?.type === 'client' && $user?.id !== task.createdById && 'border-4 border-primary',
 		className
 	)}
 >
 	<!-- Title Section -->
 	<div class="flex items-start justify-between gap-2">
-		{#if dragHandleAction}
+		<h3 class="line-clamp-2 text-lg leading-tight font-semibold">{task.title}</h3>
+		{#if dragHandleAction && !$isClient && task.assignedToUserId}
 			<div
 				use:dragHandleAction
 				data-drag-handle="true"
@@ -93,7 +98,6 @@
 				<GripVertical class="h-5 w-5 " />
 			</div>
 		{/if}
-		<h3 class="line-clamp-2 text-lg leading-tight font-semibold">{task.title}</h3>
 		<!-- Optional Priority Icon could go here -->
 	</div>
 
@@ -109,21 +113,21 @@
 		{#if task.endDate}
 			<div class="flex items-center gap-2 text-sm">
 				<Clock class="h-4 w-4 shrink-0 " />
-				<span>Jānodod: {formatDate(task.endDate)}</span>
+				<span>{m['product_card.deadline']()}: {formatDate(task.endDate)}</span>
 			</div>
 		{/if}
 
 		<!-- Active Duration -->
 		<div class="flex items-center gap-2 text-sm">
 			<Hourglass class="h-4 w-4 shrink-0 " />
-			<span>Aktīvs: {activeDuration}</span>
+			<span>{m['product_card.active']()}: {activeDuration}</span>
 		</div>
 
 		<!-- Manager -->
 		{#if task.creator}
 			<div class="flex items-center gap-2 text-sm font-medium">
 				<User class="h-4 w-4 shrink-0 " />
-				<span>Atbildīgs: {task.creator.name}</span>
+				<span>{m['product_card.created_by']()}: {task.creator.name}</span>
 			</div>
 		{/if}
 
@@ -131,7 +135,7 @@
 		{#if task.client}
 			<div class="flex items-center gap-2 text-sm">
 				<Building2 class="h-4 w-4 shrink-0 " />
-				<span>Klients: {task.client.name}</span>
+				<span>{m['product_card.client']()}: {task.client.name}</span>
 			</div>
 		{/if}
 
@@ -139,7 +143,7 @@
 		{#if task.assignedToUser}
 			<div class="flex items-center gap-2 text-sm">
 				<UserPlus class="h-4 w-4 shrink-0 " />
-				<span>Izpildītājs: {task.assignedToUser.name}</span>
+				<span>{m['product_card.assignee']()}: {task.assignedToUser.name}</span>
 			</div>
 		{/if}
 	</div>
@@ -148,24 +152,48 @@
 
 	<!-- Bottom Actions -->
 	<div class="flex items-center justify-between pt-1">
-		<div class="flex gap-3">
+		<div class="relative flex gap-3">
+			<Button
+				title={m['components.copy_link']()}
+				variant="ghost"
+				class="dark:hover:text-white"
+				onclick={(e: Event) => {
+					e.preventDefault();
+					navigator.clipboard.writeText(`${window.location.origin}/projekti/labot/${task.id}`);
+					copied = true;
+					setTimeout(() => {
+						copied = false;
+					}, 2000);
+				}}
+			>
+				{#if copied}
+					<Check class="h-4 w-4" />
+				{:else}
+					<Link class="h-4 w-4" />
+				{/if}
+			</Button>
 			<!-- Edit Button (Explicitly requested) -->
-			<Button title="Rediģēt" variant="ghost" href={`/projekti/labot/${task.id}`}>
+			<Button
+				title={m['components.edit']()}
+				variant="ghost"
+				class="dark:hover:text-white"
+				href={`/projekti/labot/${task.id}`}
+			>
 				<Pencil class="h-4 w-4" />
 			</Button>
 
 			<Button
-				title="Complete"
+				title={m['components.complete']()}
 				variant="ghost"
-				class="hover:bg-green-100 hover:text-green-600"
+				class="hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900 dark:hover:text-green-400"
 				href={`/projekti/pabeigt/${task.id}`}
 			>
 				<Check class="h-4 w-4" />
 			</Button>
 			<Button
-				title="Delete"
+				title={m['components.delete']()}
 				variant="ghost"
-				class="hover:bg-red-100 hover:text-red-600"
+				class="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-400"
 				href={`/projekti/izdzest/${task.id}`}
 			>
 				<Trash class="h-4 w-4" />

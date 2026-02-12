@@ -7,6 +7,8 @@
 		"save": "Save",
 		"saved_successfully": "Saved successfully",
 		"copy_link": "Copy Link",
+		"link_copied": "Link copied",
+		"complete": "Complete",
 		"pagination": {
 			"showing": "Showing {start}-{end} of {total} items",
 			"items_per_page": "Items: {pageSize}"

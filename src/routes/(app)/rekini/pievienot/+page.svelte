@@ -77,6 +77,35 @@
 		}
 	});
 
+	$effect(() => {
+		// Auto-fill from task if provided and not already manually modified (checking selectedClientId as proxy)
+		// We only want to do this initially.
+		if (data.prefillTask && !selectedClientId) {
+			if (data.prefillTask.clientId) {
+				selectedClientId = data.prefillTask.clientId.toString();
+			}
+
+			if (data.prefillTask.taskProducts && data.prefillTask.taskProducts.length > 0) {
+				items = data.prefillTask.taskProducts.map((tp: any) => ({
+					description: tp.product.title,
+					unit: 'gab.',
+					quantity: tp.count || 1,
+					price: tp.product.cost // price in cents
+				}));
+			} else {
+				// If no products, maybe use task title as description?
+				items = [
+					{
+						description: data.prefillTask.title,
+						unit: 'gab.',
+						quantity: 1,
+						price: data.prefillTask.price || 0
+					}
+				];
+			}
+		}
+	});
+
 	const formatMoney = (cents: number) => (cents / 100).toFixed(2);
 </script>
 
@@ -106,6 +135,10 @@
 						</div>
 					{/if}
 
+					{#if data.prefillTask}
+						<input type="hidden" name="taskId" value={data.prefillTask.id} />
+					{/if}
+
 					<!-- 1. Header Row -->
 					<div class="mb-8 flex items-start justify-between">
 						<!-- Logo -->
@@ -126,7 +159,7 @@
 											<input
 												type="date"
 												name="issueDate"
-												class="w-full border-none bg-transparent px-2 pl-6 py-0.5 text-right text-sm focus:ring-0 relative [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
+												class="relative w-full border-none bg-transparent px-2 py-0.5 pl-6 text-right text-sm focus:ring-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
 												value={new Date().toISOString().split('T')[0]}
 												required
 											/>
@@ -150,7 +183,7 @@
 											<input
 												type="date"
 												name="dueDate"
-												class="w-full border-none bg-transparent px-2 pl-6 py-0.5 text-right text-sm focus:ring-0 relative [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
+												class="relative w-full border-none bg-transparent px-2 py-0.5 pl-6 text-right text-sm focus:ring-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
 												value={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 													.toISOString()
 													.split('T')[0]}
@@ -158,31 +191,27 @@
 											/>
 										</td>
 									</tr>
-                                    <tr>
-										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
-											>Language:</td
-										>
+									<tr>
+										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">Language:</td>
 										<td class="border border-black px-0 py-0">
 											<select
-                                                name="language"
-                                                bind:value={language}
-                                                class="w-full border-none bg-transparent px-1 py-0.5 text-right text-sm focus:ring-0 appearance-none"
-                                            >
-                                                <option value="lv">Latviešu</option>
-                                                <option value="en">English</option>
-                                            </select>
+												name="language"
+												bind:value={language}
+												class="w-full appearance-none border-none bg-transparent px-1 py-0.5 text-right text-sm focus:ring-0"
+											>
+												<option value="lv">Latviešu</option>
+												<option value="en">English</option>
+											</select>
 										</td>
 									</tr>
-                                     <tr>
-										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
-											>VAT (%):</td
-										>
+									<tr>
+										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">VAT (%):</td>
 										<td class="border border-black px-0 py-0">
 											<input
 												type="number"
-                                                step="0.1"
+												step="0.1"
 												name="vatRate"
-                                                bind:value={vatRate}
+												bind:value={vatRate}
 												class="w-full border-none bg-transparent px-2 py-0.5 text-right text-sm focus:ring-0"
 												required
 											/>
@@ -437,38 +466,37 @@
 						{m['invoices.items.add_row']()}
 					</Button>
 					<div class="flex gap-4">
-					<div class="mb-4 w-full">
-						<Label class="mb-1 block text-sm font-bold">{m['invoices.notes']()}:</Label>
-						<Textarea
-							name="notes"
-							placeholder={m['invoices.notes']()}
-							class="h-16 resize-none text-sm"
-						/>
-					</div>
-					<!-- 5. Totals -->
-					<div class="mb-6 flex flex-col items-end text-sm font-bold">
-						<Label class="mb-1 block text-sm font-bold">{m['invoices.total']()}:</Label>
-						<div
-							class="flex w-64 justify-between border-r border-b border-t border-l border-black bg-white px-2"
-						>
-							<span>{m['invoices.summary.subtotal']()}</span>
-							<span>{formatMoney(subtotal)}</span>
+						<div class="mb-4 w-full">
+							<Label class="mb-1 block text-sm font-bold">{m['invoices.notes']()}:</Label>
+							<Textarea
+								name="notes"
+								placeholder={m['invoices.notes']()}
+								class="h-16 resize-none text-sm"
+							/>
 						</div>
-						<div
-							class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
-						>
-							<span>{m['invoices.summary.vat']()} {vatRate}%</span>
-							<span>{formatMoney(taxAmount)}</span>
-						</div>
-						<div
-							class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
-						>
-							<span>{m['invoices.summary.total']()} EUR</span>
-							<span>{formatMoney(total)}</span>
+						<!-- 5. Totals -->
+						<div class="mb-6 flex flex-col items-end text-sm font-bold">
+							<Label class="mb-1 block text-sm font-bold">{m['invoices.total']()}:</Label>
+							<div
+								class="flex w-64 justify-between border-t border-r border-b border-l border-black bg-white px-2"
+							>
+								<span>{m['invoices.summary.subtotal']()}</span>
+								<span>{formatMoney(subtotal)}</span>
+							</div>
+							<div
+								class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
+							>
+								<span>{m['invoices.summary.vat']()} {vatRate}%</span>
+								<span>{formatMoney(taxAmount)}</span>
+							</div>
+							<div
+								class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
+							>
+								<span>{m['invoices.summary.total']()} EUR</span>
+								<span>{formatMoney(total)}</span>
+							</div>
 						</div>
 					</div>
-					</div>
-
 
 					<!-- Footer / Submit Area -->
 					<div class="mt-12 flex justify-end gap-4 border-t pt-6 print:hidden">
@@ -477,7 +505,7 @@
 
 						<Button href="/rekini" variant="outline">{m['components.delete_modal.cancel']()}</Button
 						>
-						<Button type="submit"  class="px-8 cursor-pointer">{m['components.save']()}</Button>
+						<Button type="submit" class="cursor-pointer px-8">{m['components.save']()}</Button>
 					</div>
 				</form>
 			</div>

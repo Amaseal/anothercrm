@@ -20,7 +20,8 @@
 			"./messages/{locale}/completed.json",
 			"./messages/{locale}/files.json",
 			"./messages/{locale}/settings.json",
-			"./messages/{locale}/roles.json"
+			"./messages/{locale}/roles.json",
+			"./messages/{locale}/product_card.json"
 		]
 	},
 	"baseLocale": "en",

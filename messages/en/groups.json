@@ -11,6 +11,7 @@
 		"name": "Name for language: {locale}",
 		"new_group": "New group",
 		"name_placeholder": "Enter name for {locale} language",
-		"name_info": "The name will be displayed for clients in their selected language."
+		"name_info": "The name will be displayed for clients in their selected language.",
+		"color": "Color"
 	}
 }

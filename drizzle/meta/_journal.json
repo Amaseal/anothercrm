@@ -155,6 +155,20 @@
       "when": 1770674589089,
       "tag": "0021_slow_carmella_unuscione",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1770842276707,
+      "tag": "0022_goofy_daimon_hellstrom",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1770922576406,
+      "tag": "0023_overconfident_red_skull",
+      "breakpoints": true
     }
   ]
 }

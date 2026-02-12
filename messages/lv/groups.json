@@ -12,6 +12,7 @@
 		"name_placeholder": "Ievadiet nosaukumu {locale} valodai",
 		"name_info": "Nosaukums tiks parādīts klientiem viņu izvēlētajā valodā.",
 		"new_group": "Jauna grupa",
+		"color": "Krāsa",
 		"errors": {
 			"required": "Nosaukums ir obligāts visām valodām.",
 			"something_went_wrong": "Radās kļūda, mēģinot saglabāt grupu."

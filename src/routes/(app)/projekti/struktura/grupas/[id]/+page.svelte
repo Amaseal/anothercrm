@@ -45,6 +45,18 @@
 							value={data.item?.translations.find((t) => t.language === locale)?.name || ''}
 						/>
 					{/each}
+
+					<div class="mt-4">
+						<Label for="color">{m['groups.color']()}</Label>
+						<Input
+							type="color"
+							name="color"
+							id="color"
+							class="h-10 w-20 p-1"
+							value={data.item?.color || '#ffffff'}
+						/>
+					</div>
+
 					<!-- todo -->
 					<p class="text-sm text-muted-foreground">{m[`groups.name_info`]()}</p>
 

@@ -37,6 +37,13 @@ export const actions: Actions = {
 						sql`${tabGroupTranslation.tabGroupId} = ${groupId} AND ${tabGroupTranslation.language} = ${locale}`
 					);
 			}
+
+			await db
+				.update(tabGroup)
+				.set({
+					color: (formData.get('color') as string) || '#ffffff'
+				})
+				.where(eq(tabGroup.id, groupId));
 		} catch (error) {
 			console.log(error);
 			return fail(500, {

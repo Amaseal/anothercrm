@@ -117,7 +117,7 @@
 
 <div class="custom-scroll flex h-[calc(100vh-110px)] gap-4 overflow-x-auto pb-2" use:dragScroll>
 	{#each tabsToRender as item}
-		<List tab={item} />
+		<List tab={item} {data} />
 	{/each}
 </div>
 

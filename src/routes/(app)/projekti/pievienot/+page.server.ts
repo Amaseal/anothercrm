@@ -1,11 +1,12 @@
 import { db } from '$lib/server/db';
-import { client, tab, task, user, material, product, taskMaterial, taskProduct, file } from '$lib/server/db/schema';
+import { client, tab, task, user, material, product, taskMaterial, taskProduct, file, userClient } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
 	const tabs = await db.query.tab.findMany({
 		with: {
 			translations: true,
@@ -17,6 +18,19 @@ export const load: PageServerLoad = async () => {
 		}
 	});
 
+	let userClientId: number | null = null;
+	if (locals.user && locals.user.type === 'client') {
+		const result = await db
+			.select({ clientId: userClient.clientId })
+			.from(userClient)
+			.where(eq(userClient.userId, locals.user.id))
+			.limit(1);
+
+		if (result.length > 0) {
+			userClientId = result[0].clientId;
+		}
+	}
+
 	const clients = await db.query.client.findMany();
 	const users = await db.query.user.findMany();
 	const materials = await db.query.material.findMany();
@@ -27,7 +41,8 @@ export const load: PageServerLoad = async () => {
 		clients,
 		users,
 		materials,
-		products
+		products,
+		userClientId
 	};
 };
 

@@ -18,11 +18,15 @@
 		[key: string]: any;
 	}
 
-	let { clients = $bindable([]), value = $bindable('') }: { clients: Client[]; value: string } =
-		$props();
+	let {
+		clients = $bindable([]),
+		value = $bindable(''),
+		disabled = false
+	}: { clients: Client[]; value: string; disabled?: boolean } = $props();
 
 	let open = $state(false);
 	let dialogOpen = $state(false);
+
 	let loading = $state(false);
 
 	// Form states
@@ -122,7 +126,10 @@
 </script>
 
 <Popover.Root bind:open>
-	<Popover.Trigger class={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-between')}>
+	<Popover.Trigger
+		class={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-between')}
+		{disabled}
+	>
 		{selectedLabel}
 		<ChevronsUpDown class="ml-2 h-4 w-4 opacity-50" />
 	</Popover.Trigger>

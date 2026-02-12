@@ -7,7 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
-	import { CalendarIcon, Save, X } from '@lucide/svelte';
+	import { CalendarIcon, Save, X, Printer, FileText } from '@lucide/svelte';
 	import {
 		DateFormatter,
 		type DateValue,
@@ -25,9 +25,18 @@
 	import ImagePreviewInput from '@/components/image-preview-input.svelte';
 	import type { PageData } from './$types';
 
+	import { isClient } from '$lib/stores/user';
+
 	let { data } = $props<{ data: PageData }>();
 
 	let selectedClientId = $state(data.item.clientId?.toString() || '');
+
+	$effect(() => {
+		if (data.userClientId) {
+			selectedClientId = data.userClientId.toString();
+		}
+	});
+
 	let selectedAssigneeId = $state(data.item.assignedToUserId || '');
 	let selectedManagerId = $state(data.item.createdById || '');
 	let selectedSeamstress = $state(data.item.seamstress || '');
@@ -56,12 +65,11 @@
 			?.name || m['projects.client_label']()
 	);
 	let selectedAssigneeName = $derived(
-		data.users.find((u: { id: any }) => u.id === selectedAssigneeId)?.name ||
-			m['projects.assign_user_label']()
+		data.users.find((u: { id: any }) => u.id === selectedAssigneeId)?.name
 	);
+
 	let selectedManagerName = $derived(
-		data.users.find((u: { id: any }) => u.id === selectedManagerId)?.name ||
-			m['projects.assign_manager_label']()
+		data.users.find((u: { id: any }) => u.id === selectedManagerId)?.name
 	);
 
 	const seamstresses = [
@@ -95,10 +103,34 @@
 			size: f.size
 		}))
 	);
+
+	import ProjectPrintView from '$lib/components/project-print-view.svelte';
 </script>
 
+<ProjectPrintView
+	title={data.item.title}
+	clientName={selectedClientName}
+	{dateValue}
+	managerName={selectedManagerName}
+	assigneeName={selectedAssigneeName}
+	seamstress={selectedSeamstress}
+	materials={data.item.taskMaterials.map(
+		(tm: any) => `${tm.material.title} (${tm.material.remaining})`
+	)}
+	products={data.item.taskProducts.map((tp: any) => ({
+		name: tp.product.title,
+		count: tp.count,
+		price: tp.product.cost
+	}))}
+	description={descriptionContent}
+	previewUrl={data.item.preview || undefined}
+	{totalPrice}
+/>
+
 <!-- Modal Overlay -->
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+<div
+	class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:hidden"
+>
 	<!-- Inner Modal Container -->
 	<div
 		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
@@ -121,7 +153,7 @@
 				<!-- Client -->
 				<div class="w-64">
 					<input type="hidden" name="clientId" value={selectedClientId} />
-					<ClientSelect bind:value={selectedClientId} clients={data.clients} />
+					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={$isClient} />
 				</div>
 
 				<!-- Due Date -->
@@ -176,26 +208,17 @@
 			<div class="custom-scroll flex-1 overflow-y-auto p-6">
 				<!-- SECTION 1: Description & Products -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
-					<!-- Left (65%) - Description -->
-					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
-						<Label>{m['projects.description_label']()}</Label>
-						<div class="min-h-[400px] flex-1 rounded-md border p-2">
-							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" />
-							<input type="hidden" name="description" value={descriptionContent} />
-						</div>
-					</div>
-
 					<!-- Right (35%) - Assignment & Products -->
 					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
 						<!-- Assignment Controls -->
 						<div class="space-y-4">
-							<!-- Manager -->
+							<!-- Assignee -->
 							<div class="grid gap-2">
-								<Label>{m['projects.assign_manager_label']()}</Label>
-								<input type="hidden" name="createdById" value={selectedManagerId} />
-								<Select.Root type="single" bind:value={selectedManagerId}>
+								<Label>{m['projects.assign_user_label']()}</Label>
+								<input type="hidden" name="assignedToUserId" value={selectedAssigneeId} />
+								<Select.Root type="single" bind:value={selectedAssigneeId}>
 									<Select.Trigger class="w-full">
-										{selectedManagerName}
+										{selectedAssigneeName || m['projects.assign_user_label']()}
 									</Select.Trigger>
 									<Select.Content>
 										{#each data.users as user}
@@ -251,6 +274,14 @@
 							/>
 						</div>
 					</div>
+					<!-- Left (65%) - Description -->
+					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
+						<Label>{m['projects.description_label']()}</Label>
+						<div class="min-h-[400px] flex-1 rounded-md border p-2">
+							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" />
+							<input type="hidden" name="description" value={descriptionContent} />
+						</div>
+					</div>
 				</div>
 
 				<!-- Separator/Heading for Execution -->
@@ -258,6 +289,13 @@
 
 				<!-- SECTION 2: Execution (Preview & Files) -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
+					<!-- Right (35%) - Files -->
+					<div class="col-span-12 lg:col-span-4">
+						<div class="grid gap-2">
+							<Label for="files">{m['projects.files_label']()}</Label>
+							<FileUpload bind:files />
+						</div>
+					</div>
 					<!-- Left (65%) - Large Visual Reference -->
 					<div class="col-span-12 lg:col-span-8">
 						<div class="h-full min-h-[400px]">
@@ -270,14 +308,6 @@
 							/>
 						</div>
 					</div>
-
-					<!-- Right (35%) - Files -->
-					<div class="col-span-12 lg:col-span-4">
-						<div class="grid gap-2">
-							<Label for="files">{m['projects.files_label']()}</Label>
-							<FileUpload bind:files />
-						</div>
-					</div>
 				</div>
 			</div>
 
@@ -285,14 +315,39 @@
 			<div
 				class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"
 			>
-				<div class="text-xl font-bold">
-					{m['projects.total_price']()}: €{formatPrice(totalPrice)}
+				<div class="flex items-center gap-4">
+					<div class="text-xl font-bold">
+						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
+					</div>
 				</div>
+				<div class="flex items-center gap-2 print:hidden">
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						onclick={() => window.print()}
+						title="Printēt"
+					>
+						<Printer class="size-4" />
+						<span class="sr-only">Print</span>
+					</Button>
 
-				<Button type="submit" size="lg">
-					{m['projects.create_button']()}
-					<!-- Change to Save/Update if distinct label exists, or create_button is typically 'Saglabāt' -->
-				</Button>
+					{#if data.user?.type === 'admin'}
+						<Button
+							variant="outline"
+							size="icon"
+							href={`/rekini/pievienot?taskId=${data.item.id}`}
+							title="Izveidot rēķinu"
+						>
+							<FileText class="size-4" />
+							<span class="sr-only">Create Invoice</span>
+						</Button>
+					{/if}
+					<Button type="submit" size="lg">
+						{m['projects.create_button']()}
+						<!-- Change to Save/Update if distinct label exists, or create_button is typically 'Saglabāt' -->
+					</Button>
+				</div>
 			</div>
 		</form>
 	</div>
