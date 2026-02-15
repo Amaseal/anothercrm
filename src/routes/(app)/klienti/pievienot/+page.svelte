@@ -101,6 +101,9 @@
 					<Label>{m['clients.email']()}</Label>
 					<Input placeholder={m['clients.email_placeholder']()} name="email" />
 
+					<Label>{m['clients.sport_type']()}</Label>
+					<Input placeholder={m['clients.sport_type_placeholder']()} name="sport_type" />
+
 					<Label>{m['clients.description']()}</Label>
 					<Textarea
 						class=""

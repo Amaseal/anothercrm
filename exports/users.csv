@@ -1,0 +1,8 @@
+id,email,password,name,nextcloud,nextcloud_username,nextcloud_password,updated_at,created_at
+boaj3cdrucdxjbeirocwa2qo,arturs@fastbreak.lv,"$argon2id$v=19$m=19456,t=2,p=1$cPbzYGi8X7Ld3CHiukxSrA$Cd2biig1iIhgUOeumAXwJA5T0pPL2fiE5HmulPl+UFM",Artūrs,,arturs@fastbreak.lv,Activegear2019!,2025-06-18T08:53:28.000Z,2025-06-18T02:26:17.000Z
+joud2zyvb3wgvxlrgahougzz,info@fastbreak.lv,"$argon2id$v=19$m=19456,t=2,p=1$WCLofvz5b094YgZA3bOR8A$ALtjHXFDFQThRvt/fyg/JfUx8t1kw5vMdUfAKTwtpec",Kaspars,,info@fastbreak.lv,Activegear2019!,2025-06-18T10:19:34.000Z,2025-06-18T10:01:41.000Z
+xosfdkuu34uxwigj5aatp46y,info@fastprint.lv,"$argon2id$v=19$m=19456,t=2,p=1$VMuMQoFClP2nKxkTJOXAZA$zKjYmIx/jm7MMnsk4Z8IrS+Yxcu8N3Lu8DZqzUNYyxQ",Diāna,,,,2025-06-18T13:40:31.000Z,2025-06-18T10:01:41.000Z
+jbc733tyzrlm5syzjfpo4fdk,toms@fastbreak.lv,"$argon2id$v=19$m=19456,t=2,p=1$Kzx3PKTdcEEbvgaOA6E+qg$GqtP8DSg6CSjMgE6H0MHhT6hBnorFhaRtkFnUsPxIxk",Toms,,toms@fastbreak.lv,Activegear2019!,2025-06-19T10:33:04.000Z,2025-06-18T20:32:12.000Z
+njly65fq5kgs4odv4fqyvcst,raimonds@fastbreak.lv,"$argon2id$v=19$m=19456,t=2,p=1$UTuIHWdmS9okmlWtR/oiIQ$z1DXMwv3LYlCG+G2LfXS/V43OxjuVGZrzD0dHvbwaz0",Raimonds,,raimonds@fastbreak.lv,Activegear2019!,2025-06-20T10:41:05.000Z,2025-06-20T10:14:17.000Z
+pfxptj5omdbgwlf37xesmck7,Zemzale4@inbox.lv,"$argon2id$v=19$m=19456,t=2,p=1$ciLAR5jYzoXynfhpRn12LQ$iSrKgto/F6OlqZZDnCdnrBAyGlKwUXq7ef+u3GQlQQU",Raimonds.Z,,,,2025-07-14T10:18:18.000Z,2025-07-07T10:27:58.000Z
+zketb5v3osguad3pual4evut,zemzale4@inbox.lv,"$argon2id$v=19$m=19456,t=2,p=1$SpV+qbnG+21m1iI2IhymxQ$7i2hquHdrHj9xyoO9mzz+Qr61j9v7bh+AkM6d2FvYCA",,,,,2025-10-20T08:23:04.000Z,2025-10-20T08:23:04.000Z

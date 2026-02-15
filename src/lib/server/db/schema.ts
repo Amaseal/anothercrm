@@ -20,6 +20,7 @@ import { relations } from 'drizzle-orm'; // Define relationships between tables
 // User role types: defines whether a user is an admin or a client
 export const userRoleEnum = pgEnum('user_role', ['admin', 'client']);
 
+
 // Client type classification: BTC (Business-to-Consumer) or BTB (Business-to-Business)
 // Client type classification: BTC (Business-to-Consumer) or BTB (Business-to-Business)
 export const clientTypeEnum = pgEnum('client_type', ['BTC', 'BTB']);
@@ -248,6 +249,7 @@ export const client = pgTable(
 		bankName: text('bank_name'), // Bank name for payments
 		bankCode: text('bank_code'), // Bank routing/SWIFT code
 		bankAccount: text('bank_account'), // Bank account number
+		sportType: text('sport_type'), // Client sport type: defaults to none
 		type: clientTypeEnum('type').default('BTC').notNull(), // Client type: defaults to B2C
 		vatRate: real('vat_rate').default(21.0).notNull(), // Custom VAT rate for this client (default 21%)
 		totalOrdered: integer('total_ordered'), // Lifetime order total (optional tracking)

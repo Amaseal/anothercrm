@@ -32,7 +32,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 	}
 
 	const clients = await db.query.client.findMany();
-	const users = await db.query.user.findMany();
+	const users = await db.query.user.findMany({
+		where: (u, { eq }) => eq(u.type, 'admin')
+	});
 	const materials = await db.query.material.findMany();
 	const products = await db.query.product.findMany();
 

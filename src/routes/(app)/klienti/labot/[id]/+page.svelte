@@ -135,6 +135,13 @@
 						value={data.item.email}
 					/>
 
+					<Label>{m['clients.sport_type']()}</Label>
+					<Input
+						placeholder={m['clients.sport_type_placeholder']()}
+						name="sport_type"
+						value={data.item.sportType}
+					/>
+
 					<Label>{m['clients.description']()}</Label>
 					<Textarea
 						class=""

@@ -169,6 +169,13 @@
       "when": 1770922576406,
       "tag": "0023_overconfident_red_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1771162314813,
+      "tag": "0024_gigantic_angel",
+      "breakpoints": true
     }
   ]
 }

@@ -32,6 +32,8 @@
 		"empty": "No clients found.",
 		"add_client": "Add new client",
 		"edit_client": "Edit client {name}",
+		"sport_type": "Sport Type",
+		"sport_type_placeholder": "Enter sport type",
 		"errors": {
 			"name_required": "Name is required.",
 			"contacts_invalid": "Name or phone is required.",

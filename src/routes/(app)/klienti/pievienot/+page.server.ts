@@ -4,7 +4,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages';
 import type { Actions } from './$types';
 
-export const load = async () => {};
+export const load = async () => { };
 
 export const actions: Actions = {
 	default: async ({ request }) => {
@@ -20,6 +20,7 @@ export const actions: Actions = {
 		const email = formData.get('email') as string;
 		const phone = formData.get('phone') as string;
 		const description = formData.get('description') as string;
+		const sport_type = formData.get('sport_type') as string;
 
 		if (!name) {
 			return fail(400, { message: m['clients.errors.name_required']() });
@@ -40,7 +41,8 @@ export const actions: Actions = {
 				bankAccount: bank_account || null,
 				email: email || undefined,
 				phone: phone || undefined,
-				description: description || null
+				description: description || null,
+				sportType: sport_type || null
 			};
 			await db.insert(client).values(payload as any);
 		} catch (error) {

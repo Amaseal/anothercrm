@@ -1,0 +1,12 @@
+id,userId,dailyWordId,guesses,solved,guessCount,timeSpent,updated_at,created_at
+1,boaj3cdrucdxjbeirocwa2qo,1,"[""AEIOU"",""ZCKLR"",""PTBND"",""THMER"",""NETER"",""ENTER""]",true,6,1579,2025-06-18T11:48:02.000Z,2025-06-18T10:01:41.000Z
+2,boaj3cdrucdxjbeirocwa2qo,2,"[""AEUIO"",""TPLKH"",""ENTER"",""ENTRE"",""ENTRY""]",true,5,1344,2025-06-19T07:43:50.000Z,2025-06-18T20:32:12.000Z
+3,boaj3cdrucdxjbeirocwa2qo,3,"[""AIEOU"",""NHJKG"",""TRCDP"",""DUYIF"",""FBDIU"",""FUMID""]",false,6,341,2025-06-20T07:27:13.000Z,2025-06-19T18:11:28.000Z
+4,boaj3cdrucdxjbeirocwa2qo,4,"[""AEIOU"",""MNBVC"",""SKLPT"",""MOURN"",""ROUGY"",""FORUM""]",true,6,350,2025-06-25T10:10:17.000Z,2025-06-20T10:14:17.000Z
+5,boaj3cdrucdxjbeirocwa2qo,5,"[""AIEOU"",""FORUM"",""NBVCT"",""FOUNY"",""FOUND""]",true,5,79,2025-06-26T10:28:50.000Z,2025-06-20T10:14:17.000Z
+6,boaj3cdrucdxjbeirocwa2qo,6,"[""AEIOU"",""TRPNG"",""ERAND"",""CSMVL"",""GRAME"",""FRAME""]",true,6,120,2025-06-27T08:53:22.000Z,2025-06-20T10:14:17.000Z
+7,boaj3cdrucdxjbeirocwa2qo,7,"[""AĀIĪO"",""EUŪPR"",""PARĪT"",""SEPĪT"",""NEPĪT"",""LEPĪT""]",false,6,173,2025-06-30T13:12:08.000Z,2025-06-30T13:12:08.000Z
+8,boaj3cdrucdxjbeirocwa2qo,8,"[""AIOUE"",""ĪĒŪĀS"",""MNBLK"",""CPOTR"",""PAMRH"",""PAMPA""]",false,6,137,2025-07-01T07:57:03.000Z,2025-07-01T07:57:03.000Z
+9,boaj3cdrucdxjbeirocwa2qo,9,"[""AEIOA"",""ULKPC"",""STUPA"",""BARPA"",""NAVPA"",""ĶAMPA""]",false,6,493,2025-07-08T13:11:06.000Z,2025-07-08T13:11:06.000Z
+10,boaj3cdrucdxjbeirocwa2qo,10,"[""AIEOU"",""ĀĪSŪĒ"",""GARŠA"",""NTMLC"",""ZAMTČ"",""TAMPA""]",false,6,116,2025-07-09T07:24:35.000Z,2025-07-09T07:24:35.000Z
+11,boaj3cdrucdxjbeirocwa2qo,13,"[""AIEOU"",""ĀĒĪŪS"",""KOKĀT"",""CZPRM"",""GROPĀ"",""RĀPOT""]",false,6,261,2025-07-21T07:21:06.000Z,2025-07-21T07:21:06.000Z

@@ -31,6 +31,8 @@
 		"empty": "Neviens klients netika atrasts.",
 		"add_client": "Pievienot jaunu klientu",
 		"edit_client": "Rediģēt klientu {name}",
+		"sport_type": "Sporta veids",
+		"sport_type_placeholder": "Ievadiet sporta veidu",
 		"errors": {
 			"name_required": "Nosaukums ir obligāts.",
 			"contacts_invalid": "E=pasts vai tālruņa numurs ir obligāts.",

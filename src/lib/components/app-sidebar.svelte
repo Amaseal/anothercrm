@@ -12,51 +12,59 @@
 	import FileText from '@lucide/svelte/icons/file-text';
 	import Logo from './logo.svelte';
 	import NavUser from './nav-user.svelte';
-
-	const items = [
-		{
-			title: m['menu.dashboard'](),
-			url: '/',
-			icon: LayoutDashboard
-		},
-		{
-			title: m['menu.projects'](),
-			url: '/projekti',
-			icon: SquareKanban
-		},
-		{
-			title: m['menu.done'](),
-			url: '/pabeigtie',
-			icon: Check
-		},
-		{
-			title: m['menu.clients'](),
-			url: '/klienti',
-			icon: User
-		},
-		{
-			title: m['menu.fabrics'](),
-			url: '/audumi',
-			icon: BrickWall
-		},
-		{
-			title: m['menu.products'](),
-			url: '/produkti',
-			icon: Blocks
-		},
-		{
-			title: m['menu.files'](),
-			url: '/faili',
-			icon: Save
-		},
-		{
-			title: m['menu.invoices'](),
-			url: '/rekini',
-			icon: FileText
-		}
-	];
+	import { isClient } from '$lib/stores/user';
 
 	const { data, ...restProps } = $props();
+
+	const items = $derived(
+		[
+			{
+				title: m['menu.dashboard'](),
+				url: '/',
+				icon: LayoutDashboard
+			},
+			{
+				title: m['menu.projects'](),
+				url: '/projekti',
+				icon: SquareKanban
+			},
+			{
+				title: m['menu.done'](),
+				url: '/pabeigtie',
+				icon: Check
+			},
+			{
+				title: m['menu.clients'](),
+				url: '/klienti',
+				icon: User
+			},
+			{
+				title: m['menu.fabrics'](),
+				url: '/audumi',
+				icon: BrickWall
+			},
+			{
+				title: m['menu.products'](),
+				url: '/produkti',
+				icon: Blocks
+			},
+			{
+				title: m['menu.files'](),
+				url: '/faili',
+				icon: Save
+			},
+			{
+				title: m['menu.invoices'](),
+				url: '/rekini',
+				icon: FileText
+			}
+		].filter((item) => {
+			if ($isClient) {
+				return !['/klienti', '/audumi', '/produkti', '/faili'].includes(item.url);
+			}
+			return true;
+		})
+	);
 </script>
 
 <Sidebar.Root collapsible="offcanvas" {...restProps} variant="inset">

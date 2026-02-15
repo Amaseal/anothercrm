@@ -1,6 +1,10 @@
 export function formatDate(dateString: number | Date | string | null | undefined) {
 	if (!dateString) return '';
 	const date = new Date(dateString);
+	if (isNaN(date.getTime())) {
+		console.warn('Invalid date passed to formatDate:', dateString);
+		return '';
+	}
 	const options: Intl.DateTimeFormatOptions = {
 		day: '2-digit',
 		month: '2-digit',

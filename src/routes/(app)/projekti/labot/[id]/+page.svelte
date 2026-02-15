@@ -186,12 +186,6 @@
 					<input type="hidden" name="endDate" value={dateValue ? dateValue.toString() : ''} />
 				</div>
 
-				<!-- Save Button -->
-				<Button type="submit" size="sm">
-					<Save class="mr-2 size-4" />
-					Saglabāt
-				</Button>
-
 				<!-- Close Button -->
 				<Button
 					variant="ghost"
@@ -230,23 +224,25 @@
 								</Select.Root>
 							</div>
 
-							<!-- Seamstress -->
-							<div class="grid gap-2">
-								<Label>{m['projects.seamstress_label']()}</Label>
-								<input type="hidden" name="seamstress" value={selectedSeamstress} />
-								<Select.Root type="single" bind:value={selectedSeamstress}>
-									<Select.Trigger class="w-full">
-										{selectedSeamstress || m['projects.seamstress_placeholder']()}
-									</Select.Trigger>
-									<Select.Content>
-										{#each seamstresses as s}
-											<Select.Item value={s.value} label={s.label}>
-												{s.label}
-											</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
-							</div>
+							{#if !$isClient}
+								<!-- Seamstress -->
+								<div class="grid gap-2">
+									<Label>{m['projects.seamstress_label']()}</Label>
+									<input type="hidden" name="seamstress" value={selectedSeamstress} />
+									<Select.Root type="single" bind:value={selectedSeamstress}>
+										<Select.Trigger class="w-full">
+											{selectedSeamstress || m['projects.seamstress_placeholder']()}
+										</Select.Trigger>
+										<Select.Content>
+											{#each seamstresses as s}
+												<Select.Item value={s.value} label={s.label}>
+													{s.label}
+												</Select.Item>
+											{/each}
+										</Select.Content>
+									</Select.Root>
+								</div>
+							{/if}
 
 							<!-- Materials -->
 							<div class="grid gap-2">

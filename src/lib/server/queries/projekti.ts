@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { task, userTabPreference, tabGroup, tab, user, client } from '$lib/server/db/schema';
+import { task, userTabPreference, tabGroup, tab, user, client, userClient } from '$lib/server/db/schema';
 import { eq, or, and, isNull, inArray, notInArray, desc, asc, count, sql, ilike } from 'drizzle-orm';
 
 export interface ProjectBoardColumn {
@@ -277,6 +277,7 @@ export async function getProjectBoardData(
 }
 
 export async function getCompletedTasks(
+    currentUser: { id: string; type: 'admin' | 'client' },
     page: number = 0,
     pageSize: number = 50,
     search: string = '',
@@ -286,6 +287,26 @@ export async function getCompletedTasks(
     const offset = page * pageSize;
     const filterConditions = [];
     filterConditions.push(eq(task.isDone, true));
+
+    if (currentUser.type === 'client') {
+        // Client filtering logic
+        // 1. Get client IDs associated with this user
+        const userClients = await db.query.userClient.findMany({
+            where: eq(userClient.userId, currentUser.id),
+            columns: { clientId: true }
+        });
+        const clientIds = userClients.map((uc) => uc.clientId);
+
+        const clientConditions = [
+            eq(task.createdById, currentUser.id)
+        ];
+
+        if (clientIds.length > 0) {
+            clientConditions.push(inArray(task.clientId, clientIds));
+        }
+
+        filterConditions.push(or(...clientConditions));
+    }
 
     if (search) {
         const searchTerm = `%${search}%`;
@@ -298,10 +319,12 @@ export async function getCompletedTasks(
         );
     }
 
+    const whereCondition = and(...filterConditions);
+
     const [{ value: totalCount }] = await db
         .select({ value: count() })
         .from(task)
-        .where(and(...filterConditions));
+        .where(whereCondition);
 
     const sortableColumns = {
         title: task.title,
@@ -313,7 +336,7 @@ export async function getCompletedTasks(
     const columnToSort = sortableColumns[sortColumn as keyof typeof sortableColumns] || task.endDate;
 
     const tasks = await db.query.task.findMany({
-        where: and(...filterConditions),
+        where: whereCondition,
         orderBy: sortDirection === 'asc' ? asc(columnToSort) : desc(columnToSort),
         limit: pageSize,
         offset: offset,

@@ -32,6 +32,7 @@ export const actions: Actions = {
 		const email = formData.get('email') as string;
 		const phone = formData.get('phone') as string;
 		const description = formData.get('description') as string;
+		const sport_type = formData.get('sport_type') as string;
 
 		if (!name) {
 			return fail(400, { message: m['clients.errors.name_required']() });
@@ -52,7 +53,8 @@ export const actions: Actions = {
 				bankAccount: bank_account || null,
 				email: email || undefined,
 				phone: phone || undefined,
-				description: description || null
+				description: description || null,
+				sportType: sport_type || null
 			};
 			await db
 				.update(client)
