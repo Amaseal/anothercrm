@@ -92,33 +92,6 @@ export const actions = {
 		try {
 			await db.insert(table.user).values({ id: userId, email, password: passwordHash, name: name }); // Mark the invite code as used
 
-			// Create personal tab
-			const [newTab] = await db
-				.insert(table.tab)
-				.values({
-					userId: userId,
-					sortOrder: 0,
-					color: '#3b82f6' // Default blue
-				})
-				.returning({ id: table.tab.id });
-
-			// Create translations
-			for (const locale of locales) {
-				let tabName = name;
-				if (locale === 'en') {
-					tabName = `${name}'s Tab`;
-				} else if (locale === 'lv') {
-					tabName = `${name} saraksts`;
-				}
-
-				await db.insert(table.tabTranslation).values({
-					tabId: newTab.id,
-					language: locale,
-					name: tabName
-				});
-
-			}
-
 			// If the invite code has a clientId, link the user to that client
 			if (validInviteCode[0].clientId) {
 				await db.insert(table.userClient).values({

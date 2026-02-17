@@ -53,11 +53,6 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         }
     }
 
-    // Debug logging
-    console.log('DEBUG LOAD TASK:', taskId);
-    console.log('createdById:', item.createdById);
-    console.log('assignedToUserId:', item.assignedToUserId);
-
     return {
         item,
         clients,

@@ -57,20 +57,28 @@ export const actions: Actions = {
 
 		const userId = user.id;
 
-		// Find user's personal tab
-		const personalTab = await db.query.tab.findFirst({
-			where: (t, { eq, and }) => and(eq(t.userId, userId))
+		// Find default tab (First shared tab in first group)
+		const firstGroup = await db.query.tabGroup.findFirst({
+			orderBy: (groups, { asc }) => [asc(groups.sortOrder)],
+			with: {
+				tabs: {
+					orderBy: (tabs, { asc }) => [asc(tabs.sortOrder)],
+					limit: 1
+				}
+			}
 		});
 
-		if (!personalTab) {
-			return fail(400, { error: 'User does not have a personal tab' });
+		const defaultTab = firstGroup?.tabs[0];
+
+		if (!defaultTab) {
+			return fail(400, { error: 'No default tab found. Please ask an admin to create a tab.' });
 		}
 
 		const formData = await request.formData();
 		const title = formData.get('title') as string;
 		const description = formData.get('description') as string;
-		// Tab ID comes from personal tab now
-		const tabId = personalTab.id;
+		// Tab ID comes from default tab now
+		const tabId = defaultTab.id;
 		const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
 		const assignedToUserId = formData.get('assignedToUserId') as string;
 		const endDate = formData.get('endDate') as string;

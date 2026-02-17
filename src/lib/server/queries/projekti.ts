@@ -26,17 +26,10 @@ export async function getProjectBoardData(
     showAll: boolean = false,
     search?: string
 ) {
-    // 1. Fetch User's Personal Tab ID
-    const personalTab = await db.query.tab.findFirst({
-        where: eq(tab.userId, currentUser.id),
-        with: { translations: true }
-    });
-    const personalTabId = personalTab?.id;
-
-    // 2. Fetch Hidden Tabs (Admin uses this to hide columns, Clients logic implies only visible stuff)
+    // 1. Fetch Hidden Tabs (Admin uses this to hide columns, Clients logic implies only visible stuff)
     const hiddenTabIds = await getHiddenTabIds(currentUser.id);
 
-    // 3. Define Task Columns
+    // 2. Define Task Columns
     const taskColumns = {
         id: true,
         title: true,
@@ -121,7 +114,7 @@ export async function getProjectBoardData(
         });
     }
 
-    // 5. Structure & Mapping
+    // 3. Structure & Mapping
 
     // Fetch Tab Groups and Tabs
     const tabGroupsData = await db.query.tabGroup.findMany({
@@ -138,27 +131,13 @@ export async function getProjectBoardData(
     const columns: ProjectBoardColumn[] = [];
     const tasksMap = new Map<number, any[]>(); // tabId (or groupId for clients) -> tasks
 
-    // Init Personal Column
-    let personalColumn: ProjectBoardColumn;
-
-    if (personalTab) {
-        const translation = personalTab.translations.find(t => t.language === locale) || personalTab.translations[0];
-        personalColumn = {
-            id: personalTab.id,
-            name: translation?.name || 'My Tasks',
-            color: personalTab.color,
-            tasks: [],
-            isPersonal: true
-        };
-    } else {
-        // Fallback or "Inbox" if no personal tab
-        personalColumn = {
-            id: 0,
-            name: 'Inbox',
-            color: '#000000',
-            tasks: [],
-            isPersonal: true
-        };
+    // Find Default Tab (First shared tab in first group)
+    let defaultTabId = 0;
+    for (const group of tabGroupsData) {
+        if (group.tabs.length > 0) {
+            defaultTabId = group.tabs[0].id;
+            break;
+        }
     }
 
     const isClientCreated = (t: any) => t.creator?.type === 'client';
@@ -175,54 +154,52 @@ export async function getProjectBoardData(
     tasks.forEach(t => {
         let targetId = t.tabId;
 
+        // Check if tab exists in our known structure
+        const isKnownTab = tabToGroupMap.has(t.tabId);
+
+        // If the task is in a personal tab (not in tabToGroupMap) or explicitly in a "missing" tab, reassign to default
+        if (!isKnownTab) {
+            targetId = defaultTabId;
+        }
+
         if (currentUser.type === 'client') {
-            // Client Logic:
-            // 1. If task is in a known group, map to that GROUP ID.
-            // 2. If task is not in a group (e.g. personal tab), it goes to Personal Column.
-
-            const groupId = tabToGroupMap.get(t.tabId);
-
+            // Client Logic: map to Group ID
+            const groupId = tabToGroupMap.get(targetId); // Use targetId which might be corrected to default
             if (groupId) {
-                targetId = groupId; // Map to Group
+                targetId = groupId;
             } else {
-                // Not in a group -> Personal / Inbox
-                if (personalTabId) targetId = personalTabId;
-                else targetId = 0;
+                // Should not happen if defaultTabId is valid and mapped, but fallback to 0 or something
+                const defaultGroupId = tabToGroupMap.get(defaultTabId);
+                targetId = defaultGroupId || 0;
             }
 
         } else {
             // Admin Logic
             if (showAll) {
-                // Show All Mode: Respect raw tabId
-                // "Show All" generally just shows everything where it is.
-                // Logic for unassigned client tasks mapping to Inbox?
-                // Let's keep it consistent: logic says "client created... remapped to personal... ONLY if not assigned"
-
+                // Show All Mode: Respect tabId (targetId is already corrected for unknown tabs)
                 const clientOptions = isClientCreated(t);
                 const isUnassigned = !t.assignedToUserId;
 
                 if (clientOptions && isUnassigned) {
-                    if (personalTabId) targetId = personalTabId;
-                    else targetId = 0;
+                    targetId = defaultTabId;
                 }
             } else {
                 // Default Admin Logic
                 const clientOptions = isClientCreated(t);
                 const isUnassigned = !t.assignedToUserId;
                 const isAssignedToMe = t.assignedToUserId === currentUser.id;
-                const isHidden = hiddenTabIds.has(t.tabId);
-                const isOrphan = !tabToGroupMap.has(t.tabId);
+                const isHidden = hiddenTabIds.has(t.tabId); // Check original tab ID for hidden preference
 
-                if ((clientOptions && isUnassigned) || (isAssignedToMe && (isHidden || isOrphan))) {
-                    // Remap to Personal (Inbox)
-                    // We remap if it's an unassigned client task OR if it's assigned to me but in a hidden tab
-                    if (personalTabId) targetId = personalTabId;
-                    else targetId = 0;
+                // If it was remaps to default, we should check if default is hidden? 
+                // Logic simplifiction: If it's effectively going to default tab, check if default tab is hidden.
+                // But let's stick to original intent: 
+                // If "client unassigned" OR "assigned to me but hidden/orphan", map to DEFAULT instead of PERSONAL.
+
+                if ((clientOptions && isUnassigned) || (isAssignedToMe && (!isKnownTab || isHidden))) {
+                    // Remap to Default
+                    targetId = defaultTabId;
                 } else {
-                    // Regular Task -> Check Visibility
-                    if (isHidden) {
-                        return; // Hidden
-                    }
+                    if (isHidden) return; // Hidden
                 }
             }
         }
@@ -230,23 +207,15 @@ export async function getProjectBoardData(
         // Map created_at to createdAt for frontend component
         const taskWithCreatedAt = { ...t, createdAt: t.created_at };
 
-        if ((personalTabId && targetId === personalTabId) || targetId === 0) {
-            personalColumn.tasks.push(taskWithCreatedAt);
-        } else {
-            if (!tasksMap.has(targetId)) tasksMap.set(targetId, []);
-            tasksMap.get(targetId)?.push(taskWithCreatedAt);
-        }
+        if (!tasksMap.has(targetId)) tasksMap.set(targetId, []);
+        tasksMap.get(targetId)?.push(taskWithCreatedAt);
     });
-
-    // Build Final Columns List
-    columns.push(personalColumn);
 
     if (currentUser.type === 'admin') {
         // Admin: Flatten tabs
         tabGroupsData.forEach(group => {
             group.tabs.forEach(tab => {
                 if (!showAll && hiddenTabIds.has(tab.id)) return; // Skip hidden tabs ONLY if not showAll
-                if (tab.id === personalTabId) return; // Skip personal tab (already added)
 
                 const trans = tab.translations.find(tr => tr.language === locale) || tab.translations[0];
                 columns.push({

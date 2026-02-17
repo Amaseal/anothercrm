@@ -48,28 +48,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 		tabs: enhanceTabs(group.tabs)
 	}));
 
-	let personalTab = null;
-	if (locals.user) {
-		const rawPersonalTab = await db.query.tab.findFirst({
-			where: eq(tab.userId, locals.user.id),
-			with: {
-				translations: true
-			}
-		});
-
-		if (rawPersonalTab) {
-			const pref = preferences.find((p) => p.tabId === rawPersonalTab.id);
-			personalTab = {
-				...rawPersonalTab,
-				isVisible: pref ? pref.isVisible : true,
-				userSortOrder: pref ? pref.sortOrder : null
-			};
-		}
-	}
 
 	return {
-		tabGroups,
-		personalTab
+		tabGroups
 	};
 };
 
