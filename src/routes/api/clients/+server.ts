@@ -17,7 +17,8 @@ export const POST: RequestHandler = async ({ request }) => {
             bankName,
             bankCode,
             bankAccount,
-            description
+            description,
+            sportType
         } = data;
 
         // Validation
@@ -42,7 +43,8 @@ export const POST: RequestHandler = async ({ request }) => {
                 bankName,
                 bankCode,
                 bankAccount,
-                description
+                description,
+                sportType
             })
             .returning();
 

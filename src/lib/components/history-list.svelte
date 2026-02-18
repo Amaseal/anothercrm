@@ -35,7 +35,6 @@
 </script>
 
 <div class="space-y-4">
-    <h3 class="text-lg font-semibold">{m["history.title"]()}</h3>
     
     {#if history.length === 0}
         <p class="text-muted-foreground text-sm">{m["history.empty"]()}</p>

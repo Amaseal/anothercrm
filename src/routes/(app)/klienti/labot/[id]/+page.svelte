@@ -12,6 +12,8 @@
 	import * as m from '$lib/paraglide/messages';
 	import FormError from '$lib/components/form-error.svelte';
 
+	import { SPORT_TYPES } from '$lib/constants';
+
 	let { data, form } = $props();
 
 	const types: { value: ClientType; label: string }[] = [
@@ -20,6 +22,7 @@
 	];
 
 	let value = $state(data.item.type);
+	let sportType = $state(data.item.sportType || '');
 
 	const triggerContent = $derived(
 		types.find((f) => f.value === value)?.label ?? m['clients.type_placeholder']()
@@ -136,11 +139,17 @@
 					/>
 
 					<Label>{m['clients.sport_type']()}</Label>
-					<Input
-						placeholder={m['clients.sport_type_placeholder']()}
-						name="sport_type"
-						value={data.item.sportType}
-					/>
+					<Select.Root type="single" name="sport_type" bind:value={sportType}>
+						<Select.Trigger class="w-full bg-background">
+							{sportType || m['clients.sport_type_placeholder']()}
+						</Select.Trigger>
+						<Select.Content class="max-h-[300px] overflow-y-auto">
+							{#each SPORT_TYPES as type}
+								<Select.Item value={type} label={type} />
+							{/each}
+						</Select.Content>
+					</Select.Root>
+					<input type="hidden" name="sport_type" value={sportType} />
 
 					<Label>{m['clients.description']()}</Label>
 					<Textarea

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SPORT_TYPES } from '$lib/constants';
 	import * as m from '$lib/paraglide/messages';
 	import { Check, ChevronsUpDown, Plus } from '@lucide/svelte';
 	import * as Command from '$lib/components/ui/command';
@@ -35,6 +36,7 @@
 	let phone = $state('');
 	let address = $state('');
 	let type = $state('BTC');
+	let sportType = $state('');
 	let registrationNumber = $state('');
 	let vatNumber = $state('');
 	let bankName = $state('');
@@ -71,6 +73,7 @@
 			bankCode = '';
 			bankAccount = '';
 			description = '';
+			sportType = '';
 			error = '';
 		}
 	});
@@ -101,7 +104,8 @@
 					bankName,
 					bankCode,
 					bankAccount,
-					description
+					description,
+                    sportType
 				}),
 				headers: { 'Content-Type': 'application/json' }
 			});
@@ -255,10 +259,25 @@
 					<Input id="phone" bind:value={phone} placeholder={m['clients.phone_placeholder']()} />
 				</div>
 
-				<!-- Row 7: Email -->
-				<div class="grid gap-2">
-					<Label for="email">{m['clients.email']()}</Label>
-					<Input id="email" bind:value={email} placeholder={m['clients.email_placeholder']()} />
+				<!-- Row 7: Email and Sport Type -->
+				<div class="flex items-center gap-2">
+					<div class="flex-1">
+						<Label for="email">{m['clients.email']()}</Label>
+						<Input id="email" bind:value={email} placeholder={m['clients.email_placeholder']()} />
+					</div>
+					<div class="flex-1">
+						<Label>{m['clients.sport_type']()}</Label>
+						<Select.Root type="single" bind:value={sportType}>
+							<Select.Trigger class="w-full text-ellipsis overflow-hidden whitespace-nowrap">
+                                {sportType || m['clients.sport_type_placeholder']()}
+                            </Select.Trigger>
+							<Select.Content class="max-h-[300px] overflow-y-auto">
+								{#each SPORT_TYPES as type}
+									<Select.Item value={type} label={type} />
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					</div>
 				</div>
 
 				<!-- Row 8: Description -->

@@ -58,6 +58,30 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         if (result.length > 0) {
             userClientId = result[0].clientId;
         }
+
+        // Filter history for clients: hide 'seamstress' changes
+        if (item.history) {
+            item.history = item.history.filter((h) => {
+                if (h.changeData) {
+                    try {
+                        const changes = JSON.parse(h.changeData);
+                        if (Array.isArray(changes)) {
+                            const filteredChanges = changes.filter((c: any) => c.field !== 'seamstress');
+
+                            // If no changes remain after filtering, and it was structured data, hide the entry
+                            if (filteredChanges.length === 0) {
+                                return false;
+                            }
+
+                            h.changeData = JSON.stringify(filteredChanges);
+                        }
+                    } catch (e) {
+                        // ignore parse errors
+                    }
+                }
+                return true;
+            });
+        }
     }
 
     return {

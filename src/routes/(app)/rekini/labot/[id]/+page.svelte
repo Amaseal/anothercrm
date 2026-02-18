@@ -97,12 +97,9 @@
 </svelte:head>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-	<div class="max-h-[90vh] w-full max-w-[70vw] overflow-scroll rounded-lg">
-		<div class="min-h-screen bg-gray-100 p-8">
-			<div class="mx-auto mb-4 flex items-center justify-between print:hidden">
-				<h2 class="text-xl font-bold text-gray-700">{m['invoices.edit_invoice']()}</h2>
-				<a href="/rekini" class="text-sm text-gray-500 hover:underline">{m['components.delete_modal.cancel']()}</a>
-			</div>
+	<div class="max-h-[90vh] w-full max-w-[70vw] overflow-y-scroll custom-scroll rounded-lg">
+
+		
 
 			<!-- Paper Container -->
 			<div
@@ -494,5 +491,5 @@
 				</form>
 			</div>
 		</div>
-	</div>
+
 </div>
