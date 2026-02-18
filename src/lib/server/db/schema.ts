@@ -471,6 +471,8 @@ export const taskHistory = pgTable('task_history', {
 		.references(() => task.id, { onDelete: 'cascade' }), // CASCADE: Delete history when task is deleted
 	userId: text('user_id').references(() => user.id, { onDelete: 'set null' }), // Who performed the action (nullable if user deleted)
 	description: text('description').notNull(), // Human-readable description of what happened
+	changeType: text('change_type'), // Type of change: e.g., 'created', 'updated', 'status_change'
+	changeData: text('change_data'), // JSON string containing details { field: 'status', from: 'open', to: 'closed' }
 	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
 });
 

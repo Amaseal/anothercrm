@@ -1,0 +1,13 @@
+{
+    "$schema": "https://inlang.com/schema/inlang-message-format",
+    "history": {
+        "title": "History",
+        "created": "Task created",
+        "updated": "Task updated",
+        "field_changed": "{field} changed from {from} to {to}",
+        "status_change": "Status changed to {status}",
+        "user_unknown": "Unknown user",
+        "group_changed": "Moved from {from} to {to}",
+        "empty": "No history yet"
+    }
+}

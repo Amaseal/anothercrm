@@ -176,6 +176,13 @@
       "when": 1771162314813,
       "tag": "0024_gigantic_angel",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1771418377101,
+      "tag": "0025_slimy_sheva_callister",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,15 @@
+@import '@fontsource-variable/inter';
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
 
 @import 'tw-animate-css';
 
+
 @custom-variant dark (&:is(.dark *));
+
+body {
+	font-family: 'Inter Variable', sans-serif;
+}
 
 :root {
 	/* Default to light theme */
@@ -154,17 +160,22 @@
 	--color-sidebar-border: var(--sidebar-border);
 	--color-sidebar-ring: var(--sidebar-ring);
 }
+
 @layer base {
+
 	:root,
 	.light {
 		color-scheme: light;
 	}
+
 	.dark {
 		color-scheme: dark;
 	}
+
 	* {
 		@apply border-border outline-ring/50;
 	}
+
 	body {
 		@apply bg-background text-foreground;
 	}
@@ -182,20 +193,24 @@
 
 	.custom-scroll::-webkit-scrollbar-track {
 		border-radius: 9999px;
-		background: var(--sidebar, #f3f4f6); /* fallback to gray-100 */
+		background: var(--sidebar, #f3f4f6);
+		/* fallback to gray-100 */
 	}
 
 	.custom-scroll::-webkit-scrollbar-thumb {
-		background: var(--border, #d1d5db); /* fallback to gray-300 */
+		background: var(--border, #d1d5db);
+		/* fallback to gray-300 */
 		border-radius: 9999px;
 	}
 
 	.dark .custom-scroll::-webkit-scrollbar-track {
-		background: var(--sidebar, #18181b); /* fallback to zinc-900 */
+		background: var(--sidebar, #18181b);
+		/* fallback to zinc-900 */
 	}
 
 	.dark .custom-scroll::-webkit-scrollbar-thumb {
-		background: var(--input, #27272a); /* fallback to zinc-800 */
+		background: var(--input, #27272a);
+		/* fallback to zinc-800 */
 	}
 
 }

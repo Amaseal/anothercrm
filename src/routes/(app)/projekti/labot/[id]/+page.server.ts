@@ -1,10 +1,11 @@
+// Skipping edit for now to investigate where tab moves happen.
 import { db } from '$lib/server/db';
 import { task, material, product, taskMaterial, taskProduct, file, invoice } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
 import type { Actions, PageServerLoad } from './$types';
-import { eq, and, inArray } from 'drizzle-orm';
+import { eq, and, inArray, desc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
     const taskId = Number(params.id);
@@ -31,7 +32,13 @@ export const load: PageServerLoad = async ({ params, locals }) => {
                     product: true
                 }
             },
-            files: true
+            files: true,
+            history: {
+                with: {
+                    user: true
+                },
+                orderBy: (history, { desc }) => [desc(history.createdAt)]
+            }
         }
     });
 
@@ -106,6 +113,24 @@ export const actions: Actions = {
             }
         }
 
+
+        if (!title) {
+            return fail(400, { missing: true, error: 'Title is required' });
+        }
+
+        // Fetch old task data for history and preview deletion - moved to top level
+        const oldTask = await db.query.task.findFirst({
+            where: eq(task.id, taskId),
+            with: {
+                taskMaterials: true,
+                taskProducts: true
+            }
+        });
+
+        if (!oldTask) {
+            return fail(404, { error: 'Task not found' });
+        }
+
         // Handle Preview Image
         const preview = formData.get('preview') as File | null;
         let previewUrl: string | undefined = undefined; // undefined means no change
@@ -120,19 +145,11 @@ export const actions: Actions = {
             await writeFile(filePath, buffer);
             previewUrl = `/uploads/${fileName}`;
 
-            // Delete old preview if exists
-            const oldTask = await db.query.task.findFirst({
-                where: eq(task.id, taskId),
-                columns: { preview: true }
-            });
-            if (oldTask?.preview) {
+
+            if (oldTask.preview) {
                 const relativePath = oldTask.preview.startsWith('/') ? oldTask.preview.substring(1) : oldTask.preview;
                 await unlink(join(process.cwd(), relativePath)).catch(e => console.error('Failed to delete old preview', e));
             }
-        }
-
-        if (!title) {
-            return fail(400, { missing: true, error: 'Title is required' });
         }
 
         try {
@@ -237,6 +254,27 @@ export const actions: Actions = {
             });
             const { taskEvents } = await import('$lib/server/events');
             taskEvents.emitTaskUpdate(updatedTask, 'update');
+
+
+            // Record History
+            const changes: any[] = [];
+
+            if (oldTask.title !== title) changes.push({ field: 'title', from: oldTask.title, to: title });
+            if (oldTask.description !== description) changes.push({ field: 'description', from: oldTask.description, to: description });
+            if (oldTask.clientId !== clientId) changes.push({ field: 'client', from: oldTask.clientId, to: clientId });
+            if (oldTask.assignedToUserId !== (assignedToUserId || null)) changes.push({ field: 'assigned', from: oldTask.assignedToUserId, to: assignedToUserId || null });
+            if (oldTask.endDate !== endDate) changes.push({ field: 'dueDate', from: oldTask.endDate, to: endDate });
+            if (oldTask.seamstress !== (seamstress || null)) changes.push({ field: 'seamstress', from: oldTask.seamstress, to: seamstress || null });
+            if (oldTask.price !== calculatedPrice) changes.push({ field: 'price', from: oldTask.price, to: calculatedPrice });
+
+            // Note: Material and Product changes are more complex to track individually in this simple diff, 
+            // but we can track that "materials updated" or similar if we want.
+            // For now, let's just track the main fields.
+
+            if (changes.length > 0) {
+                const { recordHistory } = await import('$lib/server/history');
+                await recordHistory(taskId, user.id, 'updated', changes, 'Task updated');
+            }
 
         } catch (err) {
             console.error(err);

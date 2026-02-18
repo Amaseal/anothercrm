@@ -7,7 +7,8 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
-	import { CalendarIcon, Save, X, Printer, FileText } from '@lucide/svelte';
+	import { CalendarIcon, Save, X, Printer, FileText, Clock } from '@lucide/svelte';
+    import * as Sheet from '$lib/components/ui/sheet';
 	import {
 		DateFormatter,
 		type DateValue,
@@ -105,6 +106,52 @@
 	);
 
 	import ProjectPrintView from '$lib/components/project-print-view.svelte';
+	import HistoryList from '$lib/components/history-list.svelte';
+	import { onMount, onDestroy } from 'svelte';
+	import { browser } from '$app/environment';
+
+	// Presence / Locking State
+	let isLocked = $state(false);
+	let lockedBy = $state('');
+	let heartbeatInterval: any;
+
+	const taskId = data.item.id;
+
+	async function startSession() {
+		if (!browser) return;
+		try {
+			const res = await fetch(`/api/tasks/${taskId}/session`, { method: 'POST' });
+			if (res.status === 423) {
+				const body = await res.json();
+				isLocked = true;
+				lockedBy = body.error; // or fetch user name from body if available
+			} else if (res.ok) {
+				isLocked = false;
+			}
+		} catch (e) {
+			console.error('Session heartbeat failed', e);
+		}
+	}
+
+	async function endSession() {
+		if (!browser) return;
+		try {
+			await fetch(`/api/tasks/${taskId}/session`, { method: 'DELETE' });
+		} catch (e) {
+			console.error('Session end failed', e);
+		}
+	}
+
+	onMount(() => {
+		startSession();
+		heartbeatInterval = setInterval(startSession, 10000); // Check every 10s
+	});
+
+	onDestroy(() => {
+		if (heartbeatInterval) clearInterval(heartbeatInterval);
+		endSession();
+	});
+
 </script>
 
 <ProjectPrintView
@@ -135,6 +182,16 @@
 	<div
 		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
 	>
+		{#if isLocked}
+			<div class="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+				<div class="text-center p-6 bg-card border rounded-lg shadow-lg">
+					<h2 class="text-xl font-bold text-destructive mb-2">Locked</h2>
+					<p class="text-muted-foreground">{lockedBy}</p>
+					<Button href="/projekti" variant="outline" class="mt-4">Go Back</Button>
+				</div>
+			</div>
+		{/if}
+
 		<form method="POST" use:enhance enctype="multipart/form-data" class="flex h-full flex-col">
 			<!-- Sticky Header inside Modal -->
 			<div class="flex items-center gap-4 border-b bg-background px-6 py-4">
@@ -185,6 +242,33 @@
 					</Popover.Root>
 					<input type="hidden" name="endDate" value={dateValue ? dateValue.toString() : ''} />
 				</div>
+
+				<!-- Close Button -->
+				<!-- History Toggle -->
+				<Sheet.Root>
+					<Sheet.Trigger>
+                        {#snippet child({ props })}
+                            <Button
+                                {...props}
+                                variant="ghost"
+                                size="icon"
+                                class="text-muted-foreground hover:text-foreground"
+                                title={m['history.title']()}
+                            >
+                                <Clock class="size-5" />
+                                <span class="sr-only">History</span>
+                            </Button>
+                        {/snippet}
+					</Sheet.Trigger>
+					<Sheet.Content side="right" class="w-[400px] sm:w-[540px] overflow-y-auto z-[100]">
+						<Sheet.Header>
+							<Sheet.Title>{m['history.title']()}</Sheet.Title>
+						</Sheet.Header>
+						<div class="mt-6 p-4">
+							<HistoryList history={data.item.history} />
+						</div>
+					</Sheet.Content>
+				</Sheet.Root>
 
 				<!-- Close Button -->
 				<Button
@@ -305,7 +389,9 @@
 						</div>
 					</div>
 				</div>
+
 			</div>
+
 
 			<!-- Sticky Footer inside Modal -->
 			<div
@@ -340,7 +426,7 @@
 						</Button>
 					{/if}
 					<Button type="submit" size="lg">
-						{m['projects.create_button']()}
+						{m['components.save']()}
 						<!-- Change to Save/Update if distinct label exists, or create_button is typically 'Saglabāt' -->
 					</Button>
 				</div>

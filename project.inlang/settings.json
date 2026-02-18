@@ -21,9 +21,13 @@
 			"./messages/{locale}/files.json",
 			"./messages/{locale}/settings.json",
 			"./messages/{locale}/roles.json",
-			"./messages/{locale}/product_card.json"
+			"./messages/{locale}/product_card.json",
+			"./messages/{locale}/history.json"
 		]
 	},
 	"baseLocale": "en",
-	"locales": ["en", "lv"]
+	"locales": [
+		"en",
+		"lv"
+	]
 }

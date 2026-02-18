@@ -50,6 +50,9 @@ function readCsv(filename: string): any[] {
 
 function safeDate(dateStr: any): Date {
     if (!dateStr) return new Date();
+    if (typeof dateStr === 'number') {
+        return new Date((dateStr - 25569) * 86400 * 1000);
+    }
     let sanitized = String(dateStr).trim();
     sanitized = sanitized.replace('202ser5', '2025');
     if (sanitized.endsWith('.')) sanitized = sanitized.slice(0, -1);
@@ -60,6 +63,9 @@ function safeDate(dateStr: any): Date {
 
 function safeDateOrNull(dateStr: any): Date | null {
     if (!dateStr) return null;
+    if (typeof dateStr === 'number') {
+        return new Date((dateStr - 25569) * 86400 * 1000);
+    }
     let sanitized = String(dateStr).trim();
     if (sanitized === '') return null;
     sanitized = sanitized.replace('202ser5', '2025');
@@ -221,6 +227,21 @@ async function importData() {
         name: 'Legacy'
     });
 
+    const archiveTabResult = await db.insert(schema.tab).values({
+        groupId: tabGroupId,
+        color: '#808080',
+        sortOrder: 1
+    }).returning({ id: schema.tab.id });
+    const legacyArchiveTabId = archiveTabResult[0].id;
+
+    await db.insert(schema.tabTranslation).values({
+        tabId: legacyArchiveTabId,
+        language: 'lv',
+        name: 'Legacy Archive'
+    });
+
+
+
     const oldDoneTabId = 1;
 
     // 4. Import Materials
@@ -287,13 +308,13 @@ async function importData() {
             const result = await db.insert(schema.task).values({
                 title: t.title,
                 description: t.description,
-                tabId: legacyTabId, // All go to legacy tab
+                tabId: isDone ? legacyArchiveTabId : legacyTabId, // Separate done tasks
                 clientId: newClientId,
                 createdById: createdBy, // mapped
                 assignedToUserId: assignedTo, // mapped
                 seamstress: t.seamstress,
                 count: t.count ? parseInt(t.count) : null,
-                endDate: safeDateOrNull(t.endDate)?.toISOString() ?? null, // Use safeDateOrNull for endDate
+                endDate: safeDateOrNull(t.endDate)?.toISOString().split('T')[0] ?? null, // Use safeDateOrNull for endDate
                 isDone: isDone,
                 isPrinted: t.isPrinted === 'true' || t.isPrinted === true,
                 price: t.price ? parseInt(t.price) : null,

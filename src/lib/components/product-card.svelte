@@ -129,7 +129,7 @@
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger class="text-left">
-							<h3 class="truncate text-lg leading-tight font-semibold">{task.title}</h3>
+							<h3 class="truncate text-md leading-tight font-semibold">{task.title}</h3>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>{task.title}</p>

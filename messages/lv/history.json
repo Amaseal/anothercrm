@@ -1,0 +1,13 @@
+{
+    "$schema": "https://inlang.com/schema/inlang-message-format",
+    "history": {
+        "title": "Vēsture",
+        "created": "Uzdevums izveidots",
+        "updated": "Uzdevums atjaunināts",
+        "field_changed": "{field} mainīts no {from} uz {to}",
+        "status_change": "Statuss mainīts uz {status}",
+        "user_unknown": "Nezināms lietotājs",
+        "group_changed": "Pārvietots no {from} uz {to}",
+        "empty": "Vēsture ir tīra"
+    }
+}
