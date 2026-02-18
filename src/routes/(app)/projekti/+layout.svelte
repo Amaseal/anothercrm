@@ -116,7 +116,7 @@
 </header>
 
 <div class="custom-scroll flex h-[calc(100vh-110px)] gap-4 overflow-x-auto pb-2" use:dragScroll>
-	{#each tabsToRender as item}
+	{#each tabsToRender as item (item.id)}
 		<List tab={item} {data} />
 	{/each}
 </div>

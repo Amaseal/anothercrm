@@ -35,6 +35,7 @@
 	let { value = $bindable(''), class: className } = $props<{ value?: string; class?: string }>();
 	let editor = $state() as Readable<Editor | null>;
 	let isInternalUpdate = false;
+	let skipNextUpdate = false;
 	let fileInput = $state<HTMLInputElement>();
 
 	async function uploadImage(file: File) {
@@ -120,6 +121,10 @@
 			],
 			content: value,
 			onUpdate: ({ editor }: { editor: CoreEditor }) => {
+				if (skipNextUpdate) {
+					skipNextUpdate = false;
+					return;
+				}
 				isInternalUpdate = true;
 				value = editor.getHTML();
 			},
@@ -185,16 +190,19 @@
 		});
 	});
 
-	$effect(() => {
-		if ($editor && value && value !== $editor.getHTML() && !isInternalUpdate) {
-			// Only update if content is sufficiently different to avoid cursor jumps or loops
-			// Simple check: content length or straight comparison
-			if ($editor.getHTML() !== value) {
-				$editor.commands.setContent(value);
-			}
-		}
-		isInternalUpdate = false;
-	});
+	// $effect(() => {
+	// 	if (isInternalUpdate) {
+	// 		isInternalUpdate = false;
+	// 		return;
+	// 	}
+
+	// 	if ($editor && value !== undefined && value !== $editor.getHTML()) {
+	// 		// Only update if content is sufficiently different to avoid cursor jumps or loops
+	// 		// Simple check: content length or straight comparison
+	// 		skipNextUpdate = true;
+	// 		$editor.commands.setContent(value, { emitUpdate: false });
+	// 	}
+	// });
 </script>
 
 {#if $editor}

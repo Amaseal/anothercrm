@@ -53,6 +53,7 @@ export async function getProjectBoardData(
 
     let tasks;
 
+
     if (currentUser.type === 'admin') {
         if (showAll) {
             // Admin "Show All" - Fetch all active tasks (not done)

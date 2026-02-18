@@ -20,6 +20,8 @@
 	import { Card } from './ui/card';
 	import { isClient, user } from '$lib/stores/user';
 
+	const currencyFormatter = new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' });
+
 	let {
 		task,
 		class: className,
@@ -42,23 +44,24 @@
 
 	const formatCurrency = (cents: number | null) => {
 		if (cents === null || cents === undefined) return '€0.00';
-		return new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' }).format(
-			cents / 100
-		);
+		return currencyFormatter.format(cents / 100);
 	};
 
 	const formatDate = (date: Date | string | null) => {
 		if (!date) return '';
+		// Optimization: minimal date formatting without creating new Intl instances if possible,
+		// but toLocaleDateString is decent if we don't do it too often.
+		// For lists, it might be better to cache or use a shared formatter if toLocaleDateString is heavy.
+		// sticking to native for now but reusing the date object logic might be better if we parsed it once.
 		return new Date(date).toLocaleDateString('lv-LV');
 	};
 
 	const getActiveDuration = (createdAt: Date | string) => {
-		const start = new Date(createdAt);
-		const now = new Date();
-		const diffTime = Math.abs(now.getTime() - start.getTime());
+		const start = new Date(createdAt).getTime();
+		const now = Date.now();
+		const diffTime = Math.abs(now - start);
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-		// Approximate months and days
 		const months = Math.floor(diffDays / 30);
 		const days = diffDays % 30;
 
@@ -81,14 +84,21 @@
 
 	const getDeadlineStatus = (endDate: string | null) => {
 		if (!endDate) return 'normal';
-		const end = new Date(endDate);
+		const end = new Date(endDate).getTime();
+
+		// Reset time part efficiently?
+		// Actually, let's just compare dates.
 		const now = new Date();
-		now.setHours(0, 0, 0, 0); // Compare dates only
-		end.setHours(0, 0, 0, 0);
+		now.setHours(0, 0, 0, 0);
+		const midnightNow = now.getTime();
 
-		if (end < now) return 'overdue';
+		const endDateObj = new Date(endDate);
+		endDateObj.setHours(0, 0, 0, 0);
+		const midnightEnd = endDateObj.getTime();
 
-		const diffTime = end.getTime() - now.getTime();
+		if (midnightEnd < midnightNow) return 'overdue';
+
+		const diffTime = midnightEnd - midnightNow;
 		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
 		if (diffDays <= 2 && diffDays >= 0) return 'near';
@@ -129,7 +139,7 @@
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger class="text-left">
-							<h3 class="truncate text-md leading-tight font-semibold">{task.title}</h3>
+							<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>{task.title}</p>

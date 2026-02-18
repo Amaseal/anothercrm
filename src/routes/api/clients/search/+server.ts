@@ -3,7 +3,7 @@ import { db } from '$lib/server/db';
 import type { RequestHandler } from './$types';
 import { like, asc, sql } from 'drizzle-orm';
 import { client } from '$lib/server/db/schema';
-import { normalizeLatvianText } from '$lib/utils';
+import { normalizeLatvianText } from '$lib/utilities';
 
 export const GET: RequestHandler = async ({ url }) => {
 	const query = url.searchParams.get('q') || '';
@@ -16,7 +16,7 @@ export const GET: RequestHandler = async ({ url }) => {
 	try {
 		// Normalize the search query
 		const normalizedQuery = normalizeLatvianText(query).toLowerCase();
-		
+
 		// Get all clients and filter in JavaScript for better diacritic handling
 		const allClients = await db
 			.select()

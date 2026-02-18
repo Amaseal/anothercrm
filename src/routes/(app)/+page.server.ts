@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { task, user, client, taskProduct, product, tab } from '$lib/server/db/schema';
+import { task, user, client, taskProduct, product, tab, tabGroup } from '$lib/server/db/schema';
 import { sql, count, desc, eq, and, or, lte, gte, ne } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 
@@ -43,32 +43,53 @@ export const load: PageServerLoad = async ({ locals }) => {
         .orderBy(desc(count(task.id)))
         .limit(5);
 
-    // Get urgent tasks for current user (due today, tomorrow, or overdue)
+    // Get active projects count (tab groups)
+    const activeProjectsCount = await db
+        .select({ count: count() })
+        .from(tabGroup)
+        .then((res) => res[0].count);
+
+    // Get active tasks count
+    const activeTasksCount = await db
+        .select({ count: count() })
+        .from(task)
+        .where(ne(task.isDone, true))
+        .then((res) => res[0].count);
+
+    // Get total tasks count for responsible person share calculation
+    const totalTasksSnapshot = await db.select({ count: count() }).from(task).then(res => res[0].count);
+    const totalTasksCount = Number(totalTasksSnapshot) || 1; // Avoid division by zero
+
+    // Get urgent tasks (due today, tomorrow, or overdue)
     // Exclude completed tasks by filtering out the "done" tab
     const urgentTasks = await db
         .select({
             id: task.id,
             title: task.title,
             endDate: task.endDate,
-            clientName: client.name
+            clientName: client.name,
+            responsibleName: user.name,
+            status: task.endDate
         })
         .from(task)
         .leftJoin(client, eq(task.clientId, client.id))
-        .leftJoin(tab, eq(task.tabId, tab.id))
+        .leftJoin(user, eq(task.assignedToUserId, user.id))
         .where(
             and(
-                eq(task.assignedToUserId, locals.user!.id),
                 or(
                     eq(task.endDate, todayStr),
                     eq(task.endDate, tomorrowStr),
                     sql`${task.endDate} < ${todayStr}`
                 ),
-
-                ne(task.isDone, true)
+                ne(task.isDone, true),
+                or(
+                    eq(task.createdById, locals.user!.id),
+                    eq(task.assignedToUserId, locals.user!.id)
+                )
             )
         )
         .orderBy(task.endDate)
-        .limit(10);
+        .limit(5);
 
     // Get best clients by total ordered
     const bestClients = await db
@@ -152,12 +173,55 @@ export const load: PageServerLoad = async ({ locals }) => {
         return total + profit;
     }, 0);
 
+    // Calculate profit for previous month
+    const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const previousMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+    const previousMonthTasks = await db
+        .select({
+            taskId: task.id,
+            taskPrice: task.price,
+            productCost: sql<number>`COALESCE(SUM(${taskProduct.count} * ${product.cost}), 0)`
+        })
+        .from(task)
+        .leftJoin(taskProduct, eq(task.id, taskProduct.taskId))
+        .leftJoin(product, eq(taskProduct.productId, product.id))
+        .where(
+            and(
+                gte(task.created_at, previousMonthStart),
+                lte(task.created_at, previousMonthEnd),
+                sql`${task.price} IS NOT NULL`
+            )
+        )
+        .groupBy(task.id, task.price);
+
+    const previousMonthProfit = previousMonthTasks.reduce((total, taskData) => {
+        const profit = (taskData.taskPrice || 0) - (taskData.productCost || 0);
+        return total + profit;
+    }, 0);
+
+    let profitChange = 0;
+    if (previousMonthProfit !== 0) {
+        profitChange = ((currentMonthProfit - previousMonthProfit) / previousMonthProfit) * 100;
+    } else if (currentMonthProfit > 0) {
+        profitChange = 100; // 100% increase if previous was 0 and current is positive
+    }
+
+    // Update Top Responsible Persons with share calculation
+    const topResponsiblePersonsWithShare = topResponsiblePersons.map(person => ({
+        ...person,
+        share: Math.round((Number(person.taskCount) / totalTasksCount) * 100)
+    }));
+
     return {
         topManagers,
-        topResponsiblePersons,
+        topResponsiblePersons: topResponsiblePersonsWithShare,
         bestClients: bestClients.filter((client) => client.totalOrdered),
         urgentTasks,
         chartData,
-        currentMonthProfit: currentMonthProfit
+        currentMonthProfit,
+        activeProjectsCount,
+        activeTasksCount,
+        profitChange
     };
 };

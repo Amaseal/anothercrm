@@ -1,16 +1,21 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import * as Table from '$lib/components/ui/table/index.js';
+	import * as Avatar from '$lib/components/ui/avatar/index.js';
 	import { Separator } from '$lib/components/ui/separator';
 	import { Badge } from '$lib/components/ui/badge';
+	import { Button } from '$lib/components/ui/button';
 	import Users from '@lucide/svelte/icons/users';
 	import UserCheck from '@lucide/svelte/icons/user-check';
 	import TrendingUp from '@lucide/svelte/icons/trending-up';
 	import DollarSign from '@lucide/svelte/icons/dollar-sign';
 	import Clock from '@lucide/svelte/icons/clock';
 	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-	import { AreaChart, BarChart } from 'layerchart';
-	import { scaleLinear, scalePoint, scaleBand } from 'd3-scale';
+	import Folder from '@lucide/svelte/icons/folder';
+	import Zap from '@lucide/svelte/icons/zap';
+	import ListTodo from '@lucide/svelte/icons/list-todo';
+	import { scaleLinear, scaleBand } from 'd3-scale';
 
 	let { data } = $props();
 
@@ -29,11 +34,6 @@
 			profit: Number(item.profit) / 100 || 0
 		}))
 	);
-
-	// Log chart data using an effect
-	$effect(() => {
-		console.log('Chart Data:', chartData);
-	});
 
 	// Format month for display (helper functions omitted)
 	function formatMonth(monthStr: string) {
@@ -82,6 +82,31 @@
 		tomorrow.setDate(tomorrow.getDate() + 1);
 		return date.toDateString() === tomorrow.toDateString();
 	}
+
+	function getInitials(name: string) {
+		return name
+			.split(' ')
+			.map((n) => n[0])
+			.join('')
+			.toUpperCase()
+			.substring(0, 2);
+	}
+
+	function exportToCSV() {
+		const headers = ['Month', 'Profit'];
+		const rows = chartData.map((d) => [d.month, d.profit.toString()]);
+		const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.setAttribute('href', url);
+		link.setAttribute('download', `monthly_profit_${new Date().getFullYear()}.csv`);
+		link.style.visibility = 'hidden';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	}
 </script>
 
 <svelte:head>
@@ -89,7 +114,7 @@
 </svelte:head>
 
 <header
-	class=" bg-background flex h-(--header-height) shrink-0 items-center gap-2 rounded-lg border-b p-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)"
+	class=" flex h-(--header-height) shrink-0 items-center gap-2 rounded-lg border-b bg-background p-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height)"
 >
 	<div class="flex w-full items-center gap-1 lg:gap-2">
 		<Sidebar.Trigger class="-ml-1" />
@@ -97,194 +122,249 @@
 		<h1 class="text-base font-medium">Panelis</h1>
 	</div>
 </header>
-<div class="mb-4 space-y-4">
-	<div id="dashboard" class="space-y-6">
-		<!-- Header Stats -->
-		<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
-			<div class="grid gap-4">
-				<Card.Root>
-					<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-						<Card.Title class="text-sm font-medium">Šī mēneša peļņa</Card.Title>
-						<DollarSign class="text-muted-foreground h-4 w-4" />
-					</Card.Header>
-					<Card.Content>
-						<div class="text-2xl font-bold">
-							{formatCurrency(data.currentMonthProfit as number)}
-						</div>
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Header>
-						<Card.Title class="flex items-center gap-2">
-							<Clock class="h-5 w-5" />
-							Steidzami uzdevumi
-						</Card.Title>
-						<Card.Description>Uzdevumi ar beigu termiņu šodien, rīt vai kavētie</Card.Description>
-					</Card.Header>
-					<Card.Content>
-						<div class="space-y-3">
-							{#each data.urgentTasks as task}
-								<div class="flex items-center justify-between">
-									<div class="flex flex-col gap-1">
-										<span class="text-sm font-medium">{task.title}</span>
-										{#if task.clientName}
-											<span class="text-muted-foreground text-xs">{task.clientName}</span>
-										{/if}
-									</div>
-									<div class="flex flex-col items-end gap-1">
-										{#if task.endDate}
-											<Badge
-												variant={isOverdue(task.endDate)
-													? 'destructive'
-													: isToday(task.endDate)
-														? 'default'
-														: 'secondary'}
-												class="text-xs"
-											>
-												{#if isOverdue(task.endDate)}
-													<AlertTriangle class="mr-1 h-3 w-3" />
-													Kavēts
-												{:else if isToday(task.endDate)}
-													Šodien
-												{:else}
-													Rīt
-												{/if}
-											</Badge>
-											<span class="text-muted-foreground text-xs">{formatDate(task.endDate)}</span>
-										{:else}
-											<Badge variant="outline" class="text-xs">Nav datuma</Badge>
-										{/if}
-									</div>
-								</div>
-							{:else}
-								<p class="text-sm text-muted-foreground">Nav steidzamu uzdevumu</p>
-							{/each}
-						</div>
-					</Card.Content>
-				</Card.Root>
-			</div>
-		</div>
+<div class="mt-4 flex flex-1 flex-col gap-4 overflow-hidden p-4 pt-0">
+	<!-- Top Stats Row -->
+	<div class="flex shrink-0 flex-col gap-4 md:flex-row">
+		<Card.Root class="flex-1">
+			<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+				<Card.Title class="text-sm font-medium">Šī mēneša peļņa</Card.Title>
+				<DollarSign class="h-4 w-4 text-muted-foreground" />
+			</Card.Header>
+			<Card.Content>
+				<div class="text-2xl font-bold">{formatCurrency(data.currentMonthProfit as number)}</div>
+				<p class="text-xs text-muted-foreground">
+					{#if data.profitChange > 0}
+						<span class="text-green-600">+{data.profitChange.toFixed(1)}%</span> no pagājušā mēneša
+					{:else if data.profitChange < 0}
+						<span class="text-red-600">{data.profitChange.toFixed(1)}%</span> no pagājušā mēneša
+					{:else}
+						Nav izmaiņu pret pagājušo mēnesi
+					{/if}
+				</p>
+			</Card.Content>
+		</Card.Root>
+		<Card.Root class="flex-1">
+			<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
+				<Card.Title class="text-sm font-medium">Aktīvie uzdevumi</Card.Title>
+				<ListTodo class="h-4 w-4 text-muted-foreground" />
+			</Card.Header>
+			<Card.Content>
+				<div class="text-2xl font-bold">{data.activeTasksCount}</div>
+				<p class="text-xs text-muted-foreground">
+					{data.urgentTasks.filter((t) => isOverdue(t.endDate)).length} kavēti uzdevumi
+				</p>
+			</Card.Content>
+		</Card.Root>
+	</div>
 
-		<div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-			<div class="grid gap-4">
-				<Card.Root>
-					<Card.Header>
-						<Card.Title class="flex items-center gap-2">
-							<Users class="h-5 w-5" />
-							Labākie vadītāji
-						</Card.Title>
-						<Card.Description>Vadītāji ar augstāko uzdevumu kopvērtību</Card.Description>
-					</Card.Header>
-					<Card.Content>
-						<div class="space-y-3">
-							{#each data.topManagers as manager, index}
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
-										<Badge
-											variant="secondary"
-											class="flex h-6 w-6 items-center justify-center p-0 text-xs"
-										>
-											{index + 1}
-										</Badge>
-										<span class="font-medium">{manager.name || 'Nezināms'}</span>
-									</div>
-									<Badge variant="outline">{formatCurrency(manager.totalValue || 0)}</Badge>
-								</div>
-							{:else}
-								<p class="text-sm text-muted-foreground">Nav datu šajā mēnesī</p>
-							{/each}
-						</div>
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Header>
-						<Card.Title class="flex items-center gap-2">
-							<UserCheck class="h-5 w-5" />
-							Labākās atbildīgās personas
-						</Card.Title>
-						<Card.Description>Personas ar visvairāk uzdevumiem</Card.Description>
-					</Card.Header>
-					<Card.Content>
-						<div class="space-y-3">
-							{#each data.topResponsiblePersons as person, index}
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
-										<Badge
-											variant="secondary"
-											class="flex h-6 w-6 items-center justify-center p-0 text-xs"
-										>
-											{index + 1}
-										</Badge>
-										<span class="font-medium">{person.name || 'Nezināms'}</span>
-									</div>
-									<Badge variant="outline">{person.taskCount} uzdevumi</Badge>
-								</div>
-							{:else}
-								<p class="text-sm text-muted-foreground">Nav datu šajā mēnesī</p>
-							{/each}
-						</div>
-					</Card.Content>
-				</Card.Root>
-				<Card.Root>
-					<Card.Header>
-						<Card.Title class="flex items-center gap-2">
-							<TrendingUp class="h-5 w-5" />
-							Labākie klienti
-						</Card.Title>
-						<Card.Description>Pēc kopējā pasūtījumu apjoma</Card.Description>
-					</Card.Header>
-					<Card.Content>
-						<div class="space-y-3">
-							{#each data.bestClients as client, index}
-								<div class="flex items-center justify-between">
-									<div class="flex items-center gap-2">
-										<Badge
-											variant="secondary"
-											class="flex h-6 w-6 items-center justify-center p-0 text-xs"
-										>
-											{index + 1}
-										</Badge>
-										<span class="font-medium">{client.name}</span>
-									</div>
-									<Badge variant="outline">{formatCurrency(client.totalOrdered || 0)}</Badge>
-								</div>
-							{:else}
-								<p class="text-sm text-muted-foreground">Nav klientu ar pasūtījumiem</p>
-							{/each}
-						</div>
-					</Card.Content>
-				</Card.Root>
+	<!-- Urgent Tasks Table -->
+	<Card.Root class="shrink-0">
+		<Card.Header class="flex flex-row items-center justify-between py-4">
+			<div>
+				<Card.Title>Steidzami uzdevumi</Card.Title>
+				<Card.Description>Uzdevumi ar beigu termiņu šodien, rīt vai kavētie</Card.Description>
 			</div>
-			<Card.Root class="">
+			<Button variant="ghost" href="/projekti" class="text-sm font-medium text-primary">
+				Skatīt visus
+			</Button>
+		</Card.Header>
+		<Card.Content class="p-0">
+			<Table.Root>
+				<Table.Header>
+					<Table.Row>
+						<Table.Head class="pl-6">UZDEVUMA NOSAUKUMS</Table.Head>
+						<Table.Head>ATBILDĪGAIS</Table.Head>
+						<Table.Head>TERMIŅŠ</Table.Head>
+						<Table.Head>STATUSS</Table.Head>
+						<Table.Head class="pr-6 text-right">DARBĪBA</Table.Head>
+					</Table.Row>
+				</Table.Header>
+				<Table.Body>
+					{#each data.urgentTasks as task}
+						<Table.Row>
+							<Table.Cell class="pl-6 font-medium">
+								<div class="flex flex-col">
+									<span>{task.title}</span>
+									{#if task.clientName}
+										<span class="text-xs text-muted-foreground">{task.clientName}</span>
+									{/if}
+								</div>
+							</Table.Cell>
+							<Table.Cell>
+								<div class="flex items-center gap-2">
+									<Avatar.Root class="h-8 w-8">
+										<Avatar.Fallback>{getInitials(task.responsibleName || '?')}</Avatar.Fallback>
+									</Avatar.Root>
+									<span class="text-sm text-foreground/80"
+										>{task.responsibleName || 'Nezināms'}</span
+									>
+								</div>
+							</Table.Cell>
+							<Table.Cell class="text-muted-foreground">
+								{formatDate(task.endDate)}
+							</Table.Cell>
+							<Table.Cell>
+								<Badge
+									variant={isOverdue(task.endDate)
+										? 'destructive'
+										: isToday(task.endDate)
+											? 'default'
+											: 'secondary'}
+									class="uppercase"
+								>
+									{#if isOverdue(task.endDate)}
+										KAVĒTS
+									{:else if isToday(task.endDate)}
+										ŠODIEN
+									{:else}
+										RĪT
+									{/if}
+								</Badge>
+							</Table.Cell>
+							<Table.Cell class="pr-6 text-right">
+								<Button variant="link" size="sm" class="font-medium text-primary">Skatīt</Button>
+							</Table.Cell>
+						</Table.Row>
+					{:else}
+						<Table.Row>
+							<Table.Cell colspan={5} class="text-center text-muted-foreground py-8"
+								>Nav steidzamu uzdevumu</Table.Cell
+							>
+						</Table.Row>
+					{/each}
+				</Table.Body>
+			</Table.Root>
+		</Card.Content>
+	</Card.Root>
+
+	<!-- Bottom Section - Flex Grow to fill remaining space -->
+	<div class="flex flex-col gap-4">
+		<!-- Row 1: Top Managers and Chart -->
+		<div class="flex flex-col gap-4 lg:flex-row">
+			<!-- Top Managers -->
+			<Card.Root class="flex-1">
 				<Card.Header>
-					<Card.Title class="flex items-center gap-2">
-						<TrendingUp class="h-5 w-5" />
-						Mēneša peļņa
-					</Card.Title>
-					<Card.Description>Peļņas attīstība pēdējos 12 mēnešos</Card.Description>
+					<Card.Title>Labākie vadītāji</Card.Title>
+					<Card.Description>Pēc uzdevumu kopvērtības</Card.Description>
 				</Card.Header>
 				<Card.Content>
+					<div class="space-y-4">
+						{#each data.topManagers as manager, index}
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-3">
+									<div
+										class="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
+									>
+										{index + 1}
+									</div>
+									<div class="flex flex-col">
+										<span class="text-sm font-medium">{manager.name || 'Nezināms'}</span>
+										<span class="text-xs text-muted-foreground">Vadītājs</span>
+									</div>
+								</div>
+								<div class="flex flex-col items-end">
+									<span class="text-sm font-bold">{formatCurrency(manager.totalValue || 0)}</span>
+									<span class="text-xs text-muted-foreground">PUNKTU</span>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Monthly Earnings Chart -->
+			<Card.Root class="flex flex-[1.5] flex-col">
+				<Card.Header class="flex shrink-0 flex-row items-center justify-between">
+					<div>
+						<Card.Title>Mēneša peļņa</Card.Title>
+						<Card.Description>Attīstība pēdējos 12 mēnešos</Card.Description>
+					</div>
+					<div class="flex gap-2">
+						<Button variant="outline" size="sm" onclick={exportToCSV}>Export CSV</Button>
+						<Button variant="outline" size="sm">Year {new Date().getFullYear()}</Button>
+					</div>
+				</Card.Header>
+				<Card.Content class="flex-1 pt-6">
 					{#if chartData.length > 0}
-						<div class="h-[300px] w-full">
-							<BarChart
-								data={chartData}
-								x="month"
-								y="profit"
-								xScale={scaleBand().padding(0.1)}
-								yScale={scaleLinear().domain([0, Math.max(...chartData.map((d) => d.profit), 100)])}
-								padding={{ top: 20, bottom: 40, left: 60, right: 20 }}
-								series={[
-									{
-										key: 'profit',
-										label: chartConfig.profit.label,
-										color: chartConfig.profit.color
-									}
-								]}
-								tooltip
-							/>
+						{@const yScale = scaleLinear()
+							.domain([0, Math.max(...chartData.map((d) => d.profit), 100)])
+							.range([100, 0])}
+						{@const xScale = scaleBand()
+							.domain(chartData.map((d) => d.month))
+							.range([0, 100])
+							.padding(0.3)}
+
+						<div class=" w-full">
+							<svg class="w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
+								<!-- Grid lines -->
+								{#each yScale.ticks(5) as tick}
+									<line
+										x1="0"
+										x2="100"
+										y1={yScale(tick)}
+										y2={yScale(tick)}
+										stroke="currentColor"
+										stroke-opacity="0.1"
+										stroke-width="0.1"
+										vector-effect="non-scaling-stroke"
+									/>
+								{/each}
+
+								<!-- Bars -->
+								{#each chartData as d}
+									<g class="group">
+										<rect
+											x={xScale(d.month) ?? 0}
+											y={yScale(d.profit)}
+											width={xScale.bandwidth()}
+											height={100 - yScale(d.profit)}
+											rx="1"
+											class="fill-primary transition-opacity hover:opacity-80"
+										/>
+										<rect
+											x={xScale(d.month) ?? 0}
+											y="0"
+											width={xScale.bandwidth()}
+											height="100"
+											fill="transparent"
+										/>
+										<foreignObject
+											x={(xScale(d.month) ?? 0) - 10}
+											y={yScale(d.profit) - 20}
+											width={xScale.bandwidth() + 20}
+											height="20"
+											class="pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"
+											style="overflow: visible;"
+										>
+											<div class="flex justify-center">
+												<div
+													class="rounded border bg-popover px-2 py-1 text-[2px] whitespace-nowrap text-popover-foreground shadow-md"
+												>
+													<div class="font-medium">{d.month}</div>
+													<div>{formatCurrency(d.profit * 100)}</div>
+												</div>
+											</div>
+										</foreignObject>
+									</g>
+								{/each}
+
+								<!-- X Axis Labels -->
+								{#each chartData as d}
+									<text
+										x={(xScale(d.month) ?? 0) + xScale.bandwidth() / 2}
+										y="105"
+										text-anchor="middle"
+										font-size="3"
+										fill="currentColor"
+										opacity="0.5"
+									>
+										{d.month}
+									</text>
+								{/each}
+							</svg>
 						</div>
 					{:else}
-						<div class="text-muted-foreground flex h-[300px] items-center justify-center">
+						<div class="flex h-full items-center justify-center text-muted-foreground">
 							Nav pietiekami daudz datu diagrammas attēlošanai
 						</div>
 					{/if}
@@ -292,6 +372,63 @@
 			</Card.Root>
 		</div>
 
-		<!-- Monthly Profit Chart -->
+		<!-- Row 2: Top Responsible and Best Clients -->
+		<div class="flex flex-col gap-4 md:flex-row">
+			<!-- Top Responsible Persons -->
+			<Card.Root class="flex-1">
+				<Card.Header>
+					<Card.Title>Labākās atbildīgās personas</Card.Title>
+					<Card.Description>Pēc uzdevumu skaita daļas</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<div class="space-y-4">
+						{#each data.topResponsiblePersons as person, index}
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-3">
+									<Avatar.Root class="h-9 w-9">
+										<Avatar.Fallback>{getInitials(person.name || '?')}</Avatar.Fallback>
+									</Avatar.Root>
+									<div class="flex flex-col">
+										<span class="text-sm font-medium">{person.name || 'Nezināms'}</span>
+										<span class="text-xs text-muted-foreground">{person.taskCount} uzdevumi</span>
+									</div>
+								</div>
+								<Badge variant="secondary" class="bg-green-100 text-green-800 hover:bg-green-100"
+									>{person.share}% Share</Badge
+								>
+							</div>
+						{/each}
+					</div>
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Best Clients -->
+			<Card.Root class="flex-1">
+				<Card.Header>
+					<Card.Title>Labākie klienti</Card.Title>
+					<Card.Description>Pēc kopējā pasūtījumu apjoma</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<div class="space-y-3">
+						{#each data.bestClients as client, index}
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-2">
+									<Badge
+										variant="secondary"
+										class="flex h-6 w-6 items-center justify-center p-0 text-xs"
+									>
+										{index + 1}
+									</Badge>
+									<span class="font-medium">{client.name}</span>
+								</div>
+								<Badge variant="outline">{formatCurrency(client.totalOrdered || 0)}</Badge>
+							</div>
+						{:else}
+							<p class="text-sm text-muted-foreground">Nav klientu ar pasūtījumiem</p>
+						{/each}
+					</div>
+				</Card.Content>
+			</Card.Root>
+		</div>
 	</div>
 </div>

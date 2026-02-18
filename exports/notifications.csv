@@ -47,7 +47,6 @@ id,message,userId,taskId,isRead,updated_at,created_at
 65,"Artūrs pārvietoja projektu ""BK Ventspils Tehnikums"" no ""Artūrs"" uz ""Presējam""",joud2zyvb3wgvxlrgahougzz,122,true,2025-12-12T13:10:48.000Z,2025-08-18T11:25:06.000Z
 66,"Kaspars pārvietoja projektu ""SOS Order 31135"" no ""Pie mums"" uz ""Parādnieki""",boaj3cdrucdxjbeirocwa2qo,98,true,2026-01-15T07:21:15.000Z,2025-08-19T12:44:46.000Z
 68,"Kaspars rediģēja projektu: ""HK Ogre Smashers""",boaj3cdrucdxjbeirocwa2qo,108,true,2026-01-15T07:21:15.000Z,2025-08-20T11:58:32.000Z
-69,"Toms pārvietoja projektu ""Solovjevs Kalsnava"" no ""Gatavs Atdošanai"" uz ""Parādnieki""",boaj3cdrucdxjbeirocwa2qo,8,true,2026-01-15T07:21:15.000Z,2025-08-21T11:01:27.000Z
 70,"Raimonds pārvietoja projektu ""gerhardsons krekli"" no ""Lielvārde"" uz ""Pie mums""",boaj3cdrucdxjbeirocwa2qo,80,true,2026-01-15T07:21:15.000Z,2025-08-22T08:08:25.000Z
 71,"Raimonds izveidoja jaunu projektu: ""Jekabpils Treninterpi""",xosfdkuu34uxwigj5aatp46y,166,false,2025-08-22T08:46:47.000Z,2025-08-22T08:46:47.000Z
 72,"Raimonds pārvietoja projektu ""Jekabpils Treninterpi"" no ""Darbs"" uz ""FastPrint""",xosfdkuu34uxwigj5aatp46y,166,false,2025-08-22T08:47:43.000Z,2025-08-22T08:47:43.000Z
@@ -124,8 +123,6 @@ id,message,userId,taskId,isRead,updated_at,created_at
 143,"Artūrs pārvietoja projektu ""BK MEH Papildinājums"" no ""Artūrs"" uz ""Uz druku""",joud2zyvb3wgvxlrgahougzz,238,true,2025-12-12T13:10:48.000Z,2025-09-29T07:53:39.000Z
 144,"Artūrs pārvietoja projektu ""VK Tenapors"" no ""Darbs"" uz ""Artūrs""",joud2zyvb3wgvxlrgahougzz,175,true,2025-12-12T13:10:48.000Z,2025-09-29T09:13:46.000Z
 145,"Artūrs pārvietoja projektu ""VK Tenapors"" no ""Artūrs"" uz ""Darbs""",joud2zyvb3wgvxlrgahougzz,175,true,2025-12-12T13:10:48.000Z,2025-09-29T09:26:45.000Z
-146,"Toms izveidoja jaunu projektu: ""Salvis Lai līst""",joud2zyvb3wgvxlrgahougzz,244,true,2025-12-12T13:10:48.000Z,2025-09-29T10:14:21.000Z
-147,"Kaspars pārvietoja projektu ""Salvis Lai līst"" no ""Darbs"" uz ""Presējam""",jbc733tyzrlm5syzjfpo4fdk,244,false,2025-09-29T14:17:28.000Z,2025-09-29T14:17:28.000Z
 148,"Artūrs pārvietoja projektu ""Cesis Metric"" no ""Artūrs"" uz ""Uz druku""",njly65fq5kgs4odv4fqyvcst,245,false,2025-09-30T10:27:19.000Z,2025-09-30T10:27:19.000Z
 149,"Artūrs pārvietoja projektu ""BK Plezīrs Papildinājums"" no ""Artūrs"" uz ""Uz druku""",joud2zyvb3wgvxlrgahougzz,231,true,2025-12-12T13:10:48.000Z,2025-09-30T11:17:26.000Z
 150,"Artūrs pārvietoja projektu ""BK Let It Rain"" no ""Presējam"" uz ""Artūrs""",joud2zyvb3wgvxlrgahougzz,201,true,2025-12-12T13:10:48.000Z,2025-09-30T11:41:08.000Z
@@ -223,7 +220,6 @@ id,message,userId,taskId,isRead,updated_at,created_at
 243,"Artūrs rediģēja projektu: ""Valmieras Tehnikums Basis + Volejbols""",joud2zyvb3wgvxlrgahougzz,294,true,2025-12-12T13:10:48.000Z,2025-11-03T15:39:28.000Z
 244,"Kaspars pārvietoja projektu ""BK Connecto"" no ""Presējam"" uz ""Artūrs""",boaj3cdrucdxjbeirocwa2qo,287,true,2026-01-15T07:21:15.000Z,2025-11-04T12:21:59.000Z
 245,"Kaspars rediģēja projektu: ""BK Connecto""",boaj3cdrucdxjbeirocwa2qo,287,true,2026-01-15T07:21:15.000Z,2025-11-04T12:22:52.000Z
-246,"Toms pārvietoja projektu ""Salvis Lai līst"" no ""Presējam"" uz ""Parādnieki""",joud2zyvb3wgvxlrgahougzz,244,true,2025-12-12T13:10:48.000Z,2025-11-05T08:19:17.000Z
 247,"Artūrs pārvietoja projektu ""BK Connecto"" no ""Artūrs"" uz ""Uz druku""",joud2zyvb3wgvxlrgahougzz,287,true,2025-12-12T13:10:48.000Z,2025-11-05T09:56:16.000Z
 248,"Artūrs pārvietoja projektu ""Valmieras Tehnikums Basis + Volejbols"" no ""Artūrs"" uz ""Uz druku""",joud2zyvb3wgvxlrgahougzz,294,true,2025-12-12T13:10:48.000Z,2025-11-06T14:45:08.000Z
 249,"Artūrs pārvietoja projektu ""Valmieras Tehnikums Basis + Volejbols"" no ""Uz druku"" uz ""Vladislavs""",joud2zyvb3wgvxlrgahougzz,294,true,2025-12-12T13:10:48.000Z,2025-11-10T11:05:18.000Z
@@ -349,3 +345,8 @@ id,message,userId,taskId,isRead,updated_at,created_at
 369,"Kaspars izveidoja jaunu projektu: ""Smiltene Basketobls""",xosfdkuu34uxwigj5aatp46y,403,false,2026-02-10T12:30:05.000Z,2026-02-10T12:30:05.000Z
 370,"Artūrs pārvietoja projektu ""BK Alūksne papildinājums"" no ""Artūrs"" uz ""Uz druku""",joud2zyvb3wgvxlrgahougzz,401,false,2026-02-11T08:49:43.000Z,2026-02-11T08:49:43.000Z
 371,"Kaspars izveidoja jaunu projektu: ""HK AUCE""",xosfdkuu34uxwigj5aatp46y,405,false,2026-02-13T08:40:20.000Z,2026-02-13T08:40:20.000Z
+372,"Toms izdzēsa projektu: ""Solovjevs Kalsnava""",boaj3cdrucdxjbeirocwa2qo,,false,2026-02-18T06:28:14.000Z,2026-02-18T06:28:14.000Z
+373,"Toms izdzēsa projektu: ""Salvis Lai līst""",joud2zyvb3wgvxlrgahougzz,,false,2026-02-18T06:28:41.000Z,2026-02-18T06:28:41.000Z
+374,"Artūrs pārvietoja projektu ""Eimantas Jaunais L"" no ""Artūrs"" uz ""Uz druku""",joud2zyvb3wgvxlrgahougzz,404,false,2026-02-18T09:30:57.000Z,2026-02-18T09:30:57.000Z
+375,"Artūrs pārvietoja projektu ""Auseklis T krekli"" no ""Artūrs"" uz ""Uz druku""",joud2zyvb3wgvxlrgahougzz,406,false,2026-02-18T11:06:12.000Z,2026-02-18T11:06:12.000Z
+376,"Kaspars izveidoja jaunu projektu: ""KINGS AND QUEENS""",xosfdkuu34uxwigj5aatp46y,412,false,2026-02-18T14:10:49.000Z,2026-02-18T14:10:49.000Z
