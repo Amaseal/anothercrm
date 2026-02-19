@@ -263,21 +263,7 @@ export const actions: Actions = {
                 }
             }
 
-            // Note: Deleting existing files isn't in the UI for Edit yet unless they used the File manager separate logic?
-            // For now we just add new files.
 
-            // Emit Event
-            const updatedTask = await db.query.task.findFirst({
-                where: eq(task.id, taskId),
-                with: {
-                    tab: true,
-                    client: true,
-                    creator: true,
-                    assignedToUser: true
-                }
-            });
-            const { taskEvents } = await import('$lib/server/events');
-            taskEvents.emitTaskUpdate(updatedTask, 'update');
 
 
             // Record History

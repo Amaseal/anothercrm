@@ -28,6 +28,12 @@
 	let vatRate = $state(21);
 	let language = $state('lv');
 
+	// Editable Client Details State
+	let clientRegNo = $state('');
+	let clientVatNo = $state('');
+	let clientAddress = $state('');
+	let clientEmail = $state('');
+
 	// Derived Calculations
 	let subtotal = $derived(items.reduce((acc, item) => acc + item.quantity * item.price, 0));
 	let taxAmount = $derived(subtotal * (vatRate / 100));
@@ -72,9 +78,19 @@
 	$effect(() => {
 		if (selectedClientDetails) {
 			vatRate = selectedClientDetails.vatRate;
+			clientRegNo = selectedClientDetails.registrationNumber || '';
+			clientVatNo = selectedClientDetails.vatNumber || '';
+			clientAddress = selectedClientDetails.address || '';
+			clientEmail = selectedClientDetails.email || '';
 			// Infer language if possible, or default to current.
 			// For now, let's leave language as user selected, or default to LV.
-		}
+		} else if (!isNewClient) {
+             // Reset if no client selected and not in new client mode
+            clientRegNo = '';
+            clientVatNo = '';
+            clientAddress = '';
+            clientEmail = '';
+        }
 	});
 
 	$effect(() => {
@@ -223,15 +239,15 @@
 							<div class="font-bold">{company?.name}</div>
 						</div>
 						<div class="flex text-sm">
-							<div class="w-32">{m['clients.registration_number']()}</div>
+							<div class="w-32">{m['invoices.registration_number']()}</div>
 							<div>{company?.registrationNumber}</div>
 						</div>
 						<div class="flex text-sm">
-							<div class="w-32">{m['clients.vat_number']()}</div>
+							<div class="w-32">{m['invoices.vat_number']()}</div>
 							<div>{company?.vatNumber}</div>
 						</div>
 						<div class="flex text-sm">
-							<div class="w-32">{m['clients.address']()}</div>
+							<div class="w-32">{m['invoices.address']()}</div>
 							<div>{company?.address}</div>
 						</div>
 					</div>
@@ -264,7 +280,7 @@
 											<Command.Root>
 												<Command.Input placeholder="Search client..." />
 												<Command.List>
-													<Command.Empty>No client found.</Command.Empty>
+													<Command.Empty>{m['clients.empty']()}</Command.Empty>
 													<Command.Group>
 														{#each clients as client}
 															<Command.Item
@@ -302,7 +318,7 @@
 							</div>
 
 							<div class="flex items-center gap-2 text-xs">
-								<Label for="new-client-mode">Create New Client?</Label>
+								<Label for="new-client-mode">{m['invoices.new_client']()}</Label>
 								<Switch
 									id="new-client-mode"
 									checked={isNewClient}
@@ -318,25 +334,25 @@
 						<!-- Client Details Display/Edit -->
 						{#if isNewClient}
 							<!-- Editable Fields for New Client -->
-							<div class="ml-32 space-y-1">
-								<div class="flex items-center gap-2 text-sm">
-									<Label class="w-24 text-gray-500">Reg. No.</Label>
+							<div class="space-y-1">
+								<div class="flex items-center text-sm">
+									<Label class="w-32 text-gray-500">{m["invoices.registration_number"]()}</Label>
 									<Input name="newClientRegNo" class="h-6 w-48 text-sm" placeholder="Reg. Number" />
 								</div>
-								<div class="flex items-center gap-2 text-sm">
-									<Label class="w-24 text-gray-500">VAT No.</Label>
+								<div class="flex items-center text-sm">
+									<Label class="w-32 text-gray-500">{m["invoices.vat_number"]()}</Label>
 									<Input name="newClientVatNo" class="h-6 w-48 text-sm" placeholder="VAT Number" />
 								</div>
-								<div class="flex items-center gap-2 text-sm">
-									<Label class="w-24 text-gray-500">Address</Label>
+								<div class="flex items-center text-sm">
+									<Label class="w-32 text-gray-500">{m["invoices.address"]()}</Label>
 									<Input
 										name="newClientAddress"
 										class="h-6 w-full max-w-md text-sm"
 										placeholder="Full Address"
 									/>
 								</div>
-								<div class="flex items-center gap-2 text-sm">
-									<Label class="w-24 text-gray-500">Email</Label>
+								<div class="flex items-center text-sm">
+									<Label class="w-32 text-gray-500">{m["invoices.email"]()}</Label>
 									<Input
 										name="newClientEmail"
 										type="email"
@@ -346,16 +362,66 @@
 								</div>
 							</div>
 						{:else if selectedClientDetails}
-							<!-- Read-only View for Selected Client -->
-							<div class="ml-32 space-y-0.5 text-sm text-gray-700">
-								<div>Reģ.Nr.: {selectedClientDetails.registrationNumber || '-'}</div>
-								<div>PVN Nr.: {selectedClientDetails.vatNumber || '-'}</div>
-								<div>Adrese: {selectedClientDetails.address || '-'}</div>
-								<div class="mt-1 text-xs text-gray-400">{selectedClientDetails.email}</div>
+							<!-- Editable View for Selected Client -->
+							<div class=" space-y-1">
+								<div class="flex items-center text-sm">
+									<Label class="w-32 text-gray-500">{m["invoices.registration_number"]()}</Label>
+									<Input
+										name="clientRegNo"
+										bind:value={clientRegNo}
+										class="h-6 w-48 text-sm"
+										placeholder="Reg. Number"
+									/>
+								</div>
+								<div class="flex items-center text-sm">
+									<Label class="w-32 text-gray-500">{m["invoices.vat_number"]()}</Label>
+									<Input
+										name="clientVatNo"
+										bind:value={clientVatNo}
+										class="h-6 w-48 text-sm"
+										placeholder="VAT Number"
+									/>
+								</div>
+								<div class="flex items-center text-sm">
+									<Label class="w-32 text-gray-500">{m["invoices.address"]()}</Label>
+									<Input
+										name="clientAddress"
+										bind:value={clientAddress}
+										class="h-6 w-full max-w-md text-sm"
+										placeholder="Full Address"
+									/>
+								</div>
+								<div class="flex items-center text-sm">
+									<Label class="w-32 text-gray-500">{m["invoices.email"]()}</Label>
+									<Input
+										name="clientEmail"
+										type="email"
+										bind:value={clientEmail}
+										class="h-6 w-64 text-sm"
+										placeholder="Email"
+									/>
+								</div>
+                                <div class="flex items-center pt-2">
+                                    <div class="flex items-center space-x-2">
+                                        <input
+                                            type="checkbox"
+                                            id="updateClientDetails"
+                                            name="updateClientDetails"
+                                            class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                                            checked
+                                        />
+                                        <label
+                                            for="updateClientDetails"
+                                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                        >
+                                            {m['invoices.update_client_details']()}
+                                        </label>
+                                    </div>
+                                </div>
 							</div>
 						{:else}
 							<div class="ml-32 text-sm text-gray-400 italic">
-								Select a client to see details...
+								{m['invoices.select_client_to_see_details']()}
 							</div>
 						{/if}
 					</div>

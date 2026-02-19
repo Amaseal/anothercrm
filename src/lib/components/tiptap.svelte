@@ -190,21 +190,8 @@
 		});
 	});
 
-	// $effect(() => {
-	// 	if (isInternalUpdate) {
-	// 		isInternalUpdate = false;
-	// 		return;
-	// 	}
-
-	// 	if ($editor && value !== undefined && value !== $editor.getHTML()) {
-	// 		// Only update if content is sufficiently different to avoid cursor jumps or loops
-	// 		// Simple check: content length or straight comparison
-	// 		skipNextUpdate = true;
-	// 		$editor.commands.setContent(value, { emitUpdate: false });
-	// 	}
-	// });
 </script>
-
+ 
 {#if $editor}
 	<div class="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-1">
 		<!-- Formatting -->

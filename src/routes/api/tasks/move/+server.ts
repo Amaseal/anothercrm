@@ -63,8 +63,8 @@ export const POST = async ({ request, locals }) => {
 
         if (oldGroupId && newGroupId && oldGroupId !== newGroupId) {
             // Helper to get name
-            const getName = (g: any) => {
-                const t = g.translations.find((t: any) => t.language === 'lv') || g.translations[0];
+            const getName = (g: any, lang: string = 'lv') => {
+                const t = g.translations.find((t: any) => t.language === lang) || g.translations.find((t: any) => t.language === 'lv') || g.translations[0];
                 return t ? t.name : 'Unknown Group';
             };
 
@@ -81,13 +81,14 @@ export const POST = async ({ request, locals }) => {
 
             // Send email if creator is a client
             if (currentTask.creator && currentTask.creator.type === 'client' && currentTask.creator.email) {
+                const newGroupNameEn = newTab?.group ? getName(newTab.group, 'en') : newGroupName;
                 try {
                     await sendEmail(
                         currentTask.creator.email,
                         `Status Update: ${currentTask.title}`,
                         `
                         <h2>Task Updated</h2>
-                        <p>Your task <strong>${currentTask.title}</strong> has been moved to <strong>${newGroupName}</strong>.</p>
+                        <p>Your task <strong>${currentTask.title}</strong> has been moved to <strong>${newGroupNameEn}</strong>.</p>
                         <p>Best regards,<br>Fast Break</p>
                         `
                     );

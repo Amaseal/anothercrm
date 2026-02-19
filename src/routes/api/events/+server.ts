@@ -7,12 +7,15 @@ export const GET: RequestHandler = async ({ locals }) => {
         return new Response('Unauthorized', { status: 401 });
     }
 
+    let onTaskEvent: ((data: { type: string; task: any }) => void) | undefined;
+
     const readable = new ReadableStream({
         start(controller) {
             // Send initial connection message
             controller.enqueue(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
 
-            const onTaskEvent = (data: { type: string; task: any }) => {
+            onTaskEvent = (data: { type: string; task: any }) => {
+                console.log('SSE: Event received', data.type, 'Task ID:', data.task?.id);
                 const { task } = data;
 
                 // Filtering Logic
@@ -28,28 +31,31 @@ export const GET: RequestHandler = async ({ locals }) => {
                     }
                 }
 
+                console.log(`SSE: User ${user.id} (${user.type}) shouldSend: ${shouldSend}`);
+
                 if (shouldSend) {
                     // Safety check: ensure controller is open
-                    if (controller.desiredSize === null) return;
+                    // Note: desiredSize check isn't always reliable for immediate closure detection in all envs,
+                    // but catching the error is the fallback.
 
                     try {
+                        console.log('SSE: Enqueueing data');
                         controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
                     } catch (e) {
-                        console.log('SSE Controller closed, ignoring error');
-                        // Controller likely closed, cleanup will handle it
+                        // Check if it's a closed controller error
+                        console.log('SSE Enqueue Error (likely closed):', e);
                     }
                 }
             };
 
             taskEvents.on('task', onTaskEvent);
-
-            // Cleanup when connection closes
-            return () => {
-                taskEvents.off('task', onTaskEvent);
-            };
         },
         cancel() {
-            // Cleanup handled in start return
+            // Cleanup handled
+            if (onTaskEvent) {
+                console.log('SSE Cancel: Removing listener for user', user.id);
+                taskEvents.off('task', onTaskEvent);
+            }
         }
     });
 

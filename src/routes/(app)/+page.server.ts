@@ -2,8 +2,14 @@ import { db } from '$lib/server/db';
 import { task, user, client, taskProduct, product, tab, tabGroup } from '$lib/server/db/schema';
 import { sql, count, desc, eq, and, or, lte, gte, ne } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
+import { redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals }) => {
+
+    if (locals.user?.type === 'client') {
+        return redirect(302, '/projekti');
+    }
+
     // Get the current month's start and end dates
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);

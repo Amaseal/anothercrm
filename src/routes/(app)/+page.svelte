@@ -201,7 +201,7 @@
 								</div>
 							</Table.Cell>
 							<Table.Cell class="text-muted-foreground">
-								{formatDate(task.endDate)}
+								{formatDate(task.endDate as string)}
 							</Table.Cell>
 							<Table.Cell>
 								<Badge
@@ -222,7 +222,7 @@
 								</Badge>
 							</Table.Cell>
 							<Table.Cell class="pr-6 text-right">
-								<Button variant="link" size="sm" class="font-medium text-primary">Skatīt</Button>
+								<Button href={`/projekti/labot/${task.id}`} variant="link" size="sm" class="font-medium text-primary">Skatīt</Button>
 							</Table.Cell>
 						</Table.Row>
 					{:else}
@@ -264,7 +264,7 @@
 								</div>
 								<div class="flex flex-col items-end">
 									<span class="text-sm font-bold">{formatCurrency(manager.totalValue || 0)}</span>
-									<span class="text-xs text-muted-foreground">PUNKTU</span>
+	
 								</div>
 							</div>
 						{/each}
@@ -273,7 +273,7 @@
 			</Card.Root>
 
 			<!-- Monthly Earnings Chart -->
-			<Card.Root class="flex flex-[1.5] flex-col">
+			<Card.Root class="flex flex-[1.5] flex-col relative">
 				<Card.Header class="flex shrink-0 flex-row items-center justify-between">
 					<div>
 						<Card.Title>Mēneša peļņa</Card.Title>
@@ -281,93 +281,88 @@
 					</div>
 					<div class="flex gap-2">
 						<Button variant="outline" size="sm" onclick={exportToCSV}>Export CSV</Button>
-						<Button variant="outline" size="sm">Year {new Date().getFullYear()}</Button>
+						<Button variant="outline" size="sm">{new Date().getFullYear()}</Button>
 					</div>
 				</Card.Header>
-				<Card.Content class="flex-1 pt-6">
-					{#if chartData.length > 0}
-						{@const yScale = scaleLinear()
-							.domain([0, Math.max(...chartData.map((d) => d.profit), 100)])
-							.range([100, 0])}
-						{@const xScale = scaleBand()
-							.domain(chartData.map((d) => d.month))
-							.range([0, 100])
-							.padding(0.3)}
+				<Card.Content class="relative flex-1 min-h-0 p-0">
+					<div class="absolute inset-0 flex flex-col p-6 pt-0">
+						{#if chartData.length > 0}
+							{@const yScale = scaleLinear()
+								.domain([0, Math.max(...chartData.map((d) => d.profit), 100)])
+								.range([100, 0])}
+							{@const xScale = scaleBand()
+								.domain(chartData.map((d) => d.month))
+								.range([0, 100])
+								.padding(0.3)}
 
-						<div class=" w-full">
-							<svg class="w-full overflow-visible" viewBox="0 0 100 100" preserveAspectRatio="none">
-								<!-- Grid lines -->
-								{#each yScale.ticks(5) as tick}
-									<line
-										x1="0"
-										x2="100"
-										y1={yScale(tick)}
-										y2={yScale(tick)}
-										stroke="currentColor"
-										stroke-opacity="0.1"
-										stroke-width="0.1"
-										vector-effect="non-scaling-stroke"
-									/>
-								{/each}
+							<div class="flex-1 w-full min-h-0 relative">
+								<!-- Grid Background (SVG) -->
+								<svg
+									class="absolute inset-0 w-full h-full"
+									viewBox="0 0 100 100"
+									preserveAspectRatio="none"
+								>
+									<!-- Grid lines -->
+									{#each yScale.ticks(5) as tick}
+										<line
+											x1="0"
+											x2="100"
+											y1={yScale(tick)}
+											y2={yScale(tick)}
+											stroke="currentColor"
+											stroke-opacity="0.1"
+											stroke-width="0.1"
+											vector-effect="non-scaling-stroke"
+										/>
+									{/each}
+								</svg>
 
-								<!-- Bars -->
-								{#each chartData as d}
-									<g class="group">
-										<rect
-											x={xScale(d.month) ?? 0}
-											y={yScale(d.profit)}
-											width={xScale.bandwidth()}
-											height={100 - yScale(d.profit)}
-											rx="1"
-											class="fill-primary transition-opacity hover:opacity-80"
-										/>
-										<rect
-											x={xScale(d.month) ?? 0}
-											y="0"
-											width={xScale.bandwidth()}
-											height="100"
-											fill="transparent"
-										/>
-										<foreignObject
-											x={(xScale(d.month) ?? 0) - 10}
-											y={yScale(d.profit) - 20}
-											width={xScale.bandwidth() + 20}
-											height="20"
-											class="pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"
-											style="overflow: visible;"
+								<!-- HTML Bars & Tooltips -->
+								<div class="absolute inset-0">
+									{#each chartData as d}
+										<div
+											class="absolute bottom-0 bg-primary transition-opacity hover:opacity-80 rounded-t-sm group"
+											style="
+												left: {xScale(d.month) ?? 0}%;
+												width: {xScale.bandwidth()}%;
+												height: {100 - yScale(d.profit)}%;
+											"
 										>
-											<div class="flex justify-center">
-												<div
-													class="rounded border bg-popover px-2 py-1 text-[2px] whitespace-nowrap text-popover-foreground shadow-md"
-												>
-													<div class="font-medium">{d.month}</div>
-													<div>{formatCurrency(d.profit * 100)}</div>
+											<!-- Tooltip -->
+											<div
+												class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50"
+											>
+												<div class="flex justify-center">
+													<div
+														class="rounded border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground shadow-md"
+													>
+														<div class="font-medium">{d.month}</div>
+														<div>{formatCurrency(d.profit * 100)}</div>
+													</div>
 												</div>
 											</div>
-										</foreignObject>
-									</g>
-								{/each}
+										</div>
+									{/each}
+								</div>
+							</div>
 
-								<!-- X Axis Labels -->
+							<!-- X Axis Labels (HTML) -->
+							<div class="h-6 w-full relative mt-2 select-none">
 								{#each chartData as d}
-									<text
-										x={(xScale(d.month) ?? 0) + xScale.bandwidth() / 2}
-										y="105"
-										text-anchor="middle"
-										font-size="3"
-										fill="currentColor"
-										opacity="0.5"
+									<div
+										class="absolute text-[10px] text-muted-foreground text-center -translate-x-1/2 whitespace-nowrap"
+										style="left: {(xScale(d.month) ?? 0) + xScale.bandwidth() / 2}%; width: auto;"
 									>
 										{d.month}
-									</text>
+									</div>
 								{/each}
-							</svg>
-						</div>
-					{:else}
-						<div class="flex h-full items-center justify-center text-muted-foreground">
-							Nav pietiekami daudz datu diagrammas attēlošanai
-						</div>
-					{/if}
+							</div>
+						{:else}
+							<div class="flex h-full items-center justify-center text-muted-foreground">
+								Nav pietiekami daudz datu diagrammas attēlošanai
+							</div>
+						{/if}
+					</div>
 				</Card.Content>
 			</Card.Root>
 		</div>
@@ -394,7 +389,7 @@
 									</div>
 								</div>
 								<Badge variant="secondary" class="bg-green-100 text-green-800 hover:bg-green-100"
-									>{person.share}% Share</Badge
+									>{person.share}% no visiem uzdevumiem</Badge
 								>
 							</div>
 						{/each}

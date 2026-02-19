@@ -18,24 +18,31 @@
     "status_draft": "Melnraksts",
     "status_sent": "Nosūtīts",
     "status_paid": "Apmaksāts",
-            "status_overdue": "Kavēts",
+    "status_overdue": "Kavēts",
     "status_cancelled": "Atcelts",
     "items": {
       "nr": "Nr.",
       "description": "Apraksts",
       "unit": "Mērv.",
-    "quantity": "Daudzums",
-    "price": "Cena",
-    "amount": "Summa",
-    "add_row": "Pievienot rindu"
-  },
-  "summary": {
-    "subtotal": "Summa bez PVN",
-    "vat": "PVN",
-    "total": "Summa apmaksai"
-  },
-  "notes": "Piezīmes",
-  "supplier": "Piegādātājs",
-  "payer": "Maksātājs"
-}
+      "quantity": "Daudzums",
+      "price": "Cena",
+      "amount": "Summa",
+      "add_row": "Pievienot rindu"
+    },
+    "summary": {
+      "subtotal": "Summa bez PVN",
+      "vat": "PVN",
+      "total": "Summa apmaksai"
+    },
+    "notes": "Piezīmes",
+    "supplier": "Piegādātājs",
+    "payer": "Maksātājs",
+    "vat_number": "PVN Nr.",
+    "registration_number": "Reģ. Nr.",
+    "address": "Adrese",
+    "email": "E-pasts",
+    "update_client_details": "Atjaunot klienta datus",
+    "select_client_to_see_details": "Izvēlieties klientu, lai redzētu datus...",
+    "new_client": "Jauns klients"
+  }
 }

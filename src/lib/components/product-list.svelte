@@ -30,6 +30,18 @@
 	let entries = $state<{ productId: number; count: number; isOpen: boolean }[]>(
 		initialEntries.length > 0 ? initialEntries : [{ productId: 0, count: 1, isOpen: false }]
 	);
+
+    $effect(() => {
+        // React to upstream changes from SSE
+        if (initialEntries && initialEntries.length > 0) {
+             // We can use a simple JSON stringify check to avoid unnecessary updates if deep compare is needed, 
+             // but since we create new objects in parent, reference check might fail even if content same.
+             // However, for this use case, we want to force update.
+             // To be safe against focus loss, we might want to check length or IDs.
+             // But let's trust the parent's new reference for now.
+             entries = initialEntries;
+        }
+    });
 	let searchQueries = $state<Record<number, string>>({});
 
 	function getSearchQuery(index: number): string {

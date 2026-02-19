@@ -77,6 +77,24 @@ export const actions: Actions = {
         }
 
         if (!clientId) return fail(400, { message: 'Client is required' });
+
+        // Update existing client details IF checkbox is checked
+        const updateClientDetails = formData.get('updateClientDetails') === 'on';
+
+        if (updateClientDetails) {
+            const clientRegNo = formData.get('clientRegNo') as string;
+            const clientVatNo = formData.get('clientVatNo') as string;
+            const clientAddress = formData.get('clientAddress') as string;
+            const clientEmail = formData.get('clientEmail') as string;
+
+            await db.update(client).set({
+                registrationNumber: clientRegNo,
+                vatNumber: clientVatNo,
+                address: clientAddress,
+                email: clientEmail
+            }).where(eq(client.id, clientId));
+        }
+
         if (items.length === 0) return fail(400, { message: 'At least one item is required' });
 
         // Recalculate totals

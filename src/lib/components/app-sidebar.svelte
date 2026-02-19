@@ -60,7 +60,7 @@
 			}
 		].filter((item) => {
 			if ($isClient) {
-				return !['/klienti', '/audumi', '/produkti', '/faili'].includes(item.url);
+				return !['/klienti', '/audumi', '/produkti', '/faili', '/'].includes(item.url);
 			}
 			return true;
 		})

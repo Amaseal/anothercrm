@@ -6,6 +6,7 @@ import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages';
 import { unlink } from 'fs/promises';
 import { join } from 'path';
+import { taskEvents } from '$lib/server/events';
 
 export const load: PageServerLoad = async ({ params }) => {
     const item = await db.query.task.findFirst({
@@ -80,6 +81,9 @@ export const actions: Actions = {
 
             // 4. Delete the task
             await db.delete(task).where(eq(task.id, taskId));
+
+            // Emit delete event
+            taskEvents.emitTaskUpdate({ id: taskId, tabId: item.tabId } as any, 'delete');
 
         } catch (error) {
             console.error(error);

@@ -86,14 +86,15 @@
 	}
 
 	// Prepare initial entries for ProductList
-	let initialProductEntries =
+	let initialProductEntries = $state(
 		data.item.taskProducts.length > 0
 			? data.item.taskProducts.map((tp: { productId: any; count: any }) => ({
 					productId: tp.productId,
 					count: tp.count || 1,
 					isOpen: false
 				}))
-			: undefined;
+			: undefined
+    );
 
 	// Prepare existing files for FileUpload
 	// FileUpload expects { name, path, size, type? }
@@ -107,50 +108,7 @@
 
 	import ProjectPrintView from '$lib/components/project-print-view.svelte';
 	import HistoryList from '$lib/components/history-list.svelte';
-	import { onMount, onDestroy } from 'svelte';
-	import { browser } from '$app/environment';
 
-	// Presence / Locking State
-	let isLocked = $state(false);
-	let lockedBy = $state('');
-	let heartbeatInterval: any;
-
-	const taskId = data.item.id;
-
-	async function startSession() {
-		if (!browser) return;
-		try {
-			const res = await fetch(`/api/tasks/${taskId}/session`, { method: 'POST' });
-			if (res.status === 423) {
-				const body = await res.json();
-				isLocked = true;
-				lockedBy = body.error; // or fetch user name from body if available
-			} else if (res.ok) {
-				isLocked = false;
-			}
-		} catch (e) {
-			console.error('Session heartbeat failed', e);
-		}
-	}
-
-	async function endSession() {
-		if (!browser) return;
-		try {
-			await fetch(`/api/tasks/${taskId}/session`, { method: 'DELETE' });
-		} catch (e) {
-			console.error('Session end failed', e);
-		}
-	}
-
-	onMount(() => {
-		startSession();
-		heartbeatInterval = setInterval(startSession, 10000); // Check every 10s
-	});
-
-	onDestroy(() => {
-		if (heartbeatInterval) clearInterval(heartbeatInterval);
-		endSession();
-	});
 
 </script>
 
@@ -182,15 +140,7 @@
 	<div
 		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
 	>
-		{#if isLocked}
-			<div class="absolute inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-				<div class="text-center p-6 bg-card border rounded-lg shadow-lg">
-					<h2 class="text-xl font-bold text-destructive mb-2">Locked</h2>
-					<p class="text-muted-foreground">{lockedBy}</p>
-					<Button href="/projekti" variant="outline" class="mt-4">Go Back</Button>
-				</div>
-			</div>
-		{/if}
+
 
 		<form method="POST" use:enhance enctype="multipart/form-data" class="flex h-full flex-col">
 			<!-- Sticky Header inside Modal -->

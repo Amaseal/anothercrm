@@ -23,7 +23,6 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		search
 	);
 
-	console.timeEnd("Projekti Layout Load");
 	return {
 		...data,
 		pagination: {

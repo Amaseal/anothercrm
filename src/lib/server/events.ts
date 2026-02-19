@@ -13,4 +13,8 @@ class TaskEmitter extends EventEmitter {
 }
 
 // Singleton instance
-export const taskEvents = new TaskEmitter();
+const globalForEvents = globalThis as unknown as { taskEvents: TaskEmitter };
+
+export const taskEvents = globalForEvents.taskEvents || new TaskEmitter();
+
+if (process.env.NODE_ENV !== 'production') globalForEvents.taskEvents = taskEvents;
