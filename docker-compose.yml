@@ -6,4 +6,8 @@ services:
     environment:
       - ORIGIN=http://localhost:3000
       # Provide the connection string to your Coolify/External Postgres instance
-      - DATABASE_URL=postgres://user:password@host:port/dbname
+    volumes:
+      - uploads_data:/app/uploads
+
+volumes:
+  uploads_data:
