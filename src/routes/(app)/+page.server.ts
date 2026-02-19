@@ -9,6 +9,9 @@ export const load: PageServerLoad = async ({ locals }) => {
     if (locals.user?.type === 'client') {
         return redirect(302, '/projekti');
     }
+    if (!locals.user) {
+        return redirect(302, '/login');
+    }
 
     // Get the current month's start and end dates
     const now = new Date();
