@@ -259,7 +259,7 @@
 			{/each}
 		</tbody>
 	</table>
-		<!-- 4. Notes -->
+	<!-- 4. Notes -->
 	{#if invoice.notes}
 		<div style="margin-bottom: 12px; font-size: 10px; font-style: italic; color: #555;">{invoice.notes}</div>
 	{/if}
