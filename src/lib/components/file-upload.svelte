@@ -21,10 +21,12 @@
 	let {
 		files = $bindable([]),
 		label = '',
+		readonly = false,
 		...restProps
 	} = $props<{
 		files?: FileData[];
 		label?: string;
+		readonly?: boolean;
 	}>();
 
 
@@ -208,42 +210,44 @@
 
 	<input type="hidden" name="files" value={JSON.stringify(files)} />
 
-	<!-- Drop Zone -->
-	<div
-		class={cn(
-			'input border-primar/70 flex h-[100px] cursor-pointer items-center justify-center rounded-lg border-2 border-dashed bg-input/30 px-2 text-center transition-colors',
-			dragOver ? 'border-primary bg-primary/10' : 'bg-input/30',
-			'hover:bg-accent/50'
-		)}
-		ondragover={(e) => {
-			e.preventDefault();
-			dragOver = true;
-		}}
-		ondragleave={() => (dragOver = false)}
-		ondrop={handleDrop}
-		onclick={() => fileInputElement?.click()}
-		onkeydown={(e) => e.key === 'Enter' && fileInputElement?.click()}
-		role="button"
-		tabindex="0"
-	>
-		<div class="flex items-center gap-4 text-muted-foreground">
-			<div class="grid h-14 w-14 place-items-center rounded-full border bg-muted">
-				<Upload class="mb-1.5 h-6 w-6" />
+	{#if !readonly}
+		<!-- Drop Zone -->
+		<div
+			class={cn(
+				'input border-primar/70 flex h-[100px] cursor-pointer items-center justify-center rounded-lg border-2 border-dashed bg-input/30 px-2 text-center transition-colors',
+				dragOver ? 'border-primary bg-primary/10' : 'bg-input/30',
+				'hover:bg-accent/50'
+			)}
+			ondragover={(e) => {
+				e.preventDefault();
+				dragOver = true;
+			}}
+			ondragleave={() => (dragOver = false)}
+			ondrop={handleDrop}
+			onclick={() => fileInputElement?.click()}
+			onkeydown={(e) => e.key === 'Enter' && fileInputElement?.click()}
+			role="button"
+			tabindex="0"
+		>
+			<div class="flex items-center gap-4 text-muted-foreground">
+				<div class="grid h-14 w-14 place-items-center rounded-full border bg-muted">
+					<Upload class="mb-1.5 h-6 w-6" />
+				</div>
+				<p class="text-sm">
+					{m['components.file_dropzone.click_to_upload']() ?? 'Click or drop files here'}
+				</p>
 			</div>
-			<p class="text-sm">
-				{m['components.file_dropzone.click_to_upload']() ?? 'Click or drop files here'}
-			</p>
-		</div>
 
-		<input
-			id={uniqueId}
-			type="file"
-			bind:this={fileInputElement}
-			multiple
-			class="hidden"
-			onchange={handleInputChange}
-		/>
-	</div>
+			<input
+				id={uniqueId}
+				type="file"
+				bind:this={fileInputElement}
+				multiple
+				class="hidden"
+				onchange={handleInputChange}
+			/>
+		</div>
+	{/if}
 
 	<!-- File List -->
 	{#if files.length > 0 || uploadingFiles.length > 0}
@@ -273,15 +277,17 @@
 							<Download class="h-4 w-4" />
 							<span class="sr-only">Download</span>
 						</Button>
-						<Button
-							variant="ghost"
-							size="icon"
-							class="h-8 w-8 text-destructive hover:text-destructive"
-							onclick={() => deleteFile(i)}
-						>
-							<X class="h-4 w-4" />
-							<span class="sr-only">Remove</span>
-						</Button>
+						{#if !readonly}
+							<Button
+								variant="ghost"
+								size="icon"
+								class="h-8 w-8 text-destructive hover:text-destructive"
+								onclick={() => deleteFile(i)}
+							>
+								<X class="h-4 w-4" />
+								<span class="sr-only">Remove</span>
+							</Button>
+						{/if}
 					</div>
 				</div>
 			{/each}

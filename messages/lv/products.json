@@ -18,6 +18,8 @@
 		"errors": {
 			"creation_failed": "Neizdevās izveidot produktu.",
 			"update_failed": "Neizdevās atjaunināt produktu."
-		}
+		},
+		"price": "Cena",
+		"client_specific_prices": "Klientiem Pielāgotās Cenas"
 	}
 }

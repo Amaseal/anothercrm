@@ -16,7 +16,11 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         where: (u, { eq }) => eq(u.type, 'admin')
     });
     const materials = await db.query.material.findMany();
-    const products = await db.query.product.findMany();
+    const products = await db.query.product.findMany({
+        with: {
+            translations: true
+        }
+    });
 
     // Fetch the task to edit
     const item = await db.query.task.findFirst({

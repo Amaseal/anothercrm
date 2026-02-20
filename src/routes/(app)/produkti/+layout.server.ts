@@ -3,13 +3,16 @@ import { db } from '$lib/server/db';
 import { product } from '$lib/server/db/schema';
 import { and, desc, asc, sql, count } from 'drizzle-orm';
 import type { LayoutServerLoad } from './$types';
+import { handleListParams } from '$lib/server/paramState';
 
-export const load: LayoutServerLoad = async ({ url }) => {
-	const page = parseInt(url.searchParams.get('page') || '0');
-	const pageSize = parseInt(url.searchParams.get('pageSize') || '50');
-	const search = url.searchParams.get('search') || '';
-	const sortColumn = url.searchParams.get('sortColumn') || 'id';
-	const sortDirection = url.searchParams.get('sortDirection') || 'asc';
+export const load: LayoutServerLoad = async ({ url, cookies }) => {
+	const activeParams = handleListParams(url, cookies, '/produkti', 'produkti_filters');
+
+	const page = parseInt(activeParams.get('page') || '0');
+	const pageSize = parseInt(activeParams.get('pageSize') || '50');
+	const search = activeParams.get('search') || '';
+	const sortColumn = activeParams.get('sortColumn') || 'id';
+	const sortDirection = activeParams.get('sortDirection') || 'asc';
 
 	// Calculate offset for pagination
 	const offset = page * pageSize;
@@ -43,7 +46,10 @@ export const load: LayoutServerLoad = async ({ url }) => {
 		where: filterConditions.length > 0 ? and(...filterConditions) : undefined,
 		orderBy: sortDirection === 'asc' ? asc(columnToSort) : desc(columnToSort),
 		limit: pageSize,
-		offset: offset
+		offset: offset,
+		with: {
+			translations: true
+		}
 	});
 
 	let products = productData.map((product) => {
@@ -51,6 +57,7 @@ export const load: LayoutServerLoad = async ({ url }) => {
 			id: product.id,
 			title: product.title,
 			description: product.description,
+			translations: product.translations,
 			cost: (product.cost / 100).toFixed(2),
 			created_at: product.created_at,
 			updated_at: product.updated_at

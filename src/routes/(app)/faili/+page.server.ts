@@ -5,13 +5,16 @@ import { readdir, stat, unlink } from 'fs/promises';
 import { join } from 'path';
 import type { Actions, PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
+import { handleListParams } from '$lib/server/paramState';
 
-export const load: PageServerLoad = async ({ url }) => {
-    const page = parseInt(url.searchParams.get('page') || '0');
-    const pageSize = parseInt(url.searchParams.get('pageSize') || '50');
-    const search = (url.searchParams.get('search') || '').toLowerCase();
-    const sortColumn = url.searchParams.get('sortColumn') || 'created';
-    const sortDirection = url.searchParams.get('sortDirection') || 'desc';
+export const load: PageServerLoad = async ({ url, cookies }) => {
+    const activeParams = handleListParams(url, cookies, '/faili', 'faili_filters');
+
+    const page = parseInt(activeParams.get('page') || '0');
+    const pageSize = parseInt(activeParams.get('pageSize') || '50');
+    const search = (activeParams.get('search') || '').toLowerCase();
+    const sortColumn = activeParams.get('sortColumn') || 'created';
+    const sortDirection = activeParams.get('sortDirection') || 'desc';
 
     // 1. Fetch all data needed for usage check
     const [dbFiles, materials, company, tasksWithPreview, tasksWithFiles] = await Promise.all([

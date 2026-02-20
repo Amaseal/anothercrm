@@ -45,7 +45,6 @@ export const actions: Actions = {
 				})
 				.where(eq(tabGroup.id, groupId));
 		} catch (error) {
-			console.log(error);
 			return fail(500, {
 				message: m['groups.errors.something_went_wrong']()
 			});

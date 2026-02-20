@@ -151,7 +151,7 @@
 					{/if}
 
 					<!-- 1. Header Row -->
-					<div class="mb-8 flex items-start justify-between">
+					<div class="mb-2 flex items-start justify-between">
 						<!-- Logo -->
 					
 						<div class="w-1/2">
@@ -236,7 +236,7 @@
 					</div>
 
 					<!-- 2. Supplier (Piegādātājs) -->
-					<div class="mb-6">
+					<div class="mb-2">
 						<div class="flex">
 							<div class="w-32 font-bold">{m['invoices.supplier']()}</div>
 							<div class="font-bold">{company?.name}</div>
@@ -256,7 +256,7 @@
 					</div>
 
 					<!-- 3. Client (Maksātājs) - EDITABLE -->
-					<div class="mb-8">
+					<div class="mb-2">
 						<div class="mb-2 flex items-center justify-between">
 							<div class="flex items-center">
 								<div class="w-32 font-bold">{m['invoices.payer']()}</div>
@@ -564,6 +564,11 @@
 					</div>
 					</div>
 
+
+					<!-- Footnote -->
+					<div class="mt-8 text-sm italic">
+						Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta
+					</div>
 
 					<!-- Footer / Submit Area -->
 					<div class="mt-12 flex justify-end gap-4 border-t pt-6 print:hidden">

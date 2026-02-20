@@ -2,13 +2,16 @@ import { db } from '$lib/server/db';
 import { client } from '$lib/server/db/schema';
 import type { LayoutServerLoad } from './$types';
 import { and, desc, asc, sql, count } from 'drizzle-orm';
+import { handleListParams } from '$lib/server/paramState';
 
-export const load: LayoutServerLoad = async ({ url }) => {
-	const page = parseInt(url.searchParams.get('page') || '0');
-	const pageSize = parseInt(url.searchParams.get('pageSize') || '50');
-	const search = url.searchParams.get('search') || '';
-	const sortColumn = url.searchParams.get('sortColumn') || 'id';
-	const sortDirection = url.searchParams.get('sortDirection') || 'asc';
+export const load: LayoutServerLoad = async ({ url, cookies }) => {
+	const activeParams = handleListParams(url, cookies, '/klienti', 'klienti_filters');
+
+	const page = parseInt(activeParams.get('page') || '0');
+	const pageSize = parseInt(activeParams.get('pageSize') || '50');
+	const search = activeParams.get('search') || '';
+	const sortColumn = activeParams.get('sortColumn') || 'id';
+	const sortDirection = activeParams.get('sortDirection') || 'asc';
 
 	// Calculate offset for pagination
 	const offset = page * pageSize;

@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ locals }) => {
             controller.enqueue(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
 
             onTaskEvent = (data: { type: string; task: any }) => {
-                console.log('SSE: Event received', data.type, 'Task ID:', data.task?.id);
+
                 const { task } = data;
 
                 // Filtering Logic
@@ -31,7 +31,7 @@ export const GET: RequestHandler = async ({ locals }) => {
                     }
                 }
 
-                console.log(`SSE: User ${user.id} (${user.type}) shouldSend: ${shouldSend}`);
+
 
                 if (shouldSend) {
                     // Safety check: ensure controller is open
@@ -39,11 +39,11 @@ export const GET: RequestHandler = async ({ locals }) => {
                     // but catching the error is the fallback.
 
                     try {
-                        console.log('SSE: Enqueueing data');
+
                         controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
                     } catch (e) {
                         // Check if it's a closed controller error
-                        console.log('SSE Enqueue Error (likely closed):', e);
+
                     }
                 }
             };
@@ -53,7 +53,7 @@ export const GET: RequestHandler = async ({ locals }) => {
         cancel() {
             // Cleanup handled
             if (onTaskEvent) {
-                console.log('SSE Cancel: Removing listener for user', user.id);
+
                 taskEvents.off('task', onTaskEvent);
             }
         }

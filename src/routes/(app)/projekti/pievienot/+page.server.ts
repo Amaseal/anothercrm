@@ -36,7 +36,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		where: (u, { eq }) => eq(u.type, 'admin')
 	});
 	const materials = await db.query.material.findMany();
-	const products = await db.query.product.findMany();
+	const products = await db.query.product.findMany({
+		with: {
+			translations: true
+		}
+	});
 
 	return {
 		tabs,

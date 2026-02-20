@@ -18,15 +18,14 @@
 		"products_label": "Products",
 		"products_placeholder": "Select products",
 		"preview_label": "Preview",
-		"choose_date": "Choose date",
+		"choose_date": "Desired End Date",
 		"search_placeholder": "Search...",
-		"no_item_found": "No item found.",
+		"no_item_found": "No items found.",
 		"selected_count": "{count} selected",
 		"files_label": "Files",
 		"upload_preview": "Upload Preview",
 		"create_button": "Create Task",
 		"add_product": "Add Product",
 		"total_price": "Total Price"
-		
 	}
 }

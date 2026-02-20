@@ -69,3 +69,38 @@ export function normalizeLatvianText(text: string): string {
 		.replace(/Ž/g, 'z');
 }
 
+export async function copyToClipboard(text: string): Promise<boolean> {
+	try {
+		if (typeof window === 'undefined') return false;
+
+		if (navigator?.clipboard && window.isSecureContext) {
+			await navigator.clipboard.writeText(text);
+			return true;
+		} else {
+			// Unsecured context fallback
+			const textArea = document.createElement("textarea");
+			textArea.value = text;
+
+			// Move textarea out of the viewport
+			textArea.style.position = "absolute";
+			textArea.style.left = "-999999px";
+
+			document.body.prepend(textArea);
+			textArea.select();
+
+			try {
+				document.execCommand('copy');
+				return true;
+			} catch (error) {
+				console.error('execCommand Error in copyToClipboard:', error);
+				return false;
+			} finally {
+				textArea.remove();
+			}
+		}
+	} catch (err) {
+		console.error('Error in copyToClipboard:', err);
+		return false;
+	}
+}
+

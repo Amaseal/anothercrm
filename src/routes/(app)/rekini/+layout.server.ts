@@ -4,17 +4,20 @@ import { invoice, client, task, userClient } from '$lib/server/db/schema';
 import type { LayoutServerLoad } from './$types';
 import { and, desc, asc, sql, count, like, or, eq, inArray } from 'drizzle-orm';
 import { redirect } from '@sveltejs/kit';
+import { handleListParams } from '$lib/server/paramState';
 
-export const load: LayoutServerLoad = async ({ url, locals }) => {
+export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
 	if (!locals.user) {
 		throw redirect(302, '/login');
 	}
 
-	const page = parseInt(url.searchParams.get('page') || '0');
-	const pageSize = parseInt(url.searchParams.get('pageSize') || '50');
-	const search = url.searchParams.get('search') || '';
-	const sortColumn = url.searchParams.get('sortColumn') || 'issueDate';
-	const sortDirection = url.searchParams.get('sortDirection') || 'desc';
+	const activeParams = handleListParams(url, cookies, '/rekini', 'rekini_filters');
+
+	const page = parseInt(activeParams.get('page') || '0');
+	const pageSize = parseInt(activeParams.get('pageSize') || '50');
+	const search = activeParams.get('search') || '';
+	const sortColumn = activeParams.get('sortColumn') || 'issueDate';
+	const sortDirection = activeParams.get('sortDirection') || 'desc';
 
 	// Calculate offset for pagination
 	const offset = page * pageSize;

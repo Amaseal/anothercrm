@@ -1,13 +1,12 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
-	import { enhance } from '$app/forms';
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
 	import * as Select from '$lib/components/ui/select';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
-	import { CalendarIcon, Save, X, Printer, FileText, Clock } from '@lucide/svelte';
+	import { CalendarIcon, X, Printer, FileText, Clock } from '@lucide/svelte';
     import * as Sheet from '$lib/components/ui/sheet';
 	import {
 		DateFormatter,
@@ -20,10 +19,10 @@
 	import { cn } from '$lib/utils';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import MultiSelect from '$lib/components/multi-select.svelte';
-	import ProductList from '@/components/product-list.svelte';
-	import FileUpload from '@/components/file-upload.svelte';
+	import ProductList from '$lib/components/product-list.svelte';
+	import FileUpload from '$lib/components/file-upload.svelte';
 	import ClientSelect from '$lib/components/client-select.svelte';
-	import ImagePreviewInput from '@/components/image-preview-input.svelte';
+	import ImagePreviewInput from '$lib/components/image-preview-input.svelte';
 	import type { PageData } from './$types';
 
 	import { isClient, isAdmin } from '$lib/stores/user';
@@ -45,22 +44,16 @@
 		data.item.taskMaterials.map((m: { materialId: any }) => m.materialId)
 	);
 
-	// Date Picker State
-	// data.item.endDate is string (text) from DB, likely YYYY-MM-DD or similar standard format if saved correctly.
-	// If saving from Calendar value.toString(), it saves 'YYYY-MM-DD'.
 	let dateValue = $state<DateValue | undefined>(
 		data.item.endDate ? parseDate(data.item.endDate) : undefined
 	);
 	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
 	let datePlaceholder = $state<DateValue>(dateValue || today(getLocalTimeZone()));
 
-	// Tiptap Content
 	let descriptionContent = $state(data.item.description || '');
 
-	// Total Price from ProductList
 	let totalPrice = $state(data.item.price || 0);
 
-	// Derived Names
 	let selectedClientName = $derived(
 		data.clients.find((c: { id: { toString: () => any } }) => c.id.toString() === selectedClientId)
 			?.name || m['projects.client_label']()
@@ -85,7 +78,6 @@
 		return (priceInCents / 100).toFixed(2);
 	}
 
-	// Prepare initial entries for ProductList
 	let initialProductEntries = $state(
 		data.item.taskProducts.length > 0
 			? data.item.taskProducts.map((tp: { productId: any; count: any }) => ({
@@ -96,8 +88,6 @@
 			: undefined
     );
 
-	// Prepare existing files for FileUpload
-	// FileUpload expects { name, path, size, type? }
 	let files = $state(
 		data.item.files.map((f: { filename: any; downloadUrl: any; size: any }) => ({
 			name: f.filename,
@@ -108,7 +98,6 @@
 
 	import ProjectPrintView from '$lib/components/project-print-view.svelte';
 	import HistoryList from '$lib/components/history-list.svelte';
-
 
 </script>
 
@@ -133,16 +122,10 @@
 />
 
 <!-- Modal Overlay -->
-<div
-	class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:hidden"
->
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:hidden">
 	<!-- Inner Modal Container -->
-	<div
-		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
-	>
-
-
-		<form method="POST" use:enhance enctype="multipart/form-data" class="flex h-full flex-col">
+	<div class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl">
+		<div class="flex h-full flex-col">
 			<!-- Sticky Header inside Modal -->
 			<div class="flex items-center gap-4 border-b bg-background px-6 py-4">
 				<!-- Title -->
@@ -153,47 +136,32 @@
 						value={data.item.title}
 						placeholder={m['projects.title_label']()}
 						class="text-lg font-semibold"
-						required
+						disabled
 					/>
 				</div>
 
 				<!-- Client -->
 				<div class="w-64">
-					<input type="hidden" name="clientId" value={selectedClientId} />
-					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={$isClient} />
+					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={true} />
 				</div>
 
 				<!-- Due Date -->
 				<div class="w-auto">
-					<Popover.Root>
-						<Popover.Trigger
-							class={cn(
-								buttonVariants({ variant: 'outline' }),
-								'w-[240px] justify-start pl-4 text-left font-normal',
-								!dateValue && 'text-muted-foreground'
-							)}
-						>
-							{dateValue
-								? df.format(dateValue.toDate(getLocalTimeZone()))
-								: m['projects.choose_date']()}
-							<CalendarIcon class="ml-auto size-4 opacity-50" />
-						</Popover.Trigger>
-						<Popover.Content class="w-auto p-0" side="bottom">
-							<Calendar
-								type="single"
-								value={dateValue}
-								bind:placeholder={datePlaceholder}
-								minValue={today(getLocalTimeZone())}
-								onValueChange={(v) => {
-									dateValue = v;
-								}}
-							/>
-						</Popover.Content>
-					</Popover.Root>
-					<input type="hidden" name="endDate" value={dateValue ? dateValue.toString() : ''} />
+					<Button
+						variant="outline"
+						class={cn(
+							'w-[240px] justify-start pl-4 text-left font-normal cursor-not-allowed opacity-50',
+							!dateValue && 'text-muted-foreground'
+						)}
+						disabled
+					>
+						{dateValue
+							? df.format(dateValue.toDate(getLocalTimeZone()))
+							: m['projects.choose_date']()}
+						<CalendarIcon class="ml-auto size-4 opacity-50" />
+					</Button>
 				</div>
 
-				<!-- Close Button -->
 				<!-- History Toggle -->
 				<Sheet.Root>
 					<Sheet.Trigger>
@@ -237,15 +205,15 @@
 				<!-- SECTION 1: Description & Products -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
 					<!-- Right (35%) - Assignment & Products -->
+               
 					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
-						{#if $isAdmin}
+                              {#if $isAdmin}
 						<!-- Assignment Controls -->
 						<div class="space-y-4">
 							<!-- Assignee -->
 							<div class="grid gap-2">
 								<Label>{m['projects.assign_user_label']()}</Label>
-								<input type="hidden" name="assignedToUserId" value={selectedAssigneeId} />
-								<Select.Root type="single" bind:value={selectedAssigneeId}>
+								<Select.Root type="single" bind:value={selectedAssigneeId} disabled>
 									<Select.Trigger class="w-full">
 										{selectedAssigneeName || m['projects.assign_user_label']()}
 									</Select.Trigger>
@@ -259,12 +227,11 @@
 								</Select.Root>
 							</div>
 
-						
+							{#if !$isClient}
 								<!-- Seamstress -->
 								<div class="grid gap-2">
 									<Label>{m['projects.seamstress_label']()}</Label>
-									<input type="hidden" name="seamstress" value={selectedSeamstress} />
-									<Select.Root type="single" bind:value={selectedSeamstress}>
+									<Select.Root type="single" bind:value={selectedSeamstress} disabled>
 										<Select.Trigger class="w-full">
 											{selectedSeamstress || m['projects.seamstress_placeholder']()}
 										</Select.Trigger>
@@ -277,7 +244,7 @@
 										</Select.Content>
 									</Select.Root>
 								</div>
-						
+							{/if}
 
 							<!-- Materials -->
 							<div class="grid gap-2">
@@ -289,28 +256,28 @@
 									}))}
 									bind:value={selectedMaterialIds}
 									placeholder={m['projects.materials_placeholder']()}
+                                    disabled={true}
 								/>
-								{#each selectedMaterialIds as id}
-									<input type="hidden" name="materials" value={id} />
-								{/each}
 							</div>
 						</div>
-						{/if}
+                         {/if}
 						<!-- Products List -->
 						<div class="flex-1">
 							<ProductList
 								products={data.products}
 								bind:totalPrice
 								initialEntries={initialProductEntries}
+                                readonly={true}
 							/>
 						</div>
 					</div>
+                
+
 					<!-- Left (65%) - Description -->
 					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
 						<Label>{m['projects.description_label']()}</Label>
 						<div class="min-h-[400px] flex-1 rounded-md border p-2">
-							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" />
-							<input type="hidden" name="description" value={descriptionContent} />
+							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" editable={false} />
 						</div>
 					</div>
 				</div>
@@ -324,7 +291,7 @@
 					<div class="col-span-12 lg:col-span-4">
 						<div class="grid gap-2">
 							<Label for="files">{m['projects.files_label']()}</Label>
-							<FileUpload bind:files />
+							<FileUpload bind:files readonly={true} />
 						</div>
 					</div>
 					<!-- Left (65%) - Large Visual Reference -->
@@ -336,6 +303,7 @@
 								preview={data.item.preview || undefined}
 								label={m['projects.preview_label']()}
 								class="h-full w-full object-contain"
+                                readonly={true}
 							/>
 						</div>
 					</div>
@@ -343,11 +311,8 @@
 
 			</div>
 
-
 			<!-- Sticky Footer inside Modal -->
-			<div
-				class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"
-			>
+			<div class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
 				<div class="flex items-center gap-4">
 					<div class="text-xl font-bold">
 						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
@@ -376,12 +341,8 @@
 							<span class="sr-only">Create Invoice</span>
 						</Button>
 					{/if}
-					<Button type="submit" size="lg">
-						{m['components.save']()}
-						<!-- Change to Save/Update if distinct label exists, or create_button is typically 'Saglabāt' -->
-					</Button>
 				</div>
 			</div>
-		</form>
+		</div>
 	</div>
 </div>

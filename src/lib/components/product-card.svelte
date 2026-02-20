@@ -10,7 +10,8 @@
 		UserPlus,
 		Pencil,
 		GripVertical,
-		Link
+		Link,
+		Eye
 	} from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
@@ -19,6 +20,8 @@
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Card } from './ui/card';
 	import { isClient, user } from '$lib/stores/user';
+	import { copyToClipboard } from '$lib/utilities';
+	import { isAdmin } from '$lib/stores/user';
 
 	const currencyFormatter = new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' });
 
@@ -37,6 +40,7 @@
 			assignedToUser?: { name: string } | null;
 			createdById?: string | null;
 			creator?: { name: string; type?: string } | null;
+			isMoved?: boolean;
 		};
 		class?: string;
 		dragHandleAction?: any;
@@ -255,9 +259,9 @@
 				title={m['components.copy_link']()}
 				variant="ghost"
 				class="dark:hover:text-white"
-				onclick={(e: Event) => {
+				onclick={async (e: Event) => {
 					e.preventDefault();
-					navigator.clipboard.writeText(`${window.location.origin}/projekti/labot/${task.id}`);
+					await copyToClipboard(`${window.location.origin}/projekti/labot/${task.id}`);
 					copied = true;
 					setTimeout(() => {
 						copied = false;
@@ -271,19 +275,30 @@
 				{/if}
 			</Button>
 			<!-- Edit Button (Explicitly requested) -->
-			<Button
-				title={m['components.edit']()}
-				variant="ghost"
-				class="dark:hover:text-white"
-				href={`/projekti/labot/${task.id}`}
-			>
-				<Pencil class="h-4 w-4" />
-			</Button>
+			{#if task.isMoved && $isClient}
+				<Button
+					variant="ghost"
+					class="dark:hover:text-white"
+					href={`/projekti/skatit/${task.id}`}
+				>
+					<Eye class="h-4 w-4" />
+				</Button>
+			{:else}
+				<Button
+					title={m['components.edit']()}
+					variant="ghost"
+					class="dark:hover:text-white"
+					href={`/projekti/labot/${task.id}`}
+				>
+					<Pencil class="h-4 w-4" />
+				</Button>
+			{/if}
 
-			<Button
-				title={m['components.complete']()}
-				variant="ghost"
-				class="hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900 dark:hover:text-green-400"
+			{#if $isAdmin}
+				<Button
+					title={m['components.complete']()}
+					variant="ghost"
+					class="hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900 dark:hover:text-green-400"
 				href={`/projekti/pabeigt/${task.id}`}
 			>
 				<Check class="h-4 w-4" />
@@ -296,6 +311,7 @@
 			>
 				<Trash class="h-4 w-4" />
 			</Button>
+			{/if}
 		</div>
 	</div>
 </Card>

@@ -11,19 +11,20 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { formatDate } from '$lib/utilities';
 	import { page } from '$app/state';
-	import type { Product } from '$lib/server/db/schema.js';
+	import type { Product, ProductTranslation } from '$lib/server/db/schema.js';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Plus from '@lucide/svelte/icons/plus';
 	import * as m from '$lib/paraglide/messages';
 	import Pagination from '$lib/components/pagination.svelte';
+	import { getLocale } from '@/paraglide/runtime.js';
 
 	let {
 		data,
 		children
 	}: {
 		data: {
-			products: Product[];
+			products: (Product & { translations: ProductTranslation[] })[];
 			pagination: {
 				page: number;
 				pageSize: number;
@@ -83,6 +84,13 @@
 			sortColumn: column,
 			sortDirection: newDirection
 		});
+	}
+
+	function getLocalizedValue(item: Product & { translations: ProductTranslation[] }, field: 'title' | 'description', locale: string) {
+		const translation = item.translations?.find(t => t.language === locale);
+		if (translation && translation[field]) return translation[field];
+        if (locale === 'lv') return item[field]; // Base schema holds 'lv' string usually as fallback
+		return item[field];
 	}
 </script>
 
@@ -159,8 +167,8 @@
 				{:else}
 					{#each data.products as item (item.id)}
 						<Table.Row class="cursor-pointer hover:bg-muted/50">
-							<Table.Cell class="font-medium">{item.title || '-'}</Table.Cell>
-							<Table.Cell class="hidden md:table-cell">{item.description || '-'}</Table.Cell>
+							<Table.Cell class="font-medium">{getLocalizedValue(item, 'title', getLocale()) || '-'}</Table.Cell>
+							<Table.Cell class="hidden md:table-cell">{getLocalizedValue(item, 'description', getLocale()) || '-'}</Table.Cell>
 							<Table.Cell class="hidden md:table-cell">{item.cost} €</Table.Cell>
 
 							<Table.Cell class="hidden md:table-cell">

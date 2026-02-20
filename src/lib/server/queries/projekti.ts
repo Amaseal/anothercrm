@@ -206,7 +206,7 @@ export async function getProjectBoardData(
         }
 
         // Map created_at to createdAt for frontend component
-        const taskWithCreatedAt = { ...t, createdAt: t.created_at };
+        const taskWithCreatedAt = { ...t, createdAt: t.created_at, isMoved: t.tabId !== defaultTabId };
 
         if (!tasksMap.has(targetId)) tasksMap.set(targetId, []);
         tasksMap.get(targetId)?.push(taskWithCreatedAt);

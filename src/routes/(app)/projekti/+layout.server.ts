@@ -1,8 +1,9 @@
 import type { LayoutServerLoad } from '../$types';
 import { getProjectBoardData } from '$lib/server/queries/projekti';
 import { getLocale } from '$lib/paraglide/runtime';
+import { handleListParams } from '$lib/server/paramState';
 
-export const load: LayoutServerLoad = async ({ locals, url }) => {
+export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 
 	const user = locals.user;
 
@@ -12,8 +13,10 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	}
 	const locale = getLocale();
 
-	const showAll = url.searchParams.get('view') === 'all';
-	const search = url.searchParams.get('search') || undefined;
+	const activeParams = handleListParams(url, cookies, '/projekti', 'projekti_filters');
+
+	const showAll = activeParams.get('view') === 'all';
+	const search = activeParams.get('search') || undefined;
 
 	const data = await getProjectBoardData(
 		// @ts-ignore

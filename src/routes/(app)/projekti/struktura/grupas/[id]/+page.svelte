@@ -15,7 +15,6 @@
 		return new Intl.DisplayNames([getLocale()], { type: 'language' }).of(code) || code;
 	};
 
-	console.log(data.item);
 </script>
 
 <svelte:head>

@@ -1,6 +1,5 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-
 	"products": {
 		"value": "Products",
 		"name": "Name",
@@ -21,6 +20,8 @@
 		"errors": {
 			"creation_failed": "Failed to create product.",
 			"update_failed": "Failed to update product."
-		}
+		},
+		"price": "Price",
+		"client_specific_prices": "Client Specific Prices"
 	}
 }

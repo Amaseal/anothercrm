@@ -194,9 +194,45 @@ export const product = pgTable('products', {
 	id: serial('id').primaryKey(), // Auto-incrementing ID
 	title: text('title').notNull(), // Product name
 	description: text('description'), // Product description (optional)
-	cost: integer('cost').notNull(), // Product cost/price (likely in cents)
+	cost: integer('cost').notNull(), // Product cost (likely in cents)
+	price: integer('price').notNull().default(0), // Selling price (in cents)
 	...timestamps // Includes created_at and updated_at
 });
+
+export const productTranslation = pgTable(
+	'product_translations',
+	{
+		id: serial('id').primaryKey(), // Auto-incrementing translation ID
+		productId: integer('product_id')
+			.notNull()
+			.references(() => product.id, { onDelete: 'cascade' }), // CASCADE: Deleting product removes its translations
+		language: text('language').notNull(), // Language code: 'en', 'lv', etc.
+		title: text('title').notNull(), // Translated title for this product
+		description: text('description'), // Translated description
+		...timestamps // Includes created_at and updated_at
+	},
+	(table) => [
+		unique().on(table.productId, table.language) // One translation per language per product
+	]
+);
+
+export const clientProductPrice = pgTable(
+	'client_product_prices',
+	{
+		id: serial('id').primaryKey(),
+		productId: integer('product_id')
+			.notNull()
+			.references(() => product.id, { onDelete: 'cascade' }),
+		clientId: integer('client_id')
+			.notNull()
+			.references(() => client.id, { onDelete: 'cascade' }),
+		price: integer('price').notNull(), // Specific price for this client (in cents)
+		...timestamps
+	},
+	(table) => [
+		unique().on(table.productId, table.clientId) // One specific price per client per product
+	]
+);
 
 
 export const taskMaterial = pgTable('taskMaterials', {
@@ -221,7 +257,27 @@ export const materialRelations = relations(material, ({ many }) => ({
 }));
 
 export const productRelations = relations(product, ({ many }) => ({
-	taskProducts: many(taskProduct)
+	taskProducts: many(taskProduct),
+	translations: many(productTranslation),
+	clientPrices: many(clientProductPrice)
+}));
+
+export const productTranslationRelations = relations(productTranslation, ({ one }) => ({
+	product: one(product, {
+		fields: [productTranslation.productId],
+		references: [product.id]
+	})
+}));
+
+export const clientProductPriceRelations = relations(clientProductPrice, ({ one }) => ({
+	product: one(product, {
+		fields: [clientProductPrice.productId],
+		references: [product.id]
+	}),
+	client: one(client, {
+		fields: [clientProductPrice.clientId],
+		references: [client.id]
+	})
 }));
 
 
@@ -713,7 +769,8 @@ export const fileRelations = relations(file, ({ one }) => ({
  */
 export const clientRelations = relations(client, ({ many }) => ({
 	tasks: many(task), // All tasks/projects for this client
-	userClients: many(userClient) // All user associations (junction table records)
+	userClients: many(userClient), // All user associations (junction table records)
+	productPrices: many(clientProductPrice) // Client specific product prices
 }));
 
 /**
@@ -836,3 +893,5 @@ export type Tab = typeof tab.$inferSelect; // Tab record type
 export type TabTranslation = typeof tabTranslation.$inferSelect; // Tab translation record type
 export type Task = typeof task.$inferSelect; // Task record type
 export type UserTabPreference = typeof userTabPreference.$inferSelect; // User tab preference record type
+export type ProductTranslation = typeof productTranslation.$inferSelect; // Product translation record type
+export type ClientProductPrice = typeof clientProductPrice.$inferSelect; // Client specific product price record type

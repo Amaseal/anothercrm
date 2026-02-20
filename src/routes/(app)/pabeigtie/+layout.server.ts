@@ -1,17 +1,20 @@
 import { getCompletedTasks } from '$lib/server/queries/projekti';
 import type { LayoutServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
+import { handleListParams } from '$lib/server/paramState';
 
-export const load: LayoutServerLoad = async ({ url, locals }) => {
+export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
     if (!locals.user) {
         throw redirect(302, '/login');
     }
 
-    const page = parseInt(url.searchParams.get('page') || '0');
-    const pageSize = parseInt(url.searchParams.get('pageSize') || '50');
-    const search = url.searchParams.get('search') || '';
-    const sortColumn = url.searchParams.get('sortColumn') || 'endDate';
-    const sortDirection = (url.searchParams.get('sortDirection') as 'asc' | 'desc') || 'desc';
+    const activeParams = handleListParams(url, cookies, '/pabeigtie', 'pabeigtie_filters');
+
+    const page = parseInt(activeParams.get('page') || '0');
+    const pageSize = parseInt(activeParams.get('pageSize') || '50');
+    const search = activeParams.get('search') || '';
+    const sortColumn = activeParams.get('sortColumn') || 'endDate';
+    const sortDirection = (activeParams.get('sortDirection') as 'asc' | 'desc') || 'desc';
 
     const data = await getCompletedTasks(locals.user, page, pageSize, search, sortColumn, sortDirection);
 

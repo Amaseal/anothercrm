@@ -43,7 +43,6 @@ export const actions: Actions = {
 
 			// Redirect on success
 		} catch (error) {
-			console.log(error);
 			return fail(500, {
 				message: m['groups.errors.something_went_wrong']()
 			});

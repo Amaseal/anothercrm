@@ -14,6 +14,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { locales, getLocale } from '@/paraglide/runtime.js';
 	import { invalidateAll } from '$app/navigation';
+	import { m } from '@/paraglide/messages';
 
 	let { tab, data } = $props();
 
@@ -87,7 +88,7 @@
 				<div
 					class="flex h-full w-full items-center justify-center text-gray-500 dark:text-gray-400"
 				>
-					Nav projektu
+					{m['projects.no_item_found']()}
 				</div>
 			{:else}
 				{#each items as task (task.id)}

@@ -40,6 +40,7 @@
 		"cancel": "Cancel",
 		"delete": "Delete",
 		"edit": "Edit",
+		"view": "View",
 		"file_dropzone": {
 			"click_to_upload": "Click or drop files here",
 			"click_drop_paste": "Click, drop or paste image here"

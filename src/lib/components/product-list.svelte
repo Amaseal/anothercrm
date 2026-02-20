@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { getLocale } from '$lib/paraglide/runtime';
 	import * as m from '$lib/paraglide/messages';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
@@ -15,21 +16,34 @@
 		title: string;
 		description?: string | null;
 		cost: number;
+		translations?: { language: string; title: string; description: string | null }[];
 	}
 
 	let {
 		products,
 		totalPrice = $bindable(0),
-		initialEntries = []
+		initialEntries = [],
+		readonly = false
 	} = $props<{
 		products: Product[];
 		totalPrice?: number;
 		initialEntries?: { productId: number; count: number; isOpen: boolean }[];
+		readonly?: boolean;
 	}>();
 
 	let entries = $state<{ productId: number; count: number; isOpen: boolean }[]>(
 		initialEntries.length > 0 ? initialEntries : [{ productId: 0, count: 1, isOpen: false }]
 	);
+
+	let translatedProducts = $derived(products.map((p: { translations: any[]; title: any; description: any; }) => {
+		const lang = getLocale();
+		const translation = p.translations?.find((t: { language: string; }) => t.language === lang);
+		return {
+			...p,
+			title: translation?.title || p.title,
+			description: translation?.description || p.description
+		};
+	}));
 
     $effect(() => {
         // React to upstream changes from SSE
@@ -78,10 +92,9 @@
 	}
 
 	function getFilteredOptions(searchQuery: string) {
-		if (!searchQuery) return products;
-		return products.filter(
-			(p: { title: string; description: any }) =>
-				fuzzyMatch(searchQuery, p.title) || fuzzyMatch(searchQuery, p.description || '')
+		if (!searchQuery) return translatedProducts;
+		return translatedProducts.filter(
+			(p: { title: string; }) => fuzzyMatch(searchQuery, p.title)
 		);
 	}
 
@@ -122,10 +135,12 @@
 				<Label>{m['projects.products_label']()}</Label>
 				<Popover.Root bind:open={entry.isOpen}>
 					<Popover.Trigger
+						disabled={readonly}
 						class={cn(
 							buttonVariants({ variant: 'outline' }),
 							'w-full justify-between text-left',
-							(!entry.productId || entry.productId === 0) && 'text-muted-foreground'
+							(!entry.productId || entry.productId === 0) && 'text-muted-foreground',
+							readonly && 'opacity-50 cursor-not-allowed'
 						)}
 						role="combobox"
 					>
@@ -133,13 +148,8 @@
 							{#if entry.productId === 0}
 								<span>{m['projects.products_placeholder']()}</span>
 							{:else}
-								{@const product = products.find((p: { id: number }) => p.id === entry.productId)}
-								<span class="truncate font-medium"
-									>{product?.title || m['projects.products_placeholder']()}</span
-								>
-								{#if product?.description}
-									<span class="truncate text-xs text-muted-foreground">{product.description}</span>
-								{/if}
+								{@const product = translatedProducts.find((p: { id: number; }) => p.id === entry.productId)}
+								<span class="truncate font-medium">{product?.title || m['projects.products_placeholder']()}</span>
 							{/if}
 						</div>
 						<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
@@ -153,7 +163,7 @@
 							/>
 							<Command.List>
 								<Command.Empty>{m['projects.no_item_found']()}</Command.Empty>
-								<Command.Group class="max-h-64 overflow-y-auto">
+								<Command.Group class="max-h-64 overflow-y-auto custom-scroll">
 									{#each getFilteredOptions(getSearchQuery(index)) as product (product.id)}
 										<Command.Item
 											value={product.title}
@@ -174,9 +184,6 @@
 														)}
 													/>
 												</div>
-												{#if product.description}
-													<span class="text-xs text-muted-foreground">{product.description}</span>
-												{/if}
 											</div>
 										</Command.Item>
 									{/each}
@@ -192,15 +199,15 @@
 				<Label>{m['projects.count_label']()}</Label>
 				<NumberField.Root min={1} max={1000} bind:value={entry.count}>
 					<NumberField.Group>
-						<NumberField.Decrement />
-						<NumberField.Input class="w-12" />
-						<NumberField.Increment />
+						<NumberField.Decrement disabled={readonly} />
+						<NumberField.Input class="w-12" disabled={readonly} />
+						<NumberField.Increment disabled={readonly} />
 					</NumberField.Group>
 				</NumberField.Root>
 			</div>
 
 			<!-- Remove Button -->
-			{#if entries.length > 0}
+			{#if entries.length > 0 && !readonly}
 				<Button
 					type="button"
 					variant="ghost"
@@ -222,8 +229,10 @@
 		<div class="text-sm font-medium">
 			{m['projects.total_price']()}: €{formatPrice(calculatedTotal)}
 		</div>
-		<Button type="button" variant="outline" onclick={addEntry}>
-			{m['projects.add_product']()}
-		</Button>
+		{#if !readonly}
+			<Button type="button" variant="outline" onclick={addEntry}>
+				{m['projects.add_product']()}
+			</Button>
+		{/if}
 	</div>
 </div>

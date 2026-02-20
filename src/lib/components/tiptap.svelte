@@ -32,7 +32,7 @@
 	import Rows2 from '@lucide/svelte/icons/rows-2';
 	import { X } from '@lucide/svelte';
 
-	let { value = $bindable(''), class: className } = $props<{ value?: string; class?: string }>();
+	let { value = $bindable(''), editable = true, class: className } = $props<{ value?: string; editable?: boolean; class?: string }>();
 	let editor = $state() as Readable<Editor | null>;
 	let isInternalUpdate = false;
 	let skipNextUpdate = false;
@@ -106,6 +106,7 @@
 
 	onMount(() => {
 		editor = createEditor({
+			editable: editable,
 			extensions: [
 				StarterKit,
 				Image,
@@ -192,7 +193,7 @@
 
 </script>
  
-{#if $editor}
+{#if $editor && editable}
 	<div class="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-1">
 		<!-- Formatting -->
 		<Toggle
@@ -360,6 +361,8 @@
 			</Popover.Content>
 		</Popover.Root>
 	</div>
+{/if}
+{#if $editor}
 	<EditorContent class="h-full max-h-full" editor={$editor} />
 {/if}
 <input

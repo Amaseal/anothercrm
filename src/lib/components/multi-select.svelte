@@ -10,11 +10,13 @@
 	let {
 		options = [],
 		value = $bindable([]),
-		placeholder = 'Select items...'
+		placeholder = 'Select items...',
+		disabled = false
 	} = $props<{
 		options: { value: string | number; label: string }[];
 		value: (string | number)[];
 		placeholder?: string;
+		disabled?: boolean;
 	}>();
 
 	let open = $state(false);
@@ -29,12 +31,13 @@
 </script>
 
 <Popover.Root bind:open>
-	<Popover.Trigger>
+	<Popover.Trigger disabled={disabled}>
 		{#snippet child({ props })}
 			<Button
 				variant="outline"
 				role="combobox"
 				aria-expanded={open}
+				disabled={disabled}
 				class="h-auto min-h-10 w-full !justify-between hover:bg-background"
 				{...props}
 			>

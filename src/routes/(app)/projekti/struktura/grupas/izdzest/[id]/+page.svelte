@@ -14,7 +14,6 @@
 		return translations.find((t) => t.language === currentLocale);
 	};
 
-	console.log(getTranslation(data.item?.translations as TabGroupTranslation[]));
 </script>
 
 <svelte:head>

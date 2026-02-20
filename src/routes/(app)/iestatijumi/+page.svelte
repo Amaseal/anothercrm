@@ -8,6 +8,7 @@
     import * as Select from '$lib/components/ui/select';
     import { Textarea } from '$lib/components/ui/textarea';
     import { toast } from 'svelte-sonner';
+    import { copyToClipboard } from '$lib/utilities';
 
 	let { data, form } = $props();
 
@@ -139,9 +140,9 @@
                     {#if generatedCode}
                         <div class="mt-4 p-4 bg-muted rounded-md flex items-center justify-between">
                             <code class="text-lg font-mono font-bold">{generatedCode}</code>
-                             <Button variant="ghost" size="sm" onclick={() => navigator.clipboard.writeText(
-                                `${window.location.origin}/register?code=${generatedCode}`
-                             )}>
+                             <Button variant="ghost" size="sm" onclick={async () => {
+                                await copyToClipboard(`${window.location.origin}/register?code=${generatedCode}`);
+                             }}>
                                 {m['components.copy_link']()}
                             </Button>
                         </div>

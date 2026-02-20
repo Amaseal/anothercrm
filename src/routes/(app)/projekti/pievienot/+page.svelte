@@ -18,7 +18,7 @@
 	import ClientSelect from '$lib/components/client-select.svelte';
 	import ImagePreviewInput from '@/components/image-preview-input.svelte';
 
-	import { isClient } from '$lib/stores/user';
+	import { isClient, isAdmin } from '$lib/stores/user';
 
 	let { data } = $props();
 
@@ -168,8 +168,10 @@
 				<!-- SECTION 1: Description & Products (Products moved here) -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
 					<!-- Right (35%) - Assignment & Products -->
+					
 					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
 						<!-- Assignment Controls -->
+						 {#if $isAdmin}
 						<div class="space-y-4">
 							<!-- Assignee -->
 							<div class="grid gap-2">
@@ -189,7 +191,7 @@
 								</Select.Root>
 							</div>
 
-							{#if !$isClient}
+							
 								<!-- Seamstress -->
 								<div class="grid gap-2">
 									<Label>{m['projects.seamstress_label']()}</Label>
@@ -207,7 +209,7 @@
 										</Select.Content>
 									</Select.Root>
 								</div>
-							{/if}
+						
 
 							<!-- Materials -->
 							<div class="grid gap-2">
@@ -225,12 +227,13 @@
 								{/each}
 							</div>
 						</div>
-
+						{/if}
 						<!-- Products List (Moved from Execution section) -->
 						<div class="flex-1">
 							<ProductList products={data.products} bind:totalPrice />
 						</div>
 					</div>
+				
 					<!-- Left (65%) - Description -->
 					<!-- Flex col to allow internal growth -->
 					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">

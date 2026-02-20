@@ -20,6 +20,7 @@
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import { toast } from 'svelte-sonner';
 	import { invalidateAll } from '$app/navigation';
+	import {isAdmin} from '$lib/stores/user';
 
 	let importing = $state(false);
 	let fileInput: HTMLInputElement;
@@ -95,30 +96,8 @@
 		children?: () => any;
 	} = $props();
 
-	import { generatePdf } from '$lib/pdf';
-
-	async function handleDownload(invoice: any) {
-		try {
-			// Fetch full invoice data including items and company if not present
-			const res = await fetch(`/api/invoices/${invoice.id}`);
-			if (!res.ok) throw new Error('Failed to fetch invoice data');
-			const fullInvoice = await res.json();
-
-			// The API should return { invoice, items, company }
-			const pdfData = {
-				...fullInvoice.invoice,
-				items: fullInvoice.items,
-				company: fullInvoice.company,
-				// Ensure language is set
-				language: fullInvoice.invoice.language || 'lv',
-				vatRate: fullInvoice.invoice.taxRate || 21
-			};
-
-			generatePdf(pdfData).download(`invoice-${invoice.invoiceNumber}.pdf`);
-		} catch (e) {
-			console.error(e);
-			toast.error('Failed to generate PDF');
-		}
+	function handleDownload(invoice: any) {
+		window.open(`/rekini/drukat/${invoice.id}`, '_blank');
 	}
 
 	// Initialize state from server data
@@ -210,6 +189,8 @@
 			bind:this={fileInput}
 			onchange={handleImport}
 		/>
+
+		{#if $isAdmin}
 		<Button
 			variant="outline"
 			class="ml-auto flex items-center gap-2"
@@ -222,9 +203,11 @@
 				<FileSpreadsheet /> {m['invoices.import_button']()}
 			{/if}
 		</Button>
-		<Button href="/rekini/pievienot" variant="outline" class="flex items-center gap-2"
+				<Button href="/rekini/pievienot" variant="outline" class="flex items-center gap-2"
 			><Plus />{m['components.add']()}</Button
 		>
+		{/if}
+
 	</div>
 </header>
 <div class="mb-4 space-y-4">
@@ -278,8 +261,10 @@
 					<Table.Head class="text-center">{m['invoices.status']()}</Table.Head>
 					<Table.Head class="w-12 text-center">PDF</Table.Head>
 					<Table.Head class="w-12 text-center">Send</Table.Head>
+					{#if $isAdmin}
 					<Table.Head class="w-12 text-center">{m['components.edit']()}</Table.Head>
 					<Table.Head class="w-12 text-center">{m['components.delete']()}</Table.Head>
+					{/if}
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
@@ -316,6 +301,7 @@
 									><Send size="16" /></Button
 								>
 							</Table.Cell>
+							{#if $isAdmin}
 							<Table.Cell class="text-center">
 								<Button href="/rekini/labot/{item.id}" variant="ghost" size="icon"
 									><Pencil size="16" /></Button
@@ -329,6 +315,7 @@
 									class="hover:bg-red-100 hover:text-red-600"><Trash2 size="16" /></Button
 								>
 							</Table.Cell>
+							{/if}
 						</Table.Row>
 					{/each}
 				{/if}

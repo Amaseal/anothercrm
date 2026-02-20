@@ -74,7 +74,7 @@ const labels = {
         vat: 'PVN',
         total: 'Summa apmaksai',
         totalInWords: 'Summa vārdiem',
-        footer: 'Rēķins ir sagatavots elektroniski un ir derīgs bez paraksta.'
+        footer: 'Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta'
     },
     en: {
         invoice: 'Commercial Invoice',
