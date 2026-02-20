@@ -16,19 +16,25 @@
 		title: string;
 		description?: string | null;
 		cost: number;
+		price: number;
+		clientPrice?: number | null;
 		translations?: { language: string; title: string; description: string | null }[];
 	}
 
 	let {
 		products,
 		totalPrice = $bindable(0),
+		totalCost = $bindable(0),
 		initialEntries = [],
-		readonly = false
+		readonly = false,
+		isAdmin = false
 	} = $props<{
 		products: Product[];
 		totalPrice?: number;
+		totalCost?: number;
 		initialEntries?: { productId: number; count: number; isOpen: boolean }[];
 		readonly?: boolean;
+		isAdmin?: boolean;
 	}>();
 
 	let entries = $state<{ productId: number; count: number; isOpen: boolean }[]>(
@@ -110,6 +116,18 @@
 		return entries.reduce((total, entry) => {
 			const product = products.find((p: { id: number }) => p.id === entry.productId);
 			if (product && entry.count > 0) {
+				// Use clientPrice if set, else selling price
+				const effectivePrice = product.clientPrice ?? product.price;
+				return total + effectivePrice * entry.count;
+			}
+			return total;
+		}, 0);
+	}
+
+	function calculateTotalCost() {
+		return entries.reduce((total, entry) => {
+			const product = products.find((p: { id: number }) => p.id === entry.productId);
+			if (product && entry.count > 0) {
 				return total + product.cost * entry.count;
 			}
 			return total;
@@ -117,9 +135,11 @@
 	}
 
 	let calculatedTotal = $derived(calculateTotalPrice());
+	let calculatedCost = $derived(calculateTotalCost());
 
 	$effect(() => {
 		totalPrice = calculatedTotal;
+		totalCost = calculatedCost;
 	});
 
 	function formatPrice(priceInCents: number): string {
@@ -226,8 +246,15 @@
 	{/each}
 
 	<div class="flex items-center justify-between pt-2">
-		<div class="text-sm font-medium">
-			{m['projects.total_price']()}: €{formatPrice(calculatedTotal)}
+		<div class="space-y-0.5">
+			<div class="text-sm font-medium">
+				{m['projects.total_price']()}: €{formatPrice(calculatedTotal)}
+			</div>
+			{#if isAdmin}
+				<div class="text-xs text-muted-foreground">
+					Izmaksas: €{formatPrice(calculatedCost)}
+				</div>
+			{/if}
 		</div>
 		{#if !readonly}
 			<Button type="button" variant="outline" onclick={addEntry}>

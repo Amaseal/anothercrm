@@ -1,6 +1,6 @@
 // Skipping edit for now to investigate where tab moves happen.
 import { db } from '$lib/server/db';
-import { task, material, product, taskMaterial, taskProduct, file, invoice } from '$lib/server/db/schema';
+import { task, material, product, taskMaterial, taskProduct, file, invoice, userClient } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
@@ -18,7 +18,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     const materials = await db.query.material.findMany();
     const products = await db.query.product.findMany({
         with: {
-            translations: true
+            translations: true,
+            clientPrices: true
         }
     });
 
@@ -88,12 +89,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         }
     }
 
+    // Attach clientPrice for the current user's client
+    const productsWithClientPrice = products.map((p) => ({
+        ...p,
+        clientPrice: userClientId
+            ? (p.clientPrices.find((cp: { clientId: number }) => cp.clientId === userClientId)?.price ?? null)
+            : null
+    }));
+
     return {
         item,
         clients,
         users,
         materials,
-        products,
+        products: productsWithClientPrice,
         userClientId
     };
 };
@@ -129,14 +138,32 @@ export const actions: Actions = {
 
             if (productIds.length > 0) {
                 const selectedProducts = await db.query.product.findMany({
-                    where: (p, { inArray }) => inArray(p.id, productIds)
+                    where: (p, { inArray }) => inArray(p.id, productIds),
+                    with: { clientPrices: true }
                 });
 
-                const productCostMap = new Map(selectedProducts.map(p => [p.id, p.cost]));
+                // Resolve clientId for the current user (if type 'client')
+                let userLinkedClientId: number | null = null;
+                if (user.type === 'client') {
+                    const ucResult = await db
+                        .select({ clientId: userClient.clientId })
+                        .from(userClient)
+                        .where(eq(userClient.userId, user.id))
+                        .limit(1);
+                    if (ucResult.length > 0) {
+                        userLinkedClientId = ucResult[0].clientId;
+                    }
+                }
+
                 calculatedPrice = productIds.reduce((total, id, index) => {
-                    const cost = productCostMap.get(id) || 0;
+                    const prod = selectedProducts.find(p => p.id === id);
+                    if (!prod) return total;
+                    const clientPriceEntry = userLinkedClientId
+                        ? prod.clientPrices.find((cp: { clientId: number }) => cp.clientId === userLinkedClientId)
+                        : null;
+                    const effectivePrice = clientPriceEntry?.price ?? prod.price;
                     const count = productCounts[index] || 0;
-                    return total + (cost * count);
+                    return total + (effectivePrice * count);
                 }, 0);
             }
         }

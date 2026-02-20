@@ -45,6 +45,7 @@
 
 	// Total Price from ProductList
 	let totalPrice = $state(0);
+	let totalCost = $state(0);
 
 	// Derived Names
 	let selectedClientName = $derived(
@@ -230,8 +231,8 @@
 						{/if}
 						<!-- Products List (Moved from Execution section) -->
 						<div class="flex-1">
-							<ProductList products={data.products} bind:totalPrice />
-						</div>
+					<ProductList products={data.products} bind:totalPrice bind:totalCost isAdmin={$isAdmin} />
+				</div>
 					</div>
 				
 					<!-- Left (65%) - Description -->
@@ -276,8 +277,15 @@
 			<div
 				class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"
 			>
-				<div class="text-xl font-bold">
-					{m['projects.total_price']()}: €{formatPrice(totalPrice)}
+				<div class="flex items-center gap-4">
+					<div class="text-xl font-bold">
+						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
+					</div>
+					{#if $isAdmin}
+						<div class="text-sm text-muted-foreground">
+							Izmaksas: €{formatPrice(totalCost)}
+						</div>
+					{/if}
 				</div>
 				<div class="flex items-center gap-4">
 					<Button

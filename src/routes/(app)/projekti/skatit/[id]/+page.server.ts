@@ -1,6 +1,6 @@
 // Copied from labot server file, removed actions
 import { db } from '$lib/server/db';
-import { task, material, product, taskMaterial, taskProduct, file, invoice } from '$lib/server/db/schema';
+import { task, material, product, taskMaterial, taskProduct, file, invoice, userClient } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { eq, and, inArray, desc } from 'drizzle-orm';
@@ -16,7 +16,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     const materials = await db.query.material.findMany();
     const products = await db.query.product.findMany({
         with: {
-            translations: true
+            translations: true,
+            clientPrices: true
         }
     });
 
@@ -86,12 +87,20 @@ export const load: PageServerLoad = async ({ params, locals }) => {
         }
     }
 
+    // Attach clientPrice for the current user's client
+    const productsWithClientPrice = products.map((p) => ({
+        ...p,
+        clientPrice: userClientId
+            ? (p.clientPrices.find((cp: { clientId: number }) => cp.clientId === userClientId)?.price ?? null)
+            : null
+    }));
+
     return {
         item,
         clients,
         users,
         materials,
-        products,
+        products: productsWithClientPrice,
         userClientId
     };
 };

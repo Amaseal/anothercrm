@@ -53,6 +53,7 @@
 	let descriptionContent = $state(data.item.description || '');
 
 	let totalPrice = $state(data.item.price || 0);
+	let totalCost = $state(0);
 
 	let selectedClientName = $derived(
 		data.clients.find((c: { id: { toString: () => any } }) => c.id.toString() === selectedClientId)
@@ -266,8 +267,10 @@
 							<ProductList
 								products={data.products}
 								bind:totalPrice
+								bind:totalCost
 								initialEntries={initialProductEntries}
                                 readonly={true}
+								isAdmin={$isAdmin}
 							/>
 						</div>
 					</div>
@@ -317,6 +320,11 @@
 					<div class="text-xl font-bold">
 						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
 					</div>
+					{#if $isAdmin}
+						<div class="text-sm text-muted-foreground">
+							Izmaksas: €{formatPrice(totalCost)}
+						</div>
+					{/if}
 				</div>
 				<div class="flex items-center gap-2 print:hidden">
 					<Button

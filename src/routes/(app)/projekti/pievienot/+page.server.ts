@@ -1,9 +1,9 @@
 import { db } from '$lib/server/db';
-import { client, tab, task, user, material, product, taskMaterial, taskProduct, file, userClient } from '$lib/server/db/schema';
+import { client, tab, task, user, material, product, taskMaterial, taskProduct, file, userClient, clientProductPrice } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -36,11 +36,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 		where: (u, { eq }) => eq(u.type, 'admin')
 	});
 	const materials = await db.query.material.findMany();
-	const products = await db.query.product.findMany({
+	const rawProducts = await db.query.product.findMany({
 		with: {
-			translations: true
+			translations: true,
+			clientPrices: true
 		}
 	});
+
+	// Attach clientPrice for the current user's client (if they are of type client)
+	const products = rawProducts.map((p) => ({
+		...p,
+		clientPrice: userClientId
+			? (p.clientPrices.find((cp) => cp.clientId === userClientId)?.price ?? null)
+			: null
+	}));
 
 	return {
 		tabs,
@@ -102,16 +111,33 @@ export const actions: Actions = {
 
 			if (productIds.length > 0) {
 				const selectedProducts = await db.query.product.findMany({
-					where: (p, { inArray }) => inArray(p.id, productIds)
+					where: (p, { inArray }) => inArray(p.id, productIds),
+					with: { clientPrices: true }
 				});
 
-				// Create a map for quick lookup
-				const productCostMap = new Map(selectedProducts.map(p => [p.id, p.cost]));
+				// Resolve clientId for the current user (if type 'client')
+				let userLinkedClientId: number | null = null;
+				if (user.type === 'client') {
+					const ucResult = await db
+						.select({ clientId: userClient.clientId })
+						.from(userClient)
+						.where(eq(userClient.userId, user.id))
+						.limit(1);
+					if (ucResult.length > 0) {
+						userLinkedClientId = ucResult[0].clientId;
+					}
+				}
 
+				// Build a price map (clientPrice > price > cost fallback)
 				calculatedPrice = productIds.reduce((total, id, index) => {
-					const cost = productCostMap.get(id) || 0;
+					const prod = selectedProducts.find(p => p.id === id);
+					if (!prod) return total;
+					const clientPriceEntry = userLinkedClientId
+						? prod.clientPrices.find(cp => cp.clientId === userLinkedClientId)
+						: null;
+					const effectivePrice = clientPriceEntry?.price ?? prod.price;
 					const count = productCounts[index] || 0;
-					return total + (cost * count);
+					return total + (effectivePrice * count);
 				}, 0);
 			}
 		}
@@ -124,11 +150,11 @@ export const actions: Actions = {
 		if (preview && preview.size > 0) {
 			const uploadDir = 'uploads';
 			await mkdir(uploadDir, { recursive: true });
-			const fileName = `${Date.now()}-${preview.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
+			const fileName = `${Date.now()} -${preview.name.replace(/[^a-zA-Z0-9.\-_]/g, '')} `;
 			const filePath = join(uploadDir, fileName);
 			const buffer = Buffer.from(await preview.arrayBuffer());
 			await writeFile(filePath, buffer);
-			previewUrl = `/uploads/${fileName}`;
+			previewUrl = `/ uploads / ${fileName} `;
 		}
 
 		if (!title) {
