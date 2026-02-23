@@ -284,7 +284,7 @@ export async function getCompletedTasks(
             or(
                 ilike(task.title, searchTerm),
                 ilike(task.description, searchTerm),
-                sql`${task.price}::text LIKE ${searchTerm}`
+                sql`${task.price}::text ILIKE ${searchTerm}`
             )
         );
     }

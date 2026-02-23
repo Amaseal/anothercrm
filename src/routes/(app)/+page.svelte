@@ -36,7 +36,8 @@
 	const chartData = $derived(
 		data.chartData.map((item, index) => ({
 			month: formatMonth(item.month),
-			profit: Number(item.profit) / 100 || 0
+			profit: Number(item.profit) / 100 || 0,
+			taskCount: Number(item.taskCount) || 0
 		}))
 	);
 
@@ -107,6 +108,22 @@
 		const link = document.createElement('a');
 		link.setAttribute('href', url);
 		link.setAttribute('download', `monthly_profit_${new Date().getFullYear()}.csv`);
+		link.style.visibility = 'hidden';
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+	}
+
+	function exportTaskCountToCSV() {
+		const headers = ['Month', 'Tasks'];
+		const rows = chartData.map((d) => [d.month, d.taskCount.toString()]);
+		const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.setAttribute('href', url);
+		link.setAttribute('download', `monthly_tasks_${new Date().getFullYear()}.csv`);
 		link.style.visibility = 'hidden';
 		document.body.appendChild(link);
 		link.click();
@@ -272,41 +289,10 @@
 
 	<!-- Bottom Section - Flex Grow to fill remaining space -->
 	<div class="flex flex-col gap-4">
-		<!-- Row 1: Top Managers and Chart -->
+		<!-- Row 1: Charts -->
 		<div class="flex flex-col gap-4 lg:flex-row">
-			<!-- Top Managers -->
-			<Card.Root class="flex-1">
-				<Card.Header>
-					<Card.Title>Labākie vadītāji</Card.Title>
-					<Card.Description>Pēc uzdevumu kopvērtības</Card.Description>
-				</Card.Header>
-				<Card.Content>
-					<div class="space-y-4">
-						{#each data.topManagers as manager, index}
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-3">
-									<div
-										class="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
-									>
-										{index + 1}
-									</div>
-									<div class="flex flex-col">
-										<span class="text-sm font-medium">{manager.name || 'Nezināms'}</span>
-										<span class="text-xs text-muted-foreground">Vadītājs</span>
-									</div>
-								</div>
-								<div class="flex flex-col items-end">
-									<span class="text-sm font-bold">{formatCurrency(manager.totalValue || 0)}</span>
-	
-								</div>
-							</div>
-						{/each}
-					</div>
-				</Card.Content>
-			</Card.Root>
-
 			<!-- Monthly Earnings Chart -->
-			<Card.Root class="flex flex-[1.5] flex-col relative">
+			<Card.Root class="flex flex-1 flex-col relative min-h-[350px]">
 				<Card.Header class="flex shrink-0 flex-row items-center justify-between">
 					<div>
 						<Card.Title>Mēneša peļņa</Card.Title>
@@ -398,10 +384,135 @@
 					</div>
 				</Card.Content>
 			</Card.Root>
+
+			<!-- Monthly Tasks Chart -->
+			<Card.Root class="flex flex-1 flex-col relative min-h-[350px]">
+				<Card.Header class="flex shrink-0 flex-row items-center justify-between">
+					<div>
+						<Card.Title>Mēneša uzdevumi</Card.Title>
+						<Card.Description>Attīstība pēdējos 12 mēnešos</Card.Description>
+					</div>
+					<div class="flex gap-2">
+						<Button variant="outline" size="sm" onclick={exportTaskCountToCSV}>Export CSV</Button>
+						<Button variant="outline" size="sm">{new Date().getFullYear()}</Button>
+					</div>
+				</Card.Header>
+				<Card.Content class="relative flex-1 min-h-0 p-0">
+					<div class="absolute inset-0 flex flex-col p-6 pt-0">
+						{#if chartData.length > 0}
+							{@const yScale = scaleLinear()
+								.domain([0, Math.max(...chartData.map((d) => d.taskCount), 10)])
+								.range([100, 0])}
+							{@const xScale = scaleBand()
+								.domain(chartData.map((d) => d.month))
+								.range([0, 100])
+								.padding(0.3)}
+
+							<div class="flex-1 w-full min-h-0 relative">
+								<!-- Grid Background (SVG) -->
+								<svg
+									class="absolute inset-0 w-full h-full"
+									viewBox="0 0 100 100"
+									preserveAspectRatio="none"
+								>
+									<!-- Grid lines -->
+									{#each yScale.ticks(5) as tick}
+										<line
+											x1="0"
+											x2="100"
+											y1={yScale(tick)}
+											y2={yScale(tick)}
+											stroke="currentColor"
+											stroke-opacity="0.1"
+											stroke-width="0.1"
+											vector-effect="non-scaling-stroke"
+										/>
+									{/each}
+								</svg>
+
+								<!-- HTML Bars & Tooltips -->
+								<div class="absolute inset-0">
+									{#each chartData as d}
+										<div
+											class="absolute bottom-0 bg-primary transition-opacity hover:opacity-80 rounded-t-sm group"
+											style="
+												left: {xScale(d.month) ?? 0}%;
+												width: {xScale.bandwidth()}%;
+												height: {100 - yScale(d.taskCount)}%;
+											"
+										>
+											<!-- Tooltip -->
+											<div
+												class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50"
+											>
+												<div class="flex justify-center">
+													<div
+														class="rounded border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground shadow-md"
+													>
+														<div class="font-medium">{d.month}</div>
+														<div>{d.taskCount} uzdevumi</div>
+													</div>
+												</div>
+											</div>
+										</div>
+									{/each}
+								</div>
+							</div>
+
+							<!-- X Axis Labels (HTML) -->
+							<div class="h-6 w-full relative mt-2 select-none">
+								{#each chartData as d}
+									<div
+										class="absolute text-[10px] text-muted-foreground text-center -translate-x-1/2 whitespace-nowrap"
+										style="left: {(xScale(d.month) ?? 0) + xScale.bandwidth() / 2}%; width: auto;"
+									>
+										{d.month}
+									</div>
+								{/each}
+							</div>
+						{:else}
+							<div class="flex h-full items-center justify-center text-muted-foreground">
+								Nav pietiekami daudz datu diagrammas attēlošanai
+							</div>
+						{/if}
+					</div>
+				</Card.Content>
+			</Card.Root>
 		</div>
 
-		<!-- Row 2: Top Responsible and Best Clients -->
+		<!-- Row 2: Top Managers, Top Responsible and Best Clients -->
 		<div class="flex flex-col gap-4 md:flex-row">
+			<!-- Top Managers -->
+			<Card.Root class="flex-1">
+				<Card.Header>
+					<Card.Title>Labākie vadītāji</Card.Title>
+					<Card.Description>Pēc uzdevumu kopvērtības</Card.Description>
+				</Card.Header>
+				<Card.Content>
+					<div class="space-y-4">
+						{#each data.topManagers as manager, index}
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-3">
+									<div
+										class="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
+									>
+										{index + 1}
+									</div>
+									<div class="flex flex-col">
+										<span class="text-sm font-medium">{manager.name || 'Nezināms'}</span>
+										<span class="text-xs text-muted-foreground">Vadītājs</span>
+									</div>
+								</div>
+								<div class="flex flex-col items-end">
+									<span class="text-sm font-bold">{formatCurrency(manager.totalValue || 0)}</span>
+	
+								</div>
+							</div>
+						{/each}
+					</div>
+				</Card.Content>
+			</Card.Root>
+
 			<!-- Top Responsible Persons -->
 			<Card.Root class="flex-1">
 				<Card.Header>

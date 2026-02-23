@@ -141,6 +141,20 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         return acc;
     }, {} as Record<string, number>);
 
+    // Calculate task count by month
+    const monthlyTaskCounts = await db
+        .select({
+            month: sql<string>`TO_CHAR(${task.created_at}, 'YYYY-MM')`,
+            count: count(task.id)
+        })
+        .from(task)
+        .groupBy(sql`TO_CHAR(${task.created_at}, 'YYYY-MM')`);
+
+    const monthlyTaskCountMap = monthlyTaskCounts.reduce((acc, item) => {
+        acc[item.month] = Number(item.count);
+        return acc;
+    }, {} as Record<string, number>);
+
     // Create array of last 12 months with zero values as default
     const chartData = [];
     for (let i = 11; i >= 0; i--) {
@@ -150,10 +164,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
         // Find if we have data for this month
         const monthProfit = monthlyProfitSums[monthStr] || 0;
+        const monthTaskCount = monthlyTaskCountMap[monthStr] || 0;
 
         chartData.push({
             month: monthStr,
-            profit: monthProfit
+            profit: monthProfit,
+            taskCount: monthTaskCount
         });
     }
 

@@ -22,7 +22,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	if (search) {
 		const searchTerm = `%${search}%`;
 		filterConditions.push(
-			sql`(${client.name} LIKE ${searchTerm} OR ${client.type} LIKE ${searchTerm})`
+			sql`(${client.name} ILIKE ${searchTerm} OR ${client.type}::text ILIKE ${searchTerm})`
 		);
 	}
 

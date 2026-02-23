@@ -23,7 +23,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	if (search) {
 		const searchTerm = `%${search}%`;
 		filterConditions.push(
-			sql`(${material.title} LIKE ${searchTerm} OR ${material.article} LIKE ${searchTerm} OR ${material.manufacturer} LIKE ${searchTerm}) OR ${material.remaining} LIKE ${searchTerm}`
+			sql`(${material.title} ILIKE ${searchTerm} OR ${material.article} ILIKE ${searchTerm} OR ${material.manufacturer} ILIKE ${searchTerm} OR ${material.remaining}::text ILIKE ${searchTerm})`
 		);
 	}
 
