@@ -70,6 +70,10 @@
 			}
 		});
 
+		if (url.searchParams.toString() === '') {
+			url.searchParams.set('clear', 'true');
+		}
+
 		goto(url.toString(), { replaceState: true });
 	}
 

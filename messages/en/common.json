@@ -9,7 +9,12 @@
 		"products": "Products",
 		"files": "Files",
 		"invoices": "Invoices"
-		
 	},
-	"selected_count": "{count} selected"
+	"selected_count": "{count} selected",
+	"dashboard_stats_tabgroups": "Tasks by groups",
+	"dashboard_stats_tabs": "Task statistics by status",
+	"dashboard_total_price": "Total amount:",
+	"dashboard_no_tasks": "No tasks in this status",
+	"dashboard_tasks_count": "Total tasks:",
+	"dashboard_no_tab_selected": "Select status"
 }

@@ -1,10 +1,10 @@
 import { db } from '$lib/server/db';
 import { task, user, client, taskProduct, product, tab, tabGroup } from '$lib/server/db/schema';
-import { sql, count, desc, eq, and, or, lte, gte, ne } from 'drizzle-orm';
+import { sql, count, desc, eq, and, or, lte, gte, ne, isNull } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 
     if (locals.user?.type === 'client') {
         return redirect(302, '/projekti');
@@ -222,6 +222,61 @@ export const load: PageServerLoad = async ({ locals }) => {
         share: Math.round((Number(person.taskCount) / totalTasksCount) * 100)
     }));
 
+    // New Data for Tab Groups Pie Chart
+    const tabGroupsStatsData = await db.query.tabGroup.findMany({
+        with: {
+            translations: true,
+            tabs: {
+                with: {
+                    tasks: {
+                        where: (t, { ne, isNull, or }) => or(ne(t.isDone, true), isNull(t.isDone)),
+                        columns: { id: true }
+                    }
+                }
+            }
+        }
+    });
+
+    const tabGroupsStats = tabGroupsStatsData.map(group => {
+        const taskCount = group.tabs.reduce((sum, currentTab) => sum + currentTab.tasks.length, 0);
+        return {
+            id: group.id,
+            color: group.color,
+            translations: group.translations,
+            taskCount
+        };
+    });
+
+    // New Data for Specific Tab Tasks
+    const selectedTabIdStr = url.searchParams.get('tabId');
+    const selectedTabId = selectedTabIdStr ? parseInt(selectedTabIdStr) : 59; // Defaults to 59 as requested
+
+    const allTabsForSelect = await db.query.tab.findMany({
+        with: {
+            translations: true
+        }
+    });
+
+    const selectedTabTasksData = await db
+        .select({
+            id: task.id,
+            title: task.title,
+            price: task.price,
+            clientName: client.name,
+            endDate: task.endDate
+        })
+        .from(task)
+        .leftJoin(client, eq(task.clientId, client.id))
+        .where(
+            and(
+                eq(task.tabId, selectedTabId),
+                or(ne(task.isDone, true), isNull(task.isDone))
+            )
+        )
+        .orderBy(desc(task.created_at));
+
+    const selectedTabTotalPrice = selectedTabTasksData.reduce((sum, t) => sum + (t.price || 0), 0);
+
     return {
         topManagers,
         topResponsiblePersons: topResponsiblePersonsWithShare,
@@ -231,6 +286,13 @@ export const load: PageServerLoad = async ({ locals }) => {
         currentMonthProfit,
         activeProjectsCount,
         activeTasksCount,
-        profitChange
+        profitChange,
+        tabGroupsStats,
+        allTabsForSelect,
+        selectedTabTasks: {
+            id: selectedTabId,
+            tasks: selectedTabTasksData,
+            totalPrice: selectedTabTotalPrice
+        }
     };
 };

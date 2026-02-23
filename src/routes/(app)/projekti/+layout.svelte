@@ -39,6 +39,10 @@
 			}
 		});
 
+		if (url.searchParams.toString() === '') {
+			url.searchParams.set('clear', 'true');
+		}
+
 		goto(url.toString(), { replaceState: true });
 	}
 	import { onMount } from 'svelte';

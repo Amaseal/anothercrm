@@ -16,6 +16,11 @@
 	import Zap from '@lucide/svelte/icons/zap';
 	import ListTodo from '@lucide/svelte/icons/list-todo';
 	import { scaleLinear, scaleBand } from 'd3-scale';
+	import * as m from '$lib/paraglide/messages';
+	import { getLocale } from '$lib/paraglide/runtime.js';
+	import * as Select from '$lib/components/ui/select/index.js';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 
 	let { data } = $props();
 
@@ -106,6 +111,34 @@
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
+	}
+
+	const conicGradient = $derived.by(() => {
+		let total = data.tabGroupsStats.reduce((sum, g) => sum + g.taskCount, 0);
+		if (total === 0) return '';
+		let currentAngle = 0;
+		let stops: string[] = [];
+		data.tabGroupsStats.forEach((g) => {
+			if (g.taskCount === 0) return;
+			const percentage = (g.taskCount / total) * 100;
+			const endAngle = currentAngle + percentage;
+			stops.push(`${g.color || '#ccc'} ${currentAngle}% ${endAngle}%`);
+			currentAngle = endAngle;
+		});
+		return `conic-gradient(${stops.join(', ')})`;
+	});
+
+	const currentTabId = $derived(data.selectedTabTasks.id.toString());
+	const lang = getLocale();
+
+	function getGroupTranslation(group: { translations: any[], id: number|string }) {
+		const trans = group.translations.find((t: any) => t.language === lang);
+		return trans ? trans.name : group.id.toString();
+	}
+
+	function getTabTranslation(tab: { translations: any[], id: number|string }) {
+		const trans = tab.translations.find((t: any) => t.language === lang);
+		return trans ? trans.name : tab.id.toString();
 	}
 </script>
 
@@ -421,6 +454,117 @@
 						{:else}
 							<p class="text-sm text-muted-foreground">Nav klientu ar pasūtījumiem</p>
 						{/each}
+					</div>
+				</Card.Content>
+			</Card.Root>
+		</div>
+
+		<!-- Row 3: Tab Groups Pie Chart & Specific Tab Tasks -->
+		<div class="flex flex-col gap-4 md:flex-row">
+			<!-- Pie chart for tabgroups -->
+			<Card.Root class="flex-1">
+				<Card.Header>
+					<Card.Title>{m.dashboard_stats_tabgroups()}</Card.Title>
+				</Card.Header>
+				<Card.Content class="flex items-center justify-center py-6 gap-8">
+					{#if conicGradient}
+						<div class="w-48 h-48 rounded-full border shadow-sm relative overflow-hidden flex-shrink-0" style="background: {conicGradient}">
+							<div class="absolute inset-8 bg-card rounded-full shadow-inner flex items-center justify-center">
+								<div class="text-sm font-semibold flex flex-col items-center">
+									<span>{data.tabGroupsStats.reduce((acc, g) => acc + g.taskCount, 0)}</span>
+									<span class="text-[10px] text-muted-foreground uppercase">{m.dashboard_tasks_count().replace(':','')}</span>
+								</div>
+							</div>
+						</div>
+						<!-- Legend -->
+						<div class="flex flex-col gap-2">
+							{#each data.tabGroupsStats as group}
+								{#if group.taskCount > 0}
+									<div class="flex items-center justify-between gap-4">
+										<div class="flex items-center gap-2">
+											<div class="w-4 h-4 rounded-sm border" style="background-color: {group.color || '#ccc'}"></div>
+											<span class="text-sm font-medium">{getGroupTranslation(group)}</span>
+										</div>
+										<span class="text-xs text-muted-foreground font-semibold px-2 py-0.5 bg-muted rounded-full">
+											{group.taskCount}
+										</span>
+									</div>
+								{/if}
+							{/each}
+						</div>
+					{:else}
+						<div class="text-muted-foreground text-sm flex items-center h-48">{m.dashboard_no_tasks()}</div>
+					{/if}
+				</Card.Content>
+			</Card.Root>
+
+			<!-- Specific Tab tasks -->
+			<Card.Root class="flex-1">
+				<Card.Header class="pb-2">
+					<div class="flex justify-between items-center gap-4">
+						<Card.Title>{m.dashboard_stats_tabs()}</Card.Title>
+						<Select.Root type="single" value={currentTabId} onValueChange={(val) => { 
+							const url = new URL(page.url);
+							url.searchParams.set('tabId', val.toString());
+							goto(url.toString(), { keepFocus: true, noScroll: true }) 
+						}}>
+							<Select.Trigger class="w-[220px]">
+								{data.allTabsForSelect.find((t) => t.id.toString() === currentTabId)
+									? getTabTranslation(data.allTabsForSelect.find((t) => t.id.toString() === currentTabId)!)
+									: m.dashboard_no_tab_selected()}
+							</Select.Trigger>
+							<Select.Content class="max-h-[300px]">
+								{#each data.allTabsForSelect as st}
+									<Select.Item value={st.id.toString()} label={getTabTranslation(st)}>{getTabTranslation(st)}</Select.Item>
+								{/each}
+							</Select.Content>
+						</Select.Root>
+					</div>
+				</Card.Header>
+				<Card.Content>
+					<div class="flex justify-between items-center mb-4 px-2 py-2 bg-muted/50 rounded-lg">
+						<div class="text-sm font-medium flex gap-2">
+							<span class="text-muted-foreground">{m.dashboard_tasks_count()}</span>
+							<span>{data.selectedTabTasks.tasks.length}</span>
+						</div>
+						<div class="text-sm font-bold flex gap-2">
+							<span class="text-muted-foreground">{m.dashboard_total_price()}</span>
+							<span class="text-primary">{formatCurrency(data.selectedTabTasks.totalPrice)}</span>
+						</div>
+					</div>
+					<div class="max-h-[300px] overflow-auto rounded-md border">
+						<Table.Root>
+							<Table.Header class="sticky top-0 bg-background z-10">
+								<Table.Row>
+									<Table.Head>UZDEVUMA NOSAUKUMS</Table.Head>
+									<Table.Head class="text-right">SUMMA</Table.Head>
+								</Table.Row>
+							</Table.Header>
+							<Table.Body>
+								{#each data.selectedTabTasks.tasks as task}
+								<Table.Row>
+									<Table.Cell class="font-medium">
+										<div class="flex flex-col">
+											<a href={`/projekti/labot/${task.id}`} class="hover:underline hover:text-primary transition-colors">{task.title}</a>
+											{#if task.clientName}
+												<span class="text-xs text-muted-foreground">{task.clientName}</span>
+											{/if}
+										</div>
+									</Table.Cell>
+									<Table.Cell class="text-right font-medium">{formatCurrency(task.price || 0)}</Table.Cell>
+								</Table.Row>
+								{:else}
+								<Table.Row>
+									<Table.Cell colspan={2} class="text-center py-8 text-muted-foreground">
+										<div class="flex flex-col items-center gap-2">
+											<ListTodo class="w-8 h-8 opacity-20" />
+											<span>{m.dashboard_no_tasks()}</span>
+										</div>
+									</Table.Cell>
+								</Table.Row>
+								{/each}
+							</Table.Body>
+						</Table.Root>
 					</div>
 				</Card.Content>
 			</Card.Root>

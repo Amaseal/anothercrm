@@ -19,7 +19,10 @@ export function handleListParams(
     const currentSearch = url.search;
     const isAtBasePath = url.pathname === basePath || url.pathname === basePath + '/';
 
-
+    if (url.searchParams.get('clear') === 'true') {
+        cookies.delete(cookieName, { path: '/' });
+        throw redirect(303, url.pathname);
+    }
 
     if (currentSearch) {
 

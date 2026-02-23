@@ -9,7 +9,12 @@
 		"products": "Produkti",
 		"files": "Faili",
 		"invoices": "Rēķini"
-		
 	},
-	"selected_count": "{count} izvēlēti"
+	"selected_count": "{count} izvēlēti",
+	"dashboard_stats_tabgroups": "Uzdevumi pa grupām",
+	"dashboard_stats_tabs": "Uzdevumu statistika statusā",
+	"dashboard_total_price": "Kopējā summa:",
+	"dashboard_no_tasks": "Nav uzdevumu šajā statusā",
+	"dashboard_tasks_count": "Kopā uzdevumi:",
+	"dashboard_no_tab_selected": "Izvēlieties statusu"
 }

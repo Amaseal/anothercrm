@@ -22,8 +22,9 @@
 	let {
 		clients = $bindable([]),
 		value = $bindable(''),
+		classes,
 		disabled = false
-	}: { clients: Client[]; value: string; disabled?: boolean } = $props();
+	}: { clients: Client[]; value: string; disabled?: boolean, classes?: string } = $props();
 
 	let open = $state(false);
 	let dialogOpen = $state(false);
@@ -129,9 +130,9 @@
 	}
 </script>
 
-<Popover.Root bind:open>
+<Popover.Root bind:open >
 	<Popover.Trigger
-		class={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-between')}
+		class={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-between', classes)}
 		{disabled}
 	>
 		{selectedLabel}

@@ -84,13 +84,14 @@
 
 						{#each clientPrices as cp (cp.id)}
 							<div class="mb-2 flex items-center gap-2">
-								<div class="flex-1 max-w-64">
+								<div class="w-60!">
 									<ClientSelect
+								
 										bind:value={cp.clientId as string}
 										clients={data.btbClients}
 									/>
 								</div>
-								<div class="w-32">
+								<div class="w-24">
 									<MoneyInput currency="EUR" placeholder="0.00" bind:value={cp.price} />
 								</div>
 								<Button
