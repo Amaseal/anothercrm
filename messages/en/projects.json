@@ -26,6 +26,7 @@
 		"upload_preview": "Upload Preview",
 		"create_button": "Create Task",
 		"add_product": "Add Product",
-		"total_price": "Total Price"
+		"total_price": "Product total price",
+		"total_cost": "Product total cost"
 	}
 }

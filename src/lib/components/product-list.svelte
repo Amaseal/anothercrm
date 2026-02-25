@@ -252,7 +252,7 @@
 			</div>
 			{#if isAdmin}
 				<div class="text-xs text-muted-foreground">
-					Izmaksas: €{formatPrice(calculatedCost)}
+					{m['projects.total_cost']()}: €{formatPrice(calculatedCost)}
 				</div>
 			{/if}
 		</div>

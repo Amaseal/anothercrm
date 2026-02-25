@@ -365,15 +365,13 @@
 				class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"
 			>
 				<div class="flex items-center gap-4">
-					<div class="text-xl font-bold whitespace-nowrap">
+					<div class=" whitespace-nowrap">
 						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
 					</div>
 					{#if $isAdmin}
-						<div class="text-sm text-muted-foreground">
-							Izmaksas: €{formatPrice(totalCost)}
-						</div>
+
 						<div class="flex items-center gap-2 border-l pl-4 ml-2">
-							<span class="text-sm font-medium whitespace-nowrap">Pielāgota cena (€):</span>
+							<span class="whitespace-nowrap">Pielāgota cena (€):</span>
 							<Input
 								id="customPrice"
 								name="customPrice"
@@ -383,6 +381,9 @@
 								placeholder="Automātiski"
 								class="w-32"
 							/>
+						</div>
+												<div class="flex items-center gap-2 border-l pl-4 ml-2">
+							{m['projects.total_cost']()}: €{formatPrice(totalCost)}
 						</div>
 					{/if}
 				</div>
