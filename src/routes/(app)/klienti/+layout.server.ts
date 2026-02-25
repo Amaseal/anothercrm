@@ -1,8 +1,9 @@
 import { db } from '$lib/server/db';
 import { client } from '$lib/server/db/schema';
 import type { LayoutServerLoad } from './$types';
-import { and, desc, asc, sql, count } from 'drizzle-orm';
+import { and, desc, asc, sql, count, or } from 'drizzle-orm';
 import { handleListParams } from '$lib/server/paramState';
+import { ilikeNormalize } from '$lib/server/dbUtils';
 
 export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	const activeParams = handleListParams(url, cookies, '/klienti', 'klienti_filters');
@@ -22,7 +23,10 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	if (search) {
 		const searchTerm = `%${search}%`;
 		filterConditions.push(
-			sql`(${client.name} ILIKE ${searchTerm} OR ${client.type}::text ILIKE ${searchTerm})`
+			or(
+				ilikeNormalize(client.name, search),
+				sql`${client.type}::text ILIKE ${searchTerm}`
+			)
 		);
 	}
 

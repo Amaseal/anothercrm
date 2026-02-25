@@ -61,6 +61,19 @@
 	let totalPrice = $state(data.item.price || 0);
 	let totalCost = $state(0);
 
+	let initialProductTotalCents = data.item.taskProducts.reduce((sum: number, tp: any) => {
+		const prod = data.products.find((p: any) => p.id === tp.productId);
+		if (!prod) return sum;
+		const effectivePrice = prod.clientPrice ?? prod.price;
+		return sum + (effectivePrice * tp.count);
+	}, 0);
+
+	let customPriceInput = $state<string>(
+		(data.item.price !== null && data.item.price !== initialProductTotalCents)
+			? (data.item.price / 100).toFixed(2)
+			: ''
+	);
+
 	// Derived Names
 	let selectedClientName = $derived(
 		data.clients.find((c: { id: { toString: () => any } }) => c.id.toString() === selectedClientId)
@@ -159,7 +172,7 @@
 				</div>
 
 				<!-- Client -->
-				<div class="w-64">
+				<div >
 					<input type="hidden" name="clientId" value={selectedClientId} />
 					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={$isClient} />
 				</div>
@@ -352,12 +365,24 @@
 				class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"
 			>
 				<div class="flex items-center gap-4">
-					<div class="text-xl font-bold">
+					<div class="text-xl font-bold whitespace-nowrap">
 						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
 					</div>
 					{#if $isAdmin}
 						<div class="text-sm text-muted-foreground">
 							Izmaksas: €{formatPrice(totalCost)}
+						</div>
+						<div class="flex items-center gap-2 border-l pl-4 ml-2">
+							<span class="text-sm font-medium whitespace-nowrap">Pielāgota cena (€):</span>
+							<Input
+								id="customPrice"
+								name="customPrice"
+								type="number"
+								step="0.01"
+								bind:value={customPriceInput}
+								placeholder="Automātiski"
+								class="w-32"
+							/>
 						</div>
 					{/if}
 				</div>

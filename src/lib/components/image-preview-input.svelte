@@ -163,7 +163,7 @@
 					<Image class="h-6 w-6" />
 				</div>
 				<p class="text-sm font-medium">
-					{m['components.file_dropzone.click_drop_paste']?.() ?? 'Click, drop or paste image here'}
+					{m['components.image_dropzone.click_to_upload']()}
 				</p>
 			</div>
 		{/if}

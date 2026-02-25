@@ -6,6 +6,7 @@ import { join } from 'path';
 import type { Actions, PageServerLoad } from './$types';
 import { fail } from '@sveltejs/kit';
 import { handleListParams } from '$lib/server/paramState';
+import { normalizeString } from '$lib/server/dbUtils';
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
     const activeParams = handleListParams(url, cookies, '/faili', 'faili_filters');
@@ -131,9 +132,10 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     // 5. Filter
     let filteredFiles = allFiles;
     if (search) {
+        const normalizedSearch = normalizeString(search);
         filteredFiles = allFiles.filter(f =>
-            f.filename.toLowerCase().includes(search) ||
-            f.usage.some((u: any) => u.name?.toLowerCase().includes(search))
+            normalizeString(f.filename || '').includes(normalizedSearch) ||
+            f.usage.some((u: any) => normalizeString(u.name || '').includes(normalizedSearch))
         );
     }
 

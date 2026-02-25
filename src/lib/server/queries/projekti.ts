@@ -1,7 +1,7 @@
 import { db } from '$lib/server/db';
 import { task, userTabPreference, tabGroup, tab, user, client, userClient } from '$lib/server/db/schema';
 import { eq, or, and, isNull, inArray, notInArray, desc, asc, count, sql, ilike } from 'drizzle-orm';
-
+import { ilikeNormalize } from '$lib/server/dbUtils';
 export interface ProjectBoardColumn {
     id: number;
     name: string;
@@ -60,7 +60,7 @@ export async function getProjectBoardData(
             tasks = await db.query.task.findMany({
                 where: (t, { eq, or, isNull, and, ilike }) => {
                     const conditions = [or(eq(t.isDone, false), isNull(t.isDone))];
-                    if (search) conditions.push(ilike(t.title, `%${search}%`));
+                    if (search) conditions.push(ilikeNormalize(t.title, search));
                     return and(...conditions);
                 },
                 with: taskRelations,
@@ -87,7 +87,7 @@ export async function getProjectBoardData(
                         or(...baseConditions),
                         or(eq(t.isDone, false), isNull(t.isDone))
                     ];
-                    if (search) conditions.push(ilike(t.title, `%${search}%`));
+                    if (search) conditions.push(ilikeNormalize(t.title, search));
 
                     return and(...conditions);
                 },
@@ -107,7 +107,7 @@ export async function getProjectBoardData(
                     or(...baseConditions),
                     or(eq(t.isDone, false), isNull(t.isDone))
                 ];
-                if (search) conditions.push(ilike(t.title, `%${search}%`));
+                if (search) conditions.push(ilikeNormalize(t.title, search));
                 return and(...conditions);
             },
             with: taskRelations,
@@ -282,8 +282,8 @@ export async function getCompletedTasks(
         const searchTerm = `%${search}%`;
         filterConditions.push(
             or(
-                ilike(task.title, searchTerm),
-                ilike(task.description, searchTerm),
+                ilikeNormalize(task.title, search),
+                ilikeNormalize(task.description, search),
                 sql`${task.price}::text ILIKE ${searchTerm}`
             )
         );

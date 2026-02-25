@@ -117,7 +117,7 @@
 				</div>
 
 				<!-- Client -->
-				<div class="w-64">
+				<div >
 					<input type="hidden" name="clientId" value={selectedClientId} />
 					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={$isClient} />
 				</div>
@@ -284,6 +284,17 @@
 					{#if $isAdmin}
 						<div class="text-sm text-muted-foreground">
 							Izmaksas: €{formatPrice(totalCost)}
+						</div>
+						<div class="flex items-center gap-2 border-l pl-4 ml-2">
+							<span class="text-sm font-medium whitespace-nowrap">Pielāgota cena (€):</span>
+							<Input
+								id="customPrice"
+								name="customPrice"
+								type="number"
+								step="0.01"
+								placeholder="Automātiski"
+								class="w-32"
+							/>
 						</div>
 					{/if}
 				</div>

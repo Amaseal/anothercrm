@@ -2,7 +2,7 @@
 	"$schema": "https://inlang.com/schema/inlang-message-format",
 	"components": {
 		"image_dropzone": {
-			"click_to_upload": "Click to upload an image"
+			"click_to_upload": "Click to upload an image, or paste while hovering over this zone."
 		},
 		"save": "Save",
 		"saved_successfully": "Saved successfully",

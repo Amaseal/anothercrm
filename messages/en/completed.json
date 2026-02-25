@@ -8,6 +8,7 @@
 		"end_date": "End Date",
 		"assigned_to": "Assigned To",
 		"empty": "No completed tasks found.",
-        "view": "View"
+		"view": "View",
+		"restore": "Restore"
 	}
 }

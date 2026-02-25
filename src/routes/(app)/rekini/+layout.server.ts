@@ -5,6 +5,7 @@ import type { LayoutServerLoad } from './$types';
 import { and, desc, asc, sql, count, like, or, eq, inArray } from 'drizzle-orm';
 import { redirect } from '@sveltejs/kit';
 import { handleListParams } from '$lib/server/paramState';
+import { ilikeNormalize } from '$lib/server/dbUtils';
 
 export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
 	if (!locals.user) {
@@ -53,8 +54,8 @@ export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
 			.leftJoin(client, eq(invoice.clientId, client.id))
 			.where(
 				or(
-					like(invoice.invoiceNumber, searchTerm),
-					like(client.name, searchTerm)
+					ilikeNormalize(invoice.invoiceNumber, search),
+					ilikeNormalize(client.name, search)
 				)
 			);
 

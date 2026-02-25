@@ -13,7 +13,7 @@ export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 	}
 	const locale = getLocale();
 
-	const activeParams = handleListParams(url, cookies, '/projekti', 'projekti_filters');
+	const activeParams = handleListParams(url, cookies, '/projekti', 'projekti_filters', ['group']);
 
 	const showAll = activeParams.get('view') === 'all';
 	const search = activeParams.get('search') || undefined;

@@ -29,6 +29,9 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/node_modules ./node_modules
 COPY package.json ./
 
+# Disable adapter-node body size limits
+ENV BODY_SIZE_LIMIT=Infinity
+
 EXPOSE 3000
 
 CMD ["node", "build"]

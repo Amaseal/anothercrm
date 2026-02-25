@@ -1,9 +1,10 @@
 import { db } from '$lib/server/db';
 
 import { product } from '$lib/server/db/schema';
-import { and, desc, asc, sql, count } from 'drizzle-orm';
+import { and, desc, asc, sql, count, or } from 'drizzle-orm';
 import type { LayoutServerLoad } from './$types';
 import { handleListParams } from '$lib/server/paramState';
+import { ilikeNormalize } from '$lib/server/dbUtils';
 
 export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	const activeParams = handleListParams(url, cookies, '/produkti', 'produkti_filters');
@@ -21,9 +22,11 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	let filterConditions = [];
 
 	if (search) {
-		const searchTerm = `%${search}%`;
 		filterConditions.push(
-			sql`(${product.title} ILIKE ${searchTerm} OR ${product.description} ILIKE ${searchTerm})`
+			or(
+				ilikeNormalize(product.title, search),
+				ilikeNormalize(product.description, search)
+			)
 		);
 	}
 

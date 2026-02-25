@@ -1,10 +1,10 @@
 import { db } from '$lib/server/db';
 import { task, user, client, taskProduct, product, tab, tabGroup } from '$lib/server/db/schema';
-import { sql, count, desc, eq, and, or, lte, gte, ne, isNull } from 'drizzle-orm';
+import { sql, count, desc, eq, and, or, lte, gte, ne, isNull, notInArray } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 
     if (locals.user?.type === 'client') {
         return redirect(302, '/projekti');
@@ -25,6 +25,20 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 
     const todayStr = today.toISOString().split('T')[0];
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    // Read hidden tab groups from cookie
+    let hiddenTabGroups: number[] = [];
+    const hiddenGroupsCookie = cookies.get('hiddenTabGroups');
+    if (hiddenGroupsCookie) {
+        try {
+            const parsed = JSON.parse(hiddenGroupsCookie);
+            hiddenTabGroups = Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            hiddenTabGroups = [];
+        }
+    }
+    const alwaysHiddenGroups = [41, 62];
+    const allHiddenGroups = Array.from(new Set([...alwaysHiddenGroups, ...hiddenTabGroups]));
 
     // Get top managers (users with highest total task prices all time)
     const topManagers = await db
@@ -81,6 +95,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
             status: task.endDate
         })
         .from(task)
+        .leftJoin(tab, eq(task.tabId, tab.id))
         .leftJoin(client, eq(task.clientId, client.id))
         .leftJoin(user, eq(task.assignedToUserId, user.id))
         .where(
@@ -94,6 +109,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
                 or(
                     eq(task.createdById, locals.user!.id),
                     eq(task.assignedToUserId, locals.user!.id)
+                ),
+                or(
+                    isNull(tab.groupId),
+                    notInArray(tab.groupId, allHiddenGroups)
                 )
             )
         )
@@ -305,6 +324,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
         profitChange,
         tabGroupsStats,
         allTabsForSelect,
+        hiddenTabGroups,
         selectedTabTasks: {
             id: selectedTabId,
             tasks: selectedTabTasksData,

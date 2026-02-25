@@ -17,25 +17,13 @@
 
 	let searchTerm = $state(data.pagination?.search);
 
-	const normalizeSearchTerm = (term: string) => {
-		if (!term) return term;
-		return term
-			.toLowerCase()
-			.normalize('NFD')
-			.replace(/[\u0300-\u036f]/g, '');
-	};
-
 	const handleSearchInput = (event: Event) => {
 		const target = event.target as HTMLInputElement;
-		const normalizedValue = normalizeSearchTerm(target.value);
-		if (target.value !== normalizedValue) {
-			target.value = normalizedValue;
-		}
-		searchTerm = normalizedValue;
-		debouncedSearch(normalizedValue);
+		searchTerm = target.value;
+		debouncedSearch(target.value);
 	};
 
-	const debouncedSearch = debounce((value: string) => {
+const debouncedSearch = debounce((value: string) => {
 		updateUrlAndNavigate({ search: value });
 	}, 1200);
 

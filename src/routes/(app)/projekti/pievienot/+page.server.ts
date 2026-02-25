@@ -142,6 +142,15 @@ export const actions: Actions = {
 			}
 		}
 
+		const customPriceStr = formData.get('customPrice') as string;
+		let finalPrice = calculatedPrice;
+		if (customPriceStr && customPriceStr.trim() !== '') {
+			const parsed = parseFloat(customPriceStr);
+			if (!isNaN(parsed)) {
+				finalPrice = Math.round(parsed * 100);
+			}
+		}
+
 		// Files (Not supported by storage yet, logging for now)
 		const files = formData.getAll('files');
 		const preview = formData.get('preview') as File | null;
@@ -170,7 +179,7 @@ export const actions: Actions = {
 				assignedToUserId: assignedToUserId || null,
 				createdById: userId,
 				endDate,
-				price: calculatedPrice,
+				price: finalPrice,
 				count: calculatedCount,
 				seamstress: seamstress || null,
 				preview: previewUrl,

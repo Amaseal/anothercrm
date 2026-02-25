@@ -168,6 +168,14 @@ export const actions: Actions = {
             }
         }
 
+        const customPriceStr = formData.get('customPrice') as string;
+        let finalPrice = calculatedPrice;
+        if (customPriceStr && customPriceStr.trim() !== '') {
+            const parsed = parseFloat(customPriceStr);
+            if (!isNaN(parsed)) {
+                finalPrice = Math.round(parsed * 100);
+            }
+        }
 
         if (!title) {
             return fail(400, { missing: true, error: 'Title is required' });
@@ -214,7 +222,7 @@ export const actions: Actions = {
                 clientId,
                 assignedToUserId: assignedToUserId || null,
                 endDate,
-                price: calculatedPrice,
+                price: finalPrice,
                 count: calculatedCount,
                 seamstress: seamstress || null,
                 ...(previewUrl ? { preview: previewUrl } : {})
@@ -306,7 +314,7 @@ export const actions: Actions = {
             if (oldTask.assignedToUserId !== (assignedToUserId || null)) changes.push({ field: 'assigned', from: oldTask.assignedToUserId, to: assignedToUserId || null });
             if (oldTask.endDate !== endDate) changes.push({ field: 'dueDate', from: oldTask.endDate, to: endDate });
             if (oldTask.seamstress !== (seamstress || null)) changes.push({ field: 'seamstress', from: oldTask.seamstress, to: seamstress || null });
-            if (oldTask.price !== calculatedPrice) changes.push({ field: 'price', from: oldTask.price, to: calculatedPrice });
+            if (oldTask.price !== finalPrice) changes.push({ field: 'price', from: oldTask.price, to: finalPrice });
 
             // Note: Material and Product changes are more complex to track individually in this simple diff, 
             // but we can track that "materials updated" or similar if we want.

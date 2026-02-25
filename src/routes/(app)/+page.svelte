@@ -16,10 +16,12 @@
 	import Zap from '@lucide/svelte/icons/zap';
 	import ListTodo from '@lucide/svelte/icons/list-todo';
 	import { scaleLinear, scaleBand } from 'd3-scale';
+	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
+	import Filter from '@lucide/svelte/icons/filter';
 	import * as m from '$lib/paraglide/messages';
 	import { getLocale } from '$lib/paraglide/runtime.js';
 	import * as Select from '$lib/components/ui/select/index.js';
-	import { goto } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
 
 	let { data } = $props();
@@ -157,6 +159,17 @@
 		const trans = tab.translations.find((t: any) => t.language === lang);
 		return trans ? trans.name : tab.id.toString();
 	}
+
+	function toggleGroupVisibility(groupId: number) {
+		let newHiddenGroups = [...data.hiddenTabGroups];
+		if (newHiddenGroups.includes(groupId)) {
+			newHiddenGroups = newHiddenGroups.filter((id) => id !== groupId);
+		} else {
+			newHiddenGroups.push(groupId);
+		}
+		document.cookie = `hiddenTabGroups=${JSON.stringify(newHiddenGroups)}; path=/; max-age=31536000`;
+		invalidateAll();
+	}
 </script>
 
 <svelte:head>
@@ -214,9 +227,35 @@
 				<Card.Title>Steidzami uzdevumi</Card.Title>
 				<Card.Description>Uzdevumi ar beigu termiņu šodien, rīt vai kavētie</Card.Description>
 			</div>
-			<Button variant="ghost" href="/projekti" class="text-sm font-medium text-primary">
-				Skatīt visus
-			</Button>
+			<div class="flex items-center gap-2">
+				<DropdownMenu.Root>
+					<DropdownMenu.Trigger>
+						{#snippet child({ props })}
+							<Button {...props} variant="outline" size="sm" class="flex items-center gap-2">
+								<Filter class="h-4 w-4" />
+								Filtrs
+							</Button>
+						{/snippet}
+					</DropdownMenu.Trigger>
+					<DropdownMenu.Content align="end" class="w-56 max-h-[300px] overflow-y-auto">
+						<DropdownMenu.Label>Grupas (rindas)</DropdownMenu.Label>
+						<DropdownMenu.Separator />
+						{#each data.tabGroupsStats as group}
+							{#if group.id !== 41 && group.id !== 62}
+								<DropdownMenu.CheckboxItem
+									checked={!data.hiddenTabGroups.includes(group.id)}
+									onCheckedChange={() => toggleGroupVisibility(group.id)}
+								>
+									{getGroupTranslation(group)}
+								</DropdownMenu.CheckboxItem>
+							{/if}
+						{/each}
+					</DropdownMenu.Content>
+				</DropdownMenu.Root>
+				<Button variant="ghost" href="/projekti" class="text-sm font-medium text-primary">
+					Skatīt visus
+				</Button>
+			</div>
 		</Card.Header>
 		<Card.Content class="p-0">
 			<Table.Root>

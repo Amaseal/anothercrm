@@ -169,6 +169,14 @@ export const actions: Actions = {
                 );
             }
 
+            // Sync with Task if taskId exists
+            if (taskId) {
+                await db.update(task).set({
+                    clientId: clientId,
+                    price: total
+                }).where(eq(task.id, taskId));
+            }
+
         } catch (error) {
             console.error(error);
             return fail(500, { message: 'Failed to create invoice' });

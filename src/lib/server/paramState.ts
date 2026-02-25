@@ -14,7 +14,8 @@ export function handleListParams(
     url: URL,
     cookies: Cookies,
     basePath: string,
-    cookieName: string
+    cookieName: string,
+    excludeParams: string[] = []
 ): URLSearchParams {
     const currentSearch = url.search;
     const isAtBasePath = url.pathname === basePath || url.pathname === basePath + '/';
@@ -25,9 +26,13 @@ export function handleListParams(
     }
 
     if (currentSearch) {
+        let paramsToSave = new URLSearchParams(currentSearch);
+        excludeParams.forEach(param => paramsToSave.delete(param));
+
+        let searchString = paramsToSave.toString() ? `?${paramsToSave.toString()}` : '';
 
         // If there are search params in the URL, save them to the cookie
-        cookies.set(cookieName, currentSearch, {
+        cookies.set(cookieName, searchString, {
             path: '/',
             maxAge: 60 * 60 * 24 * 365, // 1 year
             httpOnly: false, // Allow client-side access if needed
@@ -36,11 +41,32 @@ export function handleListParams(
         return new URLSearchParams(currentSearch);
     } else {
         // If there are no search params in the URL, check the cookie
-        const savedSearch = cookies.get(cookieName);
-
-
+        let savedSearch = cookies.get(cookieName);
 
         if (savedSearch) {
+            let savedParams = new URLSearchParams(savedSearch);
+            let hasExcluded = false;
+            excludeParams.forEach(param => {
+                if (savedParams.has(param)) {
+                    savedParams.delete(param);
+                    hasExcluded = true;
+                }
+            });
+
+            if (hasExcluded) {
+                savedSearch = savedParams.toString() ? `?${savedParams.toString()}` : '';
+                cookies.set(cookieName, savedSearch, {
+                    path: '/',
+                    maxAge: 60 * 60 * 24 * 365,
+                    httpOnly: false,
+                    secure: false
+                });
+            }
+
+            if (!savedSearch) {
+                return new URLSearchParams();
+            }
+
             if (isAtBasePath) {
                 // If we are at the root list view without params, but have saved params, redirect
                 throw redirect(303, `${basePath}${savedSearch}`);

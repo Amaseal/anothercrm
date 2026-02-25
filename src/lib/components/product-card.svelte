@@ -143,7 +143,15 @@
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger class="text-left">
-							<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
+						{#if $isClient}
+							<a href={`/projekti/skatit/${task.id}`}>
+								<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
+							</a>
+						{:else}
+							<a href={`/projekti/labot/${task.id}`}>
+								<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
+							</a>
+						{/if}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>{task.title}</p>

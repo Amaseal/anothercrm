@@ -8,6 +8,8 @@
 	import { goto } from '$app/navigation';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Eye from '@lucide/svelte/icons/eye';
+	import RotateCcw from '@lucide/svelte/icons/rotate-ccw';
+	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Separator } from '$lib/components/ui/separator';
@@ -54,23 +56,10 @@
 		searchTerm = data.pagination.search;
 	});
 
-	const normalizeSearchTerm = (term: string) => {
-		if (!term) return term;
-		return term
-			.toLowerCase()
-			.normalize('NFD')
-			.replace(/[\u0300-\u036f]/g, '');
-	};
-
-	// Set up debounced search
 	const handleSearchInput = (event: Event) => {
 		const target = event.target as HTMLInputElement;
-		const normalizedValue = normalizeSearchTerm(target.value);
-		if (target.value !== normalizedValue) {
-			target.value = normalizedValue;
-		}
-		searchTerm = normalizedValue;
-		debouncedSearch(normalizedValue);
+		searchTerm = target.value;
+		debouncedSearch(target.value);
 	};
 
 	const debouncedSearch = debounce((value: string) => {
@@ -175,6 +164,7 @@
 						</div>
 					</Table.Head>
 					<Table.Head>{m['completed_tasks.assigned_to']()}</Table.Head>
+					<Table.Head class="w-12 text-center">{m['completed_tasks.restore']()}</Table.Head>
 					<Table.Head class="w-12 text-center">{m['completed_tasks.view']()}</Table.Head>
 					<Table.Head class="w-12 text-center">{m['components.delete']()}</Table.Head>
 				</Table.Row>
@@ -182,7 +172,7 @@
 			<Table.Body>
 				{#if data.tasks.length === 0}
 					<Table.Row>
-						<Table.Cell colspan={7} class="py-6 text-center"
+						<Table.Cell colspan={8} class="py-6 text-center"
 							>{m['completed_tasks.empty']()}</Table.Cell
 						>
 					</Table.Row>
@@ -194,6 +184,19 @@
 							<Table.Cell>{toCurrency(item.price || 0)} €</Table.Cell>
 							<Table.Cell>{formatDate(item.endDate) || '-'}</Table.Cell>
 							<Table.Cell>{item.assignedToUser?.name || '-'}</Table.Cell>
+							<Table.Cell class="text-center">
+								<form method="POST" action="/pabeigtie/?/restore" use:enhance>
+									<input type="hidden" name="taskId" value={item.id} />
+									<Button
+										type="submit"
+										variant="ghost"
+										class="hover:bg-green-100 hover:text-green-600"
+										title={m['completed_tasks.restore']()}
+									>
+										<RotateCcw />
+									</Button>
+								</form>
+							</Table.Cell>
 							<Table.Cell class="text-center">
 								<Button href="/pabeigtie/{item.id}" variant="ghost"><Eye /></Button>
 							</Table.Cell>

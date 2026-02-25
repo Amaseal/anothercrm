@@ -1,8 +1,9 @@
 import { db } from '$lib/server/db';
 import { material } from '$lib/server/db/schema';
-import { and, desc, asc, sql, count } from 'drizzle-orm';
+import { and, desc, asc, sql, count, or } from 'drizzle-orm';
 import type { LayoutServerLoad } from './$types';
 import { handleListParams } from '$lib/server/paramState';
+import { ilikeNormalize } from '$lib/server/dbUtils';
 
 export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	const activeParams = handleListParams(url, cookies, '/audumi', 'audumi_filters');
@@ -21,9 +22,13 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	let filterConditions = [];
 
 	if (search) {
-		const searchTerm = `%${search}%`;
 		filterConditions.push(
-			sql`(${material.title} ILIKE ${searchTerm} OR ${material.article} ILIKE ${searchTerm} OR ${material.manufacturer} ILIKE ${searchTerm} OR ${material.remaining}::text ILIKE ${searchTerm})`
+			or(
+				ilikeNormalize(material.title, search),
+				ilikeNormalize(material.article, search),
+				ilikeNormalize(material.manufacturer, search),
+				sql`${material.remaining}::text ILIKE ${'%' + search + '%'}`
+			)
 		);
 	}
 

@@ -12,6 +12,7 @@
 	import { cn } from '$lib/utils';
 	import * as Select from '$lib/components/ui/select';
 	import FormError from '$lib/components/form-error.svelte';
+	import {isAdmin} from '$lib/stores/user';
 
 	interface Client {
 		id: number | string;
@@ -130,48 +131,82 @@
 	}
 </script>
 
-<Popover.Root bind:open >
-	<Popover.Trigger
-		class={cn(buttonVariants({ variant: 'outline' }), 'w-full justify-between', classes)}
+<div class="flex w-full items-start gap-2 {classes || ''}">
+	<Popover.Root bind:open>
+		<Popover.Trigger
+			class={cn(buttonVariants({ variant: 'outline' }), 'min-w-64 justify-between overflow-hidden')}
+			{disabled}
+		>
+			<span class="flex items-center truncate text-left">
+				{selectedLabel}
+				{#if value && clients.find((c) => c.id.toString() === value)?.email}
+					<span class="ml-2 text-xs font-normal text-muted-foreground"
+						>{clients.find((c) => c.id.toString() === value)?.email}</span
+					>
+				{:else if value && clients.find((c) => c.id.toString() === value)?.phone}
+					<span class="ml-2 text-xs font-normal text-muted-foreground"
+						>{clients.find((c) => c.id.toString() === value)?.phone}</span
+					>
+				{/if}
+			</span>
+			<ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+		</Popover.Trigger>
+		<Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0">
+			<Command.Root>
+				<Command.Input placeholder={m['clients.search']()} />
+				<Command.List class="w-full">
+					<Command.Empty class="flex w-full flex-col items-center gap-2 p-4">
+						<span class="text-sm text-muted-foreground">{m['clients.empty']()}</span>
+						<Button variant="ghost" size="sm" class="w-full" onclick={() => (dialogOpen = true)}>
+							<Plus class="mr-2 h-4 w-4" />
+							{m['clients.add_client']()}
+						</Button>
+					</Command.Empty>
+					<Command.Group>
+						{#each clients as client}
+							<Command.Item
+								value={`${client.name} ${client.email || ''} ${client.phone || ''}`}
+								onSelect={() => {
+									value = client.id.toString();
+									open = false;
+								}}
+								class="flex items-center gap-2"
+							>
+								<Check
+									class={cn(
+										'h-4 w-4 shrink-0',
+										value === client.id.toString() ? 'opacity-100' : 'opacity-0'
+									)}
+								/>
+								<div class="flex flex-col items-start justify-center">
+									<span>{client.name}</span>
+									{#if client.email || client.phone}
+										<span class="text-xs text-muted-foreground"
+											>{client.email || client.phone}</span
+										>
+									{/if}
+								</div>
+							</Command.Item>
+						{/each}
+					</Command.Group>
+				</Command.List>
+			</Command.Root>
+		</Popover.Content>
+	</Popover.Root>
+
+	{#if $isAdmin}
+	<Button
+		variant="outline"
+		size="icon"
+		class="shrink-0"
+		type="button"
+		onclick={() => (dialogOpen = true)}
 		{disabled}
 	>
-		{selectedLabel}
-		<ChevronsUpDown class="ml-2 h-4 w-4 opacity-50" />
-	</Popover.Trigger>
-	<Popover.Content class="w-[var(--bits-popover-anchor-width)] p-0">
-		<Command.Root>
-			<Command.Input placeholder={m['clients.search']()} />
-			<Command.List class="w-full">
-				<Command.Empty class="flex w-full flex-col items-center gap-2 p-4">
-					<span class="text-sm text-muted-foreground">{m['clients.empty']()}</span>
-					<Button variant="ghost" size="sm" class="w-full" onclick={() => (dialogOpen = true)}>
-						<Plus class="mr-2 h-4 w-4" />
-						{m['clients.add_client']()}
-					</Button>
-				</Command.Empty>
-				<Command.Group>
-					{#each clients as client}
-						<Command.Item
-							value={client.name}
-							onSelect={() => {
-								value = client.id.toString();
-								open = false;
-							}}
-						>
-							<Check
-								class={cn(
-									'mr-2 h-4 w-4',
-									value === client.id.toString() ? 'opacity-100' : 'opacity-0'
-								)}
-							/>
-							{client.name}
-						</Command.Item>
-					{/each}
-				</Command.Group>
-			</Command.List>
-		</Command.Root>
-	</Popover.Content>
-</Popover.Root>
+		<Plus class="h-4 w-4" />
+	</Button>
+	{/if}
+</div>
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Content class="max-h-[90vh] w-full max-w-md overflow-hidden p-0">
