@@ -24,7 +24,7 @@
 	let isNewClient = $state(false);
 	let selectedClientId = $state('');
 	let clientOpen = $state(false); // Popover state
-	let items = $state([{ description: '', unit: 'gab.', quantity: 1, price: 0 }]);
+	let items = $state([{ description: '', unit: 'gab.', quantity: 1, price: 0, isAutoFilled: false }]);
 	let vatRate = $state(21);
 	let language = $state('lv');
 
@@ -40,7 +40,7 @@
 	let total = $derived(subtotal + taxAmount);
 
 	function addItem() {
-		items = [...items, { description: '', unit: 'gab.', quantity: 1, price: 0 }];
+		items = [...items, { description: '', unit: 'gab.', quantity: 1, price: 0, isAutoFilled: false }];
 	}
 
 	function removeItem(index: number) {
@@ -51,6 +51,7 @@
 		const input = e.target as HTMLInputElement;
 		const val = parseFloat(input.value);
 		items[index].price = Math.round(val * 100);
+		items[index].isAutoFilled = false;
 	}
 
 	function handleQtyInput(e: Event, index: number) {
@@ -64,9 +65,11 @@
 		items[index].description = val;
 
 		// Check for exact match in products
-		const match = products.find((p) => p.title === val);
+		const match = products.find((p: any) => p.title === val);
 		if (match) {
-			items[index].price = match.cost;
+			const clientPriceEntry = selectedClientId ? match.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId) : null;
+			items[index].price = clientPriceEntry ? clientPriceEntry.price : match.price;
+			items[index].isAutoFilled = true;
 		}
 	}
 
@@ -82,8 +85,18 @@
 			clientVatNo = selectedClientDetails.vatNumber || '';
 			clientAddress = selectedClientDetails.address || '';
 			clientEmail = selectedClientDetails.email || '';
-			// Infer language if possible, or default to current.
-			// For now, let's leave language as user selected, or default to LV.
+			
+			// Recalculate auto-filled item prices for the new client
+			items = items.map(item => {
+				if (item.isAutoFilled) {
+					const match = products.find((p: any) => p.title === item.description);
+					if (match) {
+						const clientPriceEntry = match.clientPrices?.find((cp: any) => cp.clientId === selectedClientDetails!.id);
+						item.price = clientPriceEntry ? clientPriceEntry.price : match.price;
+					}
+				}
+				return item;
+			});
 		} else if (!isNewClient) {
              // Reset if no client selected and not in new client mode
             clientRegNo = '';
@@ -106,7 +119,8 @@
 					description: tp.product.title,
 					unit: 'gab.',
 					quantity: tp.count || 1,
-					price: tp.product.cost // price in cents
+					price: tp.product.effectivePrice ?? tp.product.price, // price in cents
+					isAutoFilled: true
 				}));
 			} else {
 				// If no products, maybe use task title as description?
@@ -115,7 +129,8 @@
 						description: data.prefillTask.title,
 						unit: 'gab.',
 						quantity: 1,
-						price: data.prefillTask.price || 0
+						price: data.prefillTask.price || 0,
+						isAutoFilled: false
 					}
 				];
 			}
@@ -429,7 +444,11 @@
 					<!-- Datalist for Items -->
 					<datalist id="products-list">
 						{#each products as product}
-							<option value={product.title}>{product.title} - {toCurrency(product.cost)} €</option>
+							{#if selectedClientId && product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)}
+								<option value={product.title}>{product.title} - {toCurrency(product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)?.price || 0)} €</option>
+							{:else}
+								<option value={product.title}>{product.title} - {toCurrency(product.price)} €</option>
+							{/if}
 						{/each}
 					</datalist>
 

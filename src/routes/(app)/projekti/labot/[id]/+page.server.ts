@@ -1,6 +1,6 @@
 // Skipping edit for now to investigate where tab moves happen.
 import { db } from '$lib/server/db';
-import { task, material, product, taskMaterial, taskProduct, file, invoice, userClient } from '$lib/server/db/schema';
+import { task, material, product, taskMaterial, taskProduct, file, invoice, userClient, taskAssignee } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
@@ -38,6 +38,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
                 }
             },
             files: true,
+            assignees: {
+                with: { user: true }
+            },
             history: {
                 with: {
                     user: true
@@ -97,13 +100,18 @@ export const load: PageServerLoad = async ({ params, locals }) => {
             : null
     }));
 
+    const taskInvoices = await db.query.invoice.findMany({
+        where: eq(invoice.taskId, taskId)
+    });
+
     return {
         item,
         clients,
         users,
         materials,
         products: productsWithClientPrice,
-        userClientId
+        userClientId,
+        taskInvoices
     };
 };
 
@@ -119,7 +127,8 @@ export const actions: Actions = {
         const title = formData.get('title') as string;
         const description = formData.get('description') as string;
         const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
-        const assignedToUserId = formData.get('assignedToUserId') as string;
+        const assignedToUserIdsStr = formData.get('assignedToUserIds') as string;
+        const assignedToUserIds = assignedToUserIdsStr ? assignedToUserIdsStr.split(',').filter(id => id.trim() !== '') : [];
         const createdById = formData.get('createdById') as string;
         const endDate = formData.get('endDate') as string;
         // const seamstress = formData.get('seamstress') as string; // User removed seamstress in pievienot? code shows it line 63.
@@ -186,7 +195,8 @@ export const actions: Actions = {
             where: eq(task.id, taskId),
             with: {
                 taskMaterials: true,
-                taskProducts: true
+                taskProducts: true,
+                assignees: true
             }
         });
 
@@ -220,7 +230,6 @@ export const actions: Actions = {
                 title,
                 description,
                 clientId,
-                assignedToUserId: assignedToUserId || null,
                 endDate,
                 price: finalPrice,
                 count: calculatedCount,
@@ -254,6 +263,16 @@ export const actions: Actions = {
                 if (productsToInsert.length > 0) {
                     await db.insert(taskProduct).values(productsToInsert);
                 }
+            }
+
+            // Assignees
+            await db.delete(taskAssignee).where(eq(taskAssignee.taskId, taskId));
+            if (assignedToUserIds.length > 0) {
+                const assigneesToInsert = assignedToUserIds.map((id) => ({
+                    taskId,
+                    userId: id
+                }));
+                await db.insert(taskAssignee).values(assigneesToInsert);
             }
 
             // Handle File Uploads (Sync logic)
@@ -311,7 +330,13 @@ export const actions: Actions = {
             if (oldTask.title !== title) changes.push({ field: 'title', from: oldTask.title, to: title });
             if (oldTask.description !== description) changes.push({ field: 'description', from: oldTask.description, to: description });
             if (oldTask.clientId !== clientId) changes.push({ field: 'client', from: oldTask.clientId, to: clientId });
-            if (oldTask.assignedToUserId !== (assignedToUserId || null)) changes.push({ field: 'assigned', from: oldTask.assignedToUserId, to: assignedToUserId || null });
+
+            const oldAssignees = (oldTask.assignees || []).map((a: any) => a.userId).sort().join(',');
+            const newAssignees = [...assignedToUserIds].sort().join(',');
+            if (oldAssignees !== newAssignees) {
+                changes.push({ field: 'assigned', from: oldAssignees || null, to: newAssignees || null });
+            }
+
             if (oldTask.endDate !== endDate) changes.push({ field: 'dueDate', from: oldTask.endDate, to: endDate });
             if (oldTask.seamstress !== (seamstress || null)) changes.push({ field: 'seamstress', from: oldTask.seamstress, to: seamstress || null });
             if (oldTask.price !== finalPrice) changes.push({ field: 'price', from: oldTask.price, to: finalPrice });

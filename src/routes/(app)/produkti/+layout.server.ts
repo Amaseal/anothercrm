@@ -37,7 +37,8 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 
 	const sortableColumns = {
 		title: product.title,
-		cost: product.cost
+		cost: product.cost,
+		price: product.price
 	};
 
 	const columnToSort =
@@ -51,7 +52,12 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 		limit: pageSize,
 		offset: offset,
 		with: {
-			translations: true
+			translations: true,
+			clientPrices: {
+				with: {
+					client: true
+				}
+			}
 		}
 	});
 
@@ -62,6 +68,11 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 			description: product.description,
 			translations: product.translations,
 			cost: (product.cost / 100).toFixed(2),
+			price: (product.price / 100).toFixed(2),
+			clientPrices: product.clientPrices.map((cp) => ({
+				clientName: cp.client.name,
+				price: (cp.price / 100).toFixed(2)
+			})),
 			created_at: product.created_at,
 			updated_at: product.updated_at
 		};

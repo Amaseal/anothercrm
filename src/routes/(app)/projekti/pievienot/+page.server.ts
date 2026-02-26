@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { client, tab, task, user, material, product, taskMaterial, taskProduct, file, userClient, clientProductPrice } from '$lib/server/db/schema';
+import { client, tab, task, user, material, product, taskMaterial, taskProduct, file, userClient, clientProductPrice, taskAssignee } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -93,7 +93,8 @@ export const actions: Actions = {
 		// Tab ID comes from default tab now
 		const tabId = defaultTab.id;
 		const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
-		const assignedToUserId = formData.get('assignedToUserId') as string;
+		const assignedToUserIdsStr = formData.get('assignedToUserIds') as string;
+		const assignedToUserIds = assignedToUserIdsStr ? assignedToUserIdsStr.split(',').filter(id => id.trim() !== '') : [];
 		const endDate = formData.get('endDate') as string;
 
 
@@ -176,7 +177,6 @@ export const actions: Actions = {
 				description,
 				tabId,
 				clientId,
-				assignedToUserId: assignedToUserId || null,
 				createdById: userId,
 				endDate,
 				price: finalPrice,
@@ -187,6 +187,14 @@ export const actions: Actions = {
 			}).returning();
 
 			if (newTask) {
+				if (assignedToUserIds.length > 0) {
+					const assigneesToInsert = assignedToUserIds.map((id) => ({
+						taskId: newTask.id,
+						userId: id
+					}));
+					await db.insert(taskAssignee).values(assigneesToInsert);
+				}
+
 				// Filter out invalid material IDs and check length
 				const materialsToInsert = materialIds
 					.filter((id) => !isNaN(id) && id > 0)
@@ -221,7 +229,7 @@ export const actions: Actions = {
 					tab: true,
 					client: true,
 					creator: true,
-					assignedToUser: true
+					assignees: { with: { user: true } }
 				}
 			});
 			// Dynamic import to avoid circular dep issues during init if any, though here it's fine.

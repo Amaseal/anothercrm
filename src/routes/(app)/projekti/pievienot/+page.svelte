@@ -30,7 +30,7 @@
 		}
 	});
 
-	let selectedAssigneeId = $state('');
+	let selectedAssigneeIds = $state<string[]>([]);
 	let selectedManagerId = $state('');
 	let selectedSeamstress = $state('');
 	let selectedMaterialIds = $state<number[]>([]);
@@ -53,7 +53,9 @@
 			m['projects.client_label']()
 	);
 	let selectedAssigneeName = $derived(
-		data.users.find((u) => u.id === selectedAssigneeId)?.name || m['projects.assign_user_label']()
+		selectedAssigneeIds.length > 0
+			? data.users.filter((u) => selectedAssigneeIds.includes(u.id)).map((u) => u.name).join(', ')
+			: m['projects.assign_user_label']()
 	);
 	let selectedManagerName = $derived(
 		data.users.find((u) => u.id === selectedManagerId)?.name || m['projects.assign_manager_label']()
@@ -177,19 +179,15 @@
 							<!-- Assignee -->
 							<div class="grid gap-2">
 								<Label>{m['projects.assign_user_label']()}</Label>
-								<input type="hidden" name="assignedToUserId" value={selectedAssigneeId} />
-								<Select.Root type="single" bind:value={selectedAssigneeId}>
-									<Select.Trigger class="w-full">
-										{selectedAssigneeName || m['projects.assign_user_label']()}
-									</Select.Trigger>
-									<Select.Content>
-										{#each data.users as user}
-											<Select.Item value={user.id} label={user.name}>
-												{user.name}
-											</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
+								<MultiSelect
+									options={data.users.map((u) => ({
+										value: u.id,
+										label: u.name
+									}))}
+									bind:value={selectedAssigneeIds}
+									placeholder={m['projects.assign_user_label']()}
+								/>
+								<input type="hidden" name="assignedToUserIds" value={selectedAssigneeIds.join(',')} />
 							</div>
 
 							

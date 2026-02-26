@@ -495,7 +495,6 @@ export const task = pgTable('tasks', {
 		.notNull()
 		.references(() => tab.id, { onDelete: 'restrict' }), // RESTRICT: Cannot delete tab with tasks
 	clientId: integer('client_id').references(() => client.id, { onDelete: 'set null' }), // SET NULL: Task survives client deletion
-	assignedToUserId: text('assigned_to_user_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
 	createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
 	seamstress: text('seamstress'), // Name of seamstress (stored as text, not FK)
 	count: integer('count'), // Quantity/count for this task (optional)
@@ -506,6 +505,25 @@ export const task = pgTable('tasks', {
 	preview: text('preview'), // Preview image URL/path (optional)
 	...timestamps // Includes created_at and updated_at
 });
+
+/**
+ * TASK ASSIGNEE TABLE
+ * Junction table for many-to-many relationship between tasks and users
+ */
+export const taskAssignee = pgTable(
+	'task_assignees',
+	{
+		taskId: integer('task_id')
+			.notNull()
+			.references(() => task.id, { onDelete: 'cascade' }),
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' })
+	},
+	(table) => [
+		unique().on(table.taskId, table.userId)
+	]
+);
 
 // ==================== TASK HISTORY & EDITING TRACKING ====================
 
@@ -683,12 +701,7 @@ export const taskRelations = relations(task, ({ one, many }) => ({
 		fields: [task.clientId],
 		references: [client.id]
 	}),
-	assignedToUser: one(user, {
-		// Optional user assignment
-		fields: [task.assignedToUserId],
-		references: [user.id],
-		relationName: 'assignedTasks' // Named relation to distinguish from managedTasks
-	}),
+	assignees: many(taskAssignee),
 	creator: one(user, {
 		// Optional manager assignment
 		fields: [task.createdById],
@@ -714,6 +727,21 @@ export const taskHistoryRelations = relations(taskHistory, ({ one }) => ({
 		fields: [taskHistory.userId],
 		references: [user.id],
 		relationName: 'taskHistories'
+	})
+}));
+
+/**
+ * TASK ASSIGNEE RELATIONS
+ */
+export const taskAssigneeRelations = relations(taskAssignee, ({ one }) => ({
+	task: one(task, {
+		fields: [taskAssignee.taskId],
+		references: [task.id]
+	}),
+	user: one(user, {
+		fields: [taskAssignee.userId],
+		references: [user.id],
+		relationName: 'assignedTasks'
 	})
 }));
 
@@ -786,7 +814,7 @@ export const clientRelations = relations(client, ({ many }) => ({
  * to distinguish multiple relationships to the same table
  */
 export const userRelations = relations(user, ({ many, one }) => ({
-	assignedTasks: many(task, { relationName: 'assignedTasks' }), // Tasks assigned TO this user
+	assignedTasks: many(taskAssignee, { relationName: 'assignedTasks' }), // Tasks assigned TO this user
 	createdTasks: many(task, { relationName: 'createdTasks' }), // Tasks MANAGED BY this user
 	personalTab: one(tab, {
 		// User's personal tab (optional)

@@ -2,6 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Table from '$lib/components/ui/table/index.js';
+	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 
@@ -24,7 +25,7 @@
 		children
 	}: {
 		data: {
-			products: (Product & { translations: ProductTranslation[] })[];
+			products: (Product & { translations: ProductTranslation[], price: string | number, clientPrices: { clientName: string, price: string }[] })[];
 			pagination: {
 				page: number;
 				pageSize: number;
@@ -79,7 +80,7 @@ const debouncedSearch = debounce((value: string) => {
 
 	function handleSort(column: keyof Product) {
 		// Check if the column is sortable
-		const sortableColumns: (keyof Product)[] = ['title', 'cost'];
+		const sortableColumns: (keyof Product)[] = ['title', 'cost', 'price'];
 		if (!sortableColumns.includes(column)) return;
 
 		const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
@@ -158,6 +159,24 @@ const debouncedSearch = debounce((value: string) => {
 							{/if}
 						</div>
 					</Table.Head>
+					<Table.Head
+						class="hidden cursor-pointer md:table-cell"
+						onclick={() => handleSort('price')}
+					>
+						<div class="flex items-center gap-1">
+							{m['products.price']()}
+							{#if sortColumn === 'price'}
+								{#if sortDirection === 'asc'}
+									<ChevronUp size="14" />
+								{:else}
+									<ChevronDown size="14" />
+								{/if}
+							{:else}
+								<ChevronDown size="14" />
+							{/if}
+						</div>
+					</Table.Head>
+					<Table.Head class="hidden md:table-cell">{m['products.client_specific_prices']()}</Table.Head>
 					<Table.Head class="hidden md:table-cell">{m['products.edited']()}</Table.Head>
 					<Table.Head class="w-12 text-center">{m['products.edit']()}</Table.Head>
 					<Table.Head class="w-12 text-center">{m['products.delete']()}</Table.Head>
@@ -174,6 +193,29 @@ const debouncedSearch = debounce((value: string) => {
 							<Table.Cell class="font-medium">{getLocalizedValue(item, 'title', getLocale()) || '-'}</Table.Cell>
 							<Table.Cell class="hidden md:table-cell">{getLocalizedValue(item, 'description', getLocale()) || '-'}</Table.Cell>
 							<Table.Cell class="hidden md:table-cell">{item.cost} €</Table.Cell>
+							<Table.Cell class="hidden md:table-cell">{item.price} €</Table.Cell>
+							<Table.Cell class="hidden md:table-cell">
+								{#if item.clientPrices && item.clientPrices.length > 0}
+									<Tooltip.Provider delayDuration={150}>
+										<Tooltip.Root>
+											<Tooltip.Trigger class="cursor-help border-b border-dashed border-muted-foreground/60">{item.clientPrices.length}</Tooltip.Trigger>
+											<Tooltip.Content>
+												<div class="flex flex-col gap-1 max-h-[300px] overflow-y-auto w-[300px]">
+													<div class="font-semibold mb-1 border-b pb-1 px-1">{m['products.client_specific_prices']()}</div>
+													{#each item.clientPrices as cp}
+														<div class="flex justify-between gap-4 text-sm hover:bg-muted/50 rounded px-1 py-0.5 transition-colors">
+															<span class="truncate pr-4">{cp.clientName}</span>
+															<span class="font-medium whitespace-nowrap">{cp.price} €</span>
+														</div>
+													{/each}
+												</div>
+											</Tooltip.Content>
+										</Tooltip.Root>
+									</Tooltip.Provider>
+								{:else}
+									<span class="text-muted-foreground">0</span>
+								{/if}
+							</Table.Cell>
 
 							<Table.Cell class="hidden md:table-cell">
 								{formatDate(item.updated_at || item.created_at)}

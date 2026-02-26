@@ -180,7 +180,7 @@ export const actions: Actions = {
             if (taskId) {
                 await db.update(task).set({
                     clientId: clientId,
-                    price: total
+                    price: subtotal
                 }).where(eq(task.id, taskId));
             }
 

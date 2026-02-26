@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
-import { task, userTabPreference, tabGroup, tab, user, client, userClient } from '$lib/server/db/schema';
-import { eq, or, and, isNull, inArray, notInArray, desc, asc, count, sql, ilike } from 'drizzle-orm';
+import { task, userTabPreference, tabGroup, tab, user, client, userClient, taskAssignee } from '$lib/server/db/schema';
+import { eq, or, and, isNull, inArray, notInArray, desc, asc, count, sql, ilike, exists } from 'drizzle-orm';
 import { ilikeNormalize } from '$lib/server/dbUtils';
 export interface ProjectBoardColumn {
     id: number;
@@ -38,7 +38,6 @@ export async function getProjectBoardData(
         created_at: true,
         tabId: true,
         clientId: true,
-        assignedToUserId: true,
         createdById: true,
         isDone: true,
         // Add other needed columns
@@ -48,7 +47,7 @@ export async function getProjectBoardData(
     const taskRelations = {
         client: { columns: { name: true } },
         creator: { columns: { name: true, type: true } }, // Include TYPE
-        assignedToUser: { columns: { name: true } }
+        assignees: { columns: { userId: true }, with: { user: { columns: { name: true } } } }
     } as const;
 
     let tasks;
@@ -64,7 +63,8 @@ export async function getProjectBoardData(
                     return and(...conditions);
                 },
                 with: taskRelations,
-                columns: taskColumns
+                columns: taskColumns,
+                orderBy: (t, { asc }) => [asc(t.endDate)]
             });
         } else {
             const clientUsers = await db.query.user.findMany({
@@ -77,7 +77,7 @@ export async function getProjectBoardData(
                 where: (t, { or, eq, inArray, and, ilike, isNull }) => {
                     const baseConditions = [
                         eq(t.createdById, currentUser.id),
-                        eq(t.assignedToUserId, currentUser.id)
+                        exists(db.select({ id: taskAssignee.taskId }).from(taskAssignee).where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id))))
                     ];
                     if (clientIds.length > 0) {
                         baseConditions.push(inArray(t.createdById, clientIds));
@@ -92,7 +92,8 @@ export async function getProjectBoardData(
                     return and(...conditions);
                 },
                 with: taskRelations,
-                columns: taskColumns
+                columns: taskColumns,
+                orderBy: (t, { asc }) => [asc(t.endDate)]
             });
         }
     } else {
@@ -101,7 +102,7 @@ export async function getProjectBoardData(
             where: (t, { or, eq, and, ilike, isNull }) => {
                 const baseConditions = [
                     eq(t.createdById, currentUser.id),
-                    eq(t.assignedToUserId, currentUser.id)
+                    exists(db.select({ id: taskAssignee.taskId }).from(taskAssignee).where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id))))
                 ];
                 const conditions = [
                     or(...baseConditions),
@@ -111,7 +112,8 @@ export async function getProjectBoardData(
                 return and(...conditions);
             },
             with: taskRelations,
-            columns: taskColumns
+            columns: taskColumns,
+            orderBy: (t, { asc }) => [asc(t.endDate)]
         });
     }
 
@@ -179,7 +181,7 @@ export async function getProjectBoardData(
             if (showAll) {
                 // Show All Mode: Respect tabId (targetId is already corrected for unknown tabs)
                 const clientOptions = isClientCreated(t);
-                const isUnassigned = !t.assignedToUserId;
+                const isUnassigned = !t.assignees || t.assignees.length === 0;
 
                 if (clientOptions && isUnassigned) {
                     targetId = defaultTabId;
@@ -187,8 +189,8 @@ export async function getProjectBoardData(
             } else {
                 // Default Admin Logic
                 const clientOptions = isClientCreated(t);
-                const isUnassigned = !t.assignedToUserId;
-                const isAssignedToMe = t.assignedToUserId === currentUser.id;
+                const isUnassigned = !t.assignees || t.assignees.length === 0;
+                const isAssignedToMe = t.assignees?.some((a: any) => a.userId === currentUser.id);
                 const isHidden = hiddenTabIds.has(t.tabId); // Check original tab ID for hidden preference
 
                 // If it was remaps to default, we should check if default is hidden? 
@@ -312,7 +314,7 @@ export async function getCompletedTasks(
         offset: offset,
         with: {
             client: true,
-            assignedToUser: true,
+            assignees: { with: { user: true } },
             creator: true
         }
     });

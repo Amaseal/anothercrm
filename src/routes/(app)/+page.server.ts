@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
-import { task, user, client, taskProduct, product, tab, tabGroup } from '$lib/server/db/schema';
-import { sql, count, desc, eq, and, or, lte, gte, ne, isNull, notInArray } from 'drizzle-orm';
+import { task, user, client, taskProduct, product, tab, tabGroup, taskAssignee } from '$lib/server/db/schema';
+import { sql, count, desc, eq, and, or, lte, gte, ne, isNull, notInArray, exists } from 'drizzle-orm';
 import type { PageServerLoad } from './$types';
 import { redirect } from '@sveltejs/kit';
 
@@ -61,7 +61,8 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
             taskCount: count(task.id)
         })
         .from(user)
-        .leftJoin(task, eq(task.assignedToUserId, user.id))
+        .leftJoin(taskAssignee, eq(taskAssignee.userId, user.id))
+        .leftJoin(task, eq(task.id, taskAssignee.taskId))
         .groupBy(user.id, user.name)
         .orderBy(desc(count(task.id)))
         .limit(5);
@@ -91,13 +92,14 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
             title: task.title,
             endDate: task.endDate,
             clientName: client.name,
-            responsibleName: user.name,
+            responsibleName: sql<string>`STRING_AGG(${user.name}, ', ')`,
             status: task.endDate
         })
         .from(task)
         .leftJoin(tab, eq(task.tabId, tab.id))
         .leftJoin(client, eq(task.clientId, client.id))
-        .leftJoin(user, eq(task.assignedToUserId, user.id))
+        .leftJoin(taskAssignee, eq(taskAssignee.taskId, task.id))
+        .leftJoin(user, eq(taskAssignee.userId, user.id))
         .where(
             and(
                 or(
@@ -108,7 +110,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
                 ne(task.isDone, true),
                 or(
                     eq(task.createdById, locals.user!.id),
-                    eq(task.assignedToUserId, locals.user!.id)
+                    exists(db.select({ id: taskAssignee.taskId }).from(taskAssignee).where(and(eq(taskAssignee.taskId, task.id), eq(taskAssignee.userId, locals.user!.id))))
                 ),
                 or(
                     isNull(tab.groupId),
@@ -116,6 +118,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
                 )
             )
         )
+        .groupBy(task.id, task.title, task.endDate, client.name, tab.id)
         .orderBy(task.endDate)
         .limit(5);
 

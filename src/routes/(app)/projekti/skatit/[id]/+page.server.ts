@@ -95,12 +95,17 @@ export const load: PageServerLoad = async ({ params, locals }) => {
             : null
     }));
 
+    const taskInvoices = await db.query.invoice.findMany({
+        where: eq(invoice.taskId, taskId)
+    });
+
     return {
         item,
         clients,
         users,
         materials,
         products: productsWithClientPrice,
-        userClientId
+        userClientId,
+        taskInvoices
     };
 };

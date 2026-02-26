@@ -38,7 +38,9 @@
 		}
 	});
 
-	let selectedAssigneeId = $state(data.item.assignedToUserId || '');
+	let selectedAssigneeIds = $state<string[]>(
+		data.item.assignees ? data.item.assignees.map((a: any) => a.userId) : []
+	);
 	let selectedManagerId = $state(data.item.createdById || '');
 	let selectedSeamstress = $state(data.item.seamstress || '');
 	let selectedMaterialIds = $state<number[]>(
@@ -80,7 +82,9 @@
 			?.name || m['projects.client_label']()
 	);
 	let selectedAssigneeName = $derived(
-		data.users.find((u: { id: any }) => u.id === selectedAssigneeId)?.name
+		selectedAssigneeIds.length > 0
+			? data.users.filter((u: { id: any }) => selectedAssigneeIds.includes(u.id)).map((u: any) => u.name).join(', ')
+			: undefined
 	);
 
 	let selectedManagerName = $derived(
@@ -258,19 +262,15 @@
 							<!-- Assignee -->
 							<div class="grid gap-2">
 								<Label>{m['projects.assign_user_label']()}</Label>
-								<input type="hidden" name="assignedToUserId" value={selectedAssigneeId} />
-								<Select.Root type="single" bind:value={selectedAssigneeId}>
-									<Select.Trigger class="w-full">
-										{selectedAssigneeName || m['projects.assign_user_label']()}
-									</Select.Trigger>
-									<Select.Content>
-										{#each data.users as user}
-											<Select.Item value={user.id} label={user.name}>
-												{user.name}
-											</Select.Item>
-										{/each}
-									</Select.Content>
-								</Select.Root>
+								<MultiSelect
+									options={data.users.map((u: any) => ({
+										value: u.id,
+										label: u.name
+									}))}
+									bind:value={selectedAssigneeIds}
+									placeholder={m['projects.assign_user_label']()}
+								/>
+								<input type="hidden" name="assignedToUserIds" value={selectedAssigneeIds.join(',')} />
 							</div>
 
 						
@@ -333,6 +333,28 @@
 
 				<!-- Separator/Heading for Execution -->
 				<div class="my-6 border-t"></div>
+
+				<!-- SECTION 3: Invoices -->
+				{#if data.taskInvoices && data.taskInvoices.length > 0}
+					<div class="mb-6 space-y-4">
+						<Label class="text-lg">Rēķini</Label>
+						<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+							{#each data.taskInvoices as inv}
+								<a href={`/rekini/labot/${inv.id}`} class="block rounded-lg border p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors">
+									<div class="flex justify-between items-center mb-2">
+										<span class="font-bold">{inv.invoiceNumber}</span>
+										<span class="text-xs px-2 py-1 rounded bg-gray-200">{inv.status}</span>
+									</div>
+									<div class="text-sm">
+										<div>Summa: {formatPrice(inv.total)} €</div>
+										<div class="text-muted-foreground">{inv.issueDate} - {inv.dueDate}</div>
+									</div>
+								</a>
+							{/each}
+						</div>
+					</div>
+					<div class="my-6 border-t"></div>
+				{/if}
 
 				<!-- SECTION 2: Execution (Preview & Files) -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
