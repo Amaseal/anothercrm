@@ -36,7 +36,7 @@
 	let selectedMaterialIds = $state<number[]>([]);
 
 	// Date Picker State
-	let dateValue = $state<DateValue | undefined>(undefined);
+	let dateValue = $state<DateValue | undefined>(today(getLocalTimeZone()).add({ weeks: 3 }));
 	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
 	let datePlaceholder = $state<DateValue>(today(getLocalTimeZone()));
 

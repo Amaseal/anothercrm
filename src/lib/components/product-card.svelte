@@ -37,7 +37,7 @@
 			endDate: string | null;
 			createdAt: Date | string;
 			client?: { name: string } | null;
-			assignedToUser?: { name: string } | null;
+			assignees?: { user: { name: string } }[] | null;
 			createdById?: string | null;
 			creator?: { name: string; type?: string } | null;
 			isMoved?: boolean;
@@ -117,17 +117,9 @@
 <Card
 	class={cn(
 		'flex w-full max-w-sm flex-col gap-3 rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md',
+		task.creator?.type === 'client' && 'border-2 border-blue-400 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30',
 		deadlineStatus === 'overdue' && 'border-l-4 border-red-500', // Example styling for overdue
 		deadlineStatus === 'near' && 'border-l-4 border-orange-400', // Example styling for near
-		// Keep the original client border logic only if it doesn't conflict or maybe prioritize deadline?
-		// User asked for "If the task is overdue... red outline. If near... orange."
-		// And "If task created by client... badge". The original code had a border for client tasks.
-		// "task.creator?.type === 'client' && $user?.id !== task.createdById && 'border-4 border-primary'"
-		// I will remove the original client border logic as the user now requests a badge for this.
-		// But maybe I should check if they want BOTH. The prompt says "If task is created by a client, we add a badge."
-		// It doesn't explicitly say "remove the border", but usually "redesign" implies replacing old cues.
-		// However, the red/orange outline request specifically mentions "If task is overdue...".
-		// Let's implement the Deadline outlines.
 		className
 	)}
 	style={deadlineStatus === 'overdue'
@@ -161,7 +153,7 @@
 			</div>
 		</div>
 
-		{#if dragHandleAction && !$isClient && (task.creator?.type !== 'client' || task.assignedToUser)}
+		{#if dragHandleAction && !$isClient && (task.creator?.type !== 'client' || task.assignees?.length)}
 			<div
 				use:dragHandleAction
 				data-drag-handle="true"
@@ -203,11 +195,7 @@
 		<!-- Manager -->
 		{#if task.creator}
 			<div
-				class={cn(
-					'-ml-1.5 flex w-fit max-w-full items-center gap-2 overflow-hidden rounded-md px-1.5 py-0.5 text-sm font-medium transition-colors',
-					task.creator.type === 'client' &&
-						'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300'
-				)}
+				class="-ml-1.5 flex w-fit max-w-full items-center gap-2 overflow-hidden rounded-md px-1.5 py-0.5 text-sm font-medium transition-colors"
 			>
 				<User class="h-4 w-4 shrink-0 " />
 				<Tooltip.Provider>
@@ -241,16 +229,16 @@
 		{/if}
 
 		<!-- Creator/Assignee (if different or user wants to see it) -->
-		{#if task.assignedToUser}
+		{#if task.assignees && task.assignees.length > 0}
 			<div class="flex items-center gap-2 overflow-hidden text-sm">
 				<UserPlus class="h-4 w-4 shrink-0 " />
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger class="truncate text-left">
-							<span>{m['product_card.assignee']()}: {task.assignedToUser.name}</span>
+							<span>{m['product_card.assignee']()}: {task.assignees.map((a: { user: { name: any; }; }) => a.user.name).join(', ')}</span>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>{task.assignedToUser.name}</p>
+							<p>{task.assignees.map((a: { user: { name: any; }; }) => a.user.name).join(', ')}</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>

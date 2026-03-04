@@ -132,7 +132,7 @@
 			editorProps: {
 				attributes: {
 					class: cn(
-						'prose dark:prose-invert max-w-none focus:outline-none min-h-[150px] p-4',
+						'prose dark:prose-invert max-w-none focus:outline-none min-h-full p-4',
 						className
 					)
 				},
@@ -192,9 +192,10 @@
 	});
 
 </script>
- 
-{#if $editor && editable}
-	<div class="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-1">
+
+<div class="flex h-full w-full flex-col overflow-hidden bg-background">
+	{#if $editor && editable}
+		<div class="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-1 shrink-0">
 		<!-- Formatting -->
 		<Toggle
 			size="sm"
@@ -363,7 +364,7 @@
 	</div>
 {/if}
 {#if $editor}
-	<EditorContent class="h-full max-h-full" editor={$editor} />
+	<EditorContent class="flex-1 max-h-[600px] custom-scroll overflow-y-auto" editor={$editor} />
 {/if}
 <input
 	type="file"
@@ -372,3 +373,4 @@
 	bind:this={fileInput}
 	onchange={handleImageSelect}
 />
+</div>
