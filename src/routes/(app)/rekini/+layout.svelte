@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -18,12 +19,69 @@
 	import * as m from '$lib/paraglide/messages';
 	import FileSpreadsheet from '@lucide/svelte/icons/file-spreadsheet';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
+	import Download from '@lucide/svelte/icons/download';
 	import { toast } from 'svelte-sonner';
 	import { invalidateAll } from '$app/navigation';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import { Calendar } from '$lib/components/ui/calendar';
+	import { CalendarIcon } from '@lucide/svelte';
+	import * as Popover from '$lib/components/ui/popover/index.js';
+	import { DateFormatter, type DateValue, getLocalTimeZone } from '@internationalized/date';
+	import { buttonVariants } from '$lib/components/ui/button';
+	import { cn } from '$lib/utils.js';
 	import {isAdmin} from '$lib/stores/user';
 
 	let importing = $state(false);
 	let fileInput: HTMLInputElement;
+
+	// Export state
+	let exportDialogOpen = $state(false);
+	let exportFromValue = $state<DateValue | undefined>(undefined);
+	let exportToValue = $state<DateValue | undefined>(undefined);
+	let exporting = $state(false);
+	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
+
+	async function handleExport() {
+		if (!exportFromValue || !exportToValue) {
+			toast.error('Please select both start and end dates');
+			return;
+		}
+		const from = exportFromValue.toString();
+		const to = exportToValue.toString();
+		if (from > to) {
+			toast.error('Start date must be before end date');
+			return;
+		}
+
+		exporting = true;
+		exportDialogOpen = false;
+
+		try {
+			const res = await fetch(`/api/invoices/export?from=${from}&to=${to}`);
+
+			if (!res.ok) {
+				const data = await res.json().catch(() => ({}));
+				toast.error(data.error || 'Export failed');
+				return;
+			}
+
+			const blob = await res.blob();
+			const objectUrl = URL.createObjectURL(blob);
+			const a = document.createElement('a');
+			a.href = objectUrl;
+			const fromStr = from.replace(/-/g, '');
+			const toStr = to.replace(/-/g, '');
+			a.download = `invoices_${fromStr}-${toStr}.zip`;
+			a.click();
+			URL.revokeObjectURL(objectUrl);
+			toast.success('Export downloaded successfully');
+		} catch (e) {
+			console.error(e);
+			toast.error('An error occurred during export');
+		} finally {
+			exporting = false;
+		}
+	}
 
 	async function handleImport(event: Event) {
 		const target = event.target as HTMLInputElement;
@@ -97,7 +155,7 @@
 	} = $props();
 
 	function handleDownload(invoice: any) {
-		window.open(`/rekini/drukat/${invoice.id}`, '_blank');
+		window.open(`/api/invoices/${invoice.id}`, '_blank');
 	}
 
 	// Initialize state from server data
@@ -206,6 +264,85 @@ const debouncedSearch = debounce((value: string) => {
 				<FileSpreadsheet /> {m['invoices.import_button']()}
 			{/if}
 		</Button>
+
+		<!-- Export PDF button + date-range dialog -->
+		<Dialog.Root bind:open={exportDialogOpen}>
+			<Dialog.Trigger>
+				{#snippet child({ props })}
+					<Button
+						variant="outline"
+						class="flex items-center gap-2"
+						disabled={exporting}
+						{...props}
+					>
+						{#if exporting}
+							<Loader2 class="animate-spin" /> Sagatavo...
+						{:else}
+							<Download size="16" /> Export PDF
+						{/if}
+					</Button>
+				{/snippet}
+			</Dialog.Trigger>
+			<Dialog.Content class="sm:max-w-sm">
+				<Dialog.Header>
+					<Dialog.Title>Export invoices as PDF</Dialog.Title>
+					<Dialog.Description>Select a date range. All invoices with an issue date in this range will be exported as a ZIP of PDFs.</Dialog.Description>
+				</Dialog.Header>
+				<div class="grid gap-4 py-4">
+					<div class="grid grid-cols-4 items-center gap-4">
+						<Label for="export-from" class="text-right">From</Label>
+						<Popover.Root>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'col-span-3 justify-start pl-4 text-left font-normal',
+									!exportFromValue && 'text-muted-foreground'
+								)}
+							>
+								{exportFromValue ? df.format(exportFromValue.toDate(getLocalTimeZone())) : 'Pick a date'}
+								<CalendarIcon class="ml-auto size-4 opacity-50" />
+							</Popover.Trigger>
+							<Popover.Content class="w-auto p-0" side="bottom">
+								<Calendar
+									type="single"
+									value={exportFromValue}
+									onValueChange={(v) => { exportFromValue = v; }}
+								/>
+							</Popover.Content>
+						</Popover.Root>
+					</div>
+					<div class="grid grid-cols-4 items-center gap-4">
+						<Label for="export-to" class="text-right">To</Label>
+						<Popover.Root>
+							<Popover.Trigger
+								class={cn(
+									buttonVariants({ variant: 'outline' }),
+									'col-span-3 justify-start pl-4 text-left font-normal',
+									!exportToValue && 'text-muted-foreground'
+								)}
+							>
+								{exportToValue ? df.format(exportToValue.toDate(getLocalTimeZone())) : 'Pick a date'}
+								<CalendarIcon class="ml-auto size-4 opacity-50" />
+							</Popover.Trigger>
+							<Popover.Content class="w-auto p-0" side="bottom">
+								<Calendar
+									type="single"
+									value={exportToValue}
+									onValueChange={(v) => { exportToValue = v; }}
+								/>
+							</Popover.Content>
+						</Popover.Root>
+					</div>
+				</div>
+				<Dialog.Footer>
+					<Button variant="outline" onclick={() => (exportDialogOpen = false)}>Cancel</Button>
+					<Button onclick={handleExport} disabled={!exportFromValue || !exportToValue}>
+						<Download size="14" class="mr-1" /> Export ZIP
+					</Button>
+				</Dialog.Footer>
+			</Dialog.Content>
+		</Dialog.Root>
+
 				<Button href="/rekini/pievienot" variant="outline" class="flex items-center gap-2"
 			><Plus />{m['components.add']()}</Button
 		>

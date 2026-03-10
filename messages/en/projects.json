@@ -27,6 +27,8 @@
 		"create_button": "Create Task",
 		"add_product": "Add Product",
 		"total_price": "Product total price",
-		"total_cost": "Product total cost"
+		"total_cost": "Product total cost",
+		"adjusted_price": "Adjusted price",
+		"adjusted_price_label": "Automatic"
 	}
 }

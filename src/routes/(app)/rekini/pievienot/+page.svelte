@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input/index.js';
 	import { Label } from '$lib/components/ui/label/index.js';
@@ -86,8 +87,11 @@
 			clientAddress = selectedClientDetails.address || '';
 			clientEmail = selectedClientDetails.email || '';
 			
-			// Recalculate auto-filled item prices for the new client
-			items = items.map(item => {
+			// Recalculate auto-filled item prices for the new client.
+			// Read items via untrack so this effect doesn't subscribe to `items` as a
+			// dependency — otherwise writing items would immediately re-trigger the effect.
+			const snapshot = untrack(() => items);
+			items = snapshot.map(item => {
 				if (item.isAutoFilled) {
 					const match = products.find((p: any) => p.title === item.description);
 					if (match) {
@@ -107,33 +111,35 @@
 	});
 
 	$effect(() => {
-		// Auto-fill from task if provided and not already manually modified (checking selectedClientId as proxy)
-		// We only want to do this initially.
-		if (data.prefillTask && !selectedClientId) {
-			if (data.prefillTask.clientId) {
-				selectedClientId = data.prefillTask.clientId.toString();
-			}
+		// Auto-fill from task if provided — run once on mount using untrack for all state assignments
+		// to prevent reactive writes from re-triggering this effect (avoids effect_update_depth_exceeded).
+		if (data.prefillTask) {
+			untrack(() => {
+				if (!selectedClientId && data.prefillTask!.clientId) {
+					selectedClientId = data.prefillTask!.clientId.toString();
+				}
 
-			if (data.prefillTask.taskProducts && data.prefillTask.taskProducts.length > 0) {
-				items = data.prefillTask.taskProducts.map((tp: any) => ({
-					description: tp.product.title,
-					unit: 'gab.',
-					quantity: tp.count || 1,
-					price: tp.product.effectivePrice ?? tp.product.price, // price in cents
-					isAutoFilled: true
-				}));
-			} else {
-				// If no products, maybe use task title as description?
-				items = [
-					{
-						description: data.prefillTask.title,
+				if (data.prefillTask!.taskProducts && data.prefillTask!.taskProducts.length > 0) {
+					items = data.prefillTask!.taskProducts.map((tp: any) => ({
+						description: tp.product.title,
 						unit: 'gab.',
-						quantity: 1,
-						price: data.prefillTask.price || 0,
-						isAutoFilled: false
-					}
-				];
-			}
+						quantity: tp.count || 1,
+						price: tp.product.effectivePrice ?? tp.product.price, // price in cents
+						isAutoFilled: true
+					}));
+				} else {
+					// If no products, use task title as description with task price
+					items = [
+						{
+							description: data.prefillTask!.title,
+							unit: 'gab.',
+							quantity: 1,
+							price: data.prefillTask!.price || 0,
+							isAutoFilled: false
+						}
+					];
+				}
+			});
 		}
 	});
 

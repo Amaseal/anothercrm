@@ -393,14 +393,14 @@
 					{#if $isAdmin}
 
 						<div class="flex items-center gap-2 border-l pl-4 ml-2">
-							<span class="whitespace-nowrap">Pielāgota cena (€):</span>
+							<span class="whitespace-nowrap">{m['projects.adjusted_price']()} (€):</span>
 							<Input
 								id="customPrice"
 								name="customPrice"
 								type="number"
 								step="0.01"
 								bind:value={customPriceInput}
-								placeholder="Automātiski"
+								placeholder={m['projects.adjusted_price_label']()}
 								class="w-32"
 							/>
 						</div>

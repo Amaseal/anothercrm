@@ -26,7 +26,9 @@
 		"upload_preview": "Augšupielādēt priekšskatījumu",
 		"create_button": "Izveidot uzdevumu",
 		"add_product": "Pievienot produktu",
-		"total_price": "Prouktu ieteicamā cena",
-		"total_cost": "Prouktu izmaksas"
+		"total_price": "Produktu ieteicamā cena",
+		"total_cost": "Produktu izmaksas",
+		"adjusted_price": "Pielāgota cena",
+		"adjusted_price_label": "Automātiski"
 	}
 }
