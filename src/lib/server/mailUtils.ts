@@ -26,11 +26,17 @@ export async function sendPasswordResetEmail(to: string, resetLink: string) {
 	});
 }
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(
+	to: string,
+	subject: string,
+	html: string,
+	attachments?: import('nodemailer/lib/mailer').Attachment[]
+) {
 	await transporter.sendMail({
 		from: env.SMTP_FROM || 'noreply@yourdomain.com',
 		to: to,
 		subject: subject,
-		html: html
+		html: html,
+		attachments: attachments
 	});
 }

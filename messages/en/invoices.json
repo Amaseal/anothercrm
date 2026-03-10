@@ -43,6 +43,22 @@
     "email": "Email",
     "update_client_details": "Update client details",
     "select_client_to_see_details": "Select a client to see details...",
-    "new_client": "New Client"
+    "new_client": "New Client",
+    "send": {
+      "title": "Send Invoice {number} via Email?",
+      "to_client": "To Client:",
+      "email": "Email:",
+      "no_email_found": "No email found!",
+      "no_email_configured": "Client has no email address configured.",
+      "cancel": "Cancel",
+      "send_button": "Send Email",
+      "email_subject": "Invoice {number} from {company}",
+      "email_greeting": "Dear {client},",
+      "email_attached": "Please find attached your invoice #{number}.",
+      "email_total": "Total: {total} EUR",
+      "email_view": "You can view and print the invoice here: ",
+      "email_view_link": "View Invoice",
+      "email_thanks": "Thank you for your business!"
+    }
   }
 }

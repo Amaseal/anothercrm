@@ -43,6 +43,22 @@
     "email": "E-pasts",
     "update_client_details": "Atjaunot klienta datus",
     "select_client_to_see_details": "Izvēlieties klientu, lai redzētu datus...",
-    "new_client": "Jauns klients"
+    "new_client": "Jauns klients",
+    "send": {
+      "title": "Sūtīt rēķinu {number} e-pastā?",
+      "to_client": "Klientam:",
+      "email": "E-pasts:",
+      "no_email_found": "Nav norādīts e-pasts!",
+      "no_email_configured": "Klientam nav norādīta e-pasta adrese.",
+      "cancel": "Atcelt",
+      "send_button": "Sūtīt e-pastu",
+      "email_subject": "Rēķins {number} no {company}",
+      "email_greeting": "Sveicināti, {client},",
+      "email_attached": "Pielikumā nosūtām Jūsu rēķinu Nr.{number}.",
+      "email_total": "Summa apmaksai: {total} EUR",
+      "email_view": "Jūs varat apskatīt un izdrukāt rēķinu arī šeit: ",
+      "email_view_link": "Skatīt rēķinu",
+      "email_thanks": "Paldies par sadarbību!"
+    }
   }
 }
