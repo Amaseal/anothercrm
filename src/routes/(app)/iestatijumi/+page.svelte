@@ -9,6 +9,7 @@
     import { Textarea } from '$lib/components/ui/textarea';
     import { toast } from 'svelte-sonner';
     import { copyToClipboard } from '$lib/utilities';
+	import ClientSelect from '$lib/components/client-select.svelte';
 
 	let { data, form } = $props();
 
@@ -115,23 +116,12 @@
                         </Select.Root>
                         <input type="hidden" name="role" value={inviteRole} />
                     </div>
-
+<!-- Client select -->
                     {#if inviteRole === 'client'}
                          <div class="grid gap-2">
                             <Label>{m['projects.client_label']()}</Label>
-                            <Select.Root type="single" bind:value={selectedClientId}>
-                                <Select.Trigger class="w-full">
-                                    {selectedClientName}
-                                </Select.Trigger>
-                                <Select.Content class="max-h-60 overflow-y-auto">
-                                    {#each data.clients as client}
-                                        <Select.Item value={client.id.toString()} label={client.name}>
-                                            {client.name}
-                                        </Select.Item>
-                                    {/each}
-                                </Select.Content>
-                            </Select.Root>
                             <input type="hidden" name="clientId" value={selectedClientId} />
+                            <ClientSelect bind:value={selectedClientId} clients={data.clients} />
                         </div>
                     {/if}
 

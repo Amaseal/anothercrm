@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { SPORT_TYPES } from '$lib/constants';
 	import * as m from '$lib/paraglide/messages';
-	import { Check, ChevronsUpDown, Plus } from '@lucide/svelte';
+	import { Check, ChevronsUpDown, Plus, Eye } from '@lucide/svelte';
 	import * as Command from '$lib/components/ui/command';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Dialog from '$lib/components/ui/dialog';
@@ -29,6 +29,7 @@
 
 	let open = $state(false);
 	let dialogOpen = $state(false);
+	let viewDialogOpen = $state(false);
 
 	let loading = $state(false);
 
@@ -52,6 +53,10 @@
 
 	let selectedLabel = $derived(
 		clients.find((c) => c.id.toString() === value)?.name || m['projects.client_label']()
+	);
+
+	let selectedClient = $derived(
+		clients.find((c) => c.id.toString() === value)
 	);
 
 	// Sync width when opening
@@ -193,6 +198,19 @@
 			</Command.Root>
 		</Popover.Content>
 	</Popover.Root>
+
+	{#if selectedClient}
+	<Button
+		variant="outline"
+		size="icon"
+		class="shrink-0"
+		type="button"
+		onclick={() => (viewDialogOpen = true)}
+		title={m['clients.details'] ? m['clients.details']() : 'Klienta informācija'}
+	>
+		<Eye class="h-4 w-4" />
+	</Button>
+	{/if}
 
 	{#if $isAdmin}
 	<Button
@@ -336,6 +354,88 @@
 				<Button onclick={createClient} type="button" disabled={loading}
 					>{m['components.save']()}</Button
 				>
+			</div>
+		</div>
+	</Dialog.Content>
+</Dialog.Root>
+
+<Dialog.Root bind:open={viewDialogOpen}>
+	<Dialog.Content class="max-h-[90vh] w-full max-w-2xl overflow-hidden p-0">
+		<Dialog.Header class="px-6 pt-6">
+			<Dialog.Title>{m['clients.details'] ? m['clients.details']() : 'Klienta informācija'}</Dialog.Title>
+		</Dialog.Header>
+		<div class="custom-scroll max-h-[calc(90vh-80px)] overflow-y-auto px-6 pb-6">
+			{#if selectedClient}
+				<div class="grid gap-6 py-4">
+					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<!-- Name & Type -->
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.name']()}</Label>
+							<div class="font-medium text-lg mt-1">{selectedClient.name}</div>
+						</div>
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.type']()}</Label>
+							<div class="mt-1">{selectedClient.type || '-'}</div>
+						</div>
+
+						<!-- Contact Info -->
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.email']()}</Label>
+							<div class="mt-1">{selectedClient.email || '-'}</div>
+						</div>
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.phone']()}</Label>
+							<div class="mt-1">{selectedClient.phone || '-'}</div>
+						</div>
+
+						<!-- Reg & VAT -->
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.registration_number']()}</Label>
+							<div class="mt-1">{selectedClient.registrationNumber || '-'}</div>
+						</div>
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.vat_number']()}</Label>
+							<div class="mt-1">{selectedClient.vatNumber || '-'}</div>
+						</div>
+
+						<!-- Address -->
+						<div class="col-span-1 md:col-span-2">
+							<Label class="text-xs text-muted-foreground">{m['clients.address']()}</Label>
+							<div class="mt-1">{selectedClient.address || '-'}</div>
+						</div>
+
+						<!-- Bank details -->
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.bank']()}</Label>
+							<div class="mt-1">{selectedClient.bankName || '-'}</div>
+						</div>
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.swift']()}</Label>
+							<div class="mt-1">{selectedClient.bankCode || '-'}</div>
+						</div>
+						<div class="col-span-1 md:col-span-2">
+							<Label class="text-xs text-muted-foreground">{m['clients.bank_account']()}</Label>
+							<div class="mt-1">{selectedClient.bankAccount || '-'}</div>
+						</div>
+
+						<!-- Other -->
+						<div>
+							<Label class="text-xs text-muted-foreground">{m['clients.sport_type']()}</Label>
+							<div class="mt-1">{selectedClient.sportType || '-'}</div>
+						</div>
+
+						<!-- Description -->
+						<div class="col-span-1 md:col-span-2">
+							<Label class="text-xs text-muted-foreground">{m['clients.description']()}</Label>
+							<p class="whitespace-pre-wrap mt-1 text-sm">{selectedClient.description || '-'}</p>
+						</div>
+					</div>
+				</div>
+			{/if}
+			<div class="flex justify-end pt-4">
+				<Button variant="outline" type="button" onclick={() => (viewDialogOpen = false)}>
+					{m['components.close'] ? m['components.close']() : 'Aizvērt'}
+				</Button>
 			</div>
 		</div>
 	</Dialog.Content>
