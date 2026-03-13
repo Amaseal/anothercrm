@@ -46,10 +46,14 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, params }) => {
+	default: async ({ request, params, locals }) => {
+		if (locals.user?.type === 'client') {
+			return fail(403, { message: 'Forbidden' });
+		}
 		const form = await request.formData();
 		const cost = form.get('cost');
 		const price = form.get('price');
+		const image = form.get('image') as string | null;
 		const clientPricesJson = form.get('clientPrices') as string;
 
 		let clientPrices: { clientId: string | null; price: number }[] = [];
@@ -67,15 +71,15 @@ export const actions: Actions = {
 		const fallbackDescription = form.get(`description-${locales[0]}`) as string;
 
 		try {
-			await db.transaction(async (tx) => {
-				// 1. Update Base Product
+			await db.transaction(async (tx) => {			// 1. Update Base Product
 				await tx
 					.update(product)
 					.set({
 						title: fallbackTitle,
 						description: fallbackDescription,
 						cost: Number(cost),
-						price: Number(price) || 0
+						price: Number(price) || 0,
+						image: image || null
 					})
 					.where(eq(product.id, Number(params.id)));
 

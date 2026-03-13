@@ -41,27 +41,29 @@
 		initialEntries.length > 0 ? initialEntries : [{ productId: 0, count: 1, isOpen: false }]
 	);
 
-	let translatedProducts = $derived(products.map((p: { translations: any[]; title: any; description: any; }) => {
-		const lang = getLocale();
-		const translation = p.translations?.find((t: { language: string; }) => t.language === lang);
-		return {
-			...p,
-			title: translation?.title || p.title,
-			description: translation?.description || p.description
-		};
-	}));
+	let translatedProducts = $derived(
+		products.map((p: { translations: any[]; title: any; description: any }) => {
+			const lang = getLocale();
+			const translation = p.translations?.find((t: { language: string }) => t.language === lang);
+			return {
+				...p,
+				title: translation?.title || p.title,
+				description: translation?.description || p.description
+			};
+		})
+	);
 
-    $effect(() => {
-        // React to upstream changes from SSE
-        if (initialEntries && initialEntries.length > 0) {
-             // We can use a simple JSON stringify check to avoid unnecessary updates if deep compare is needed, 
-             // but since we create new objects in parent, reference check might fail even if content same.
-             // However, for this use case, we want to force update.
-             // To be safe against focus loss, we might want to check length or IDs.
-             // But let's trust the parent's new reference for now.
-             entries = initialEntries;
-        }
-    });
+	$effect(() => {
+		// React to upstream changes from SSE
+		if (initialEntries && initialEntries.length > 0) {
+			// We can use a simple JSON stringify check to avoid unnecessary updates if deep compare is needed,
+			// but since we create new objects in parent, reference check might fail even if content same.
+			// However, for this use case, we want to force update.
+			// To be safe against focus loss, we might want to check length or IDs.
+			// But let's trust the parent's new reference for now.
+			entries = initialEntries;
+		}
+	});
 	let searchQueries = $state<Record<number, string>>({});
 
 	function getSearchQuery(index: number): string {
@@ -99,9 +101,7 @@
 
 	function getFilteredOptions(searchQuery: string) {
 		if (!searchQuery) return translatedProducts;
-		return translatedProducts.filter(
-			(p: { title: string; }) => fuzzyMatch(searchQuery, p.title)
-		);
+		return translatedProducts.filter((p: { title: string }) => fuzzyMatch(searchQuery, p.title));
 	}
 
 	function addEntry() {
@@ -160,7 +160,7 @@
 							buttonVariants({ variant: 'outline' }),
 							'w-full justify-between text-left',
 							(!entry.productId || entry.productId === 0) && 'text-muted-foreground',
-							readonly && 'opacity-50 cursor-not-allowed'
+							readonly && 'cursor-not-allowed opacity-50'
 						)}
 						role="combobox"
 					>
@@ -168,13 +168,17 @@
 							{#if entry.productId === 0}
 								<span>{m['projects.products_placeholder']()}</span>
 							{:else}
-								{@const product = translatedProducts.find((p: { id: number; }) => p.id === entry.productId)}
-								<span class="truncate font-medium">{product?.title || m['projects.products_placeholder']()}</span>
+								{@const product = translatedProducts.find(
+									(p: { id: number }) => p.id === entry.productId
+								)}
+								<span class="truncate font-medium"
+									>{product?.title || m['projects.products_placeholder']()}</span
+								>
 							{/if}
 						</div>
 						<ChevronsUpDownIcon class="ml-2 size-4 shrink-0 opacity-50" />
 					</Popover.Trigger>
-					<Popover.Content class="w-[300px] p-0" side="bottom" align="start">
+					<Popover.Content class="w-full p-0" side="bottom" align="start">
 						<Command.Root shouldFilter={false}>
 							<Command.Input
 								placeholder={m['projects.search_placeholder']()}
@@ -183,7 +187,7 @@
 							/>
 							<Command.List>
 								<Command.Empty>{m['projects.no_item_found']()}</Command.Empty>
-								<Command.Group class="max-h-64 overflow-y-auto custom-scroll">
+								<Command.Group class="custom-scroll max-h-64 overflow-y-auto">
 									{#each getFilteredOptions(getSearchQuery(index)) as product (product.id)}
 										<Command.Item
 											value={product.title}

@@ -11,17 +11,22 @@
 		"add": "Add",
 		"edit": "Edit",
 		"delete": "Delete",
+		"copy": "Copy",
+		"view": "View",
 		"empty": "No products found.",
 		"add_product": "Add new product",
 		"description": "Description",
 		"description_placeholder": "Football jersey made from F02 fabric",
 		"name_placeholder": "Football jersey",
 		"edit_product": "Edit product {title}",
+		"copy_product": "Copy product",
 		"errors": {
 			"creation_failed": "Failed to create product.",
 			"update_failed": "Failed to update product."
 		},
 		"price": "Price",
-		"client_specific_prices": "Client Specific Prices"
+		"client_specific_prices": "Client Specific Prices",
+		"no_image": "No image",
+		"view_client_title": "Product Catalogue"
 	}
 }

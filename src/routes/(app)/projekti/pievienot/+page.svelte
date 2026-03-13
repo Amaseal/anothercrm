@@ -54,7 +54,10 @@
 	);
 	let selectedAssigneeName = $derived(
 		selectedAssigneeIds.length > 0
-			? data.users.filter((u) => selectedAssigneeIds.includes(u.id)).map((u) => u.name).join(', ')
+			? data.users
+					.filter((u) => selectedAssigneeIds.includes(u.id))
+					.map((u) => u.name)
+					.join(', ')
 			: m['projects.assign_user_label']()
 	);
 	let selectedManagerName = $derived(
@@ -119,7 +122,7 @@
 				</div>
 
 				<!-- Client -->
-				<div >
+				<div>
 					<input type="hidden" name="clientId" value={selectedClientId} />
 					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={$isClient} />
 				</div>
@@ -171,26 +174,39 @@
 				<!-- SECTION 1: Description & Products (Products moved here) -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
 					<!-- Right (35%) - Assignment & Products -->
-					
+
 					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
 						<!-- Assignment Controls -->
-						 {#if $isAdmin}
-						<div class="space-y-4">
-							<!-- Assignee -->
-							<div class="grid gap-2">
-								<Label>{m['projects.assign_user_label']()}</Label>
-								<MultiSelect
-									options={data.users.map((u) => ({
-										value: u.id,
-										label: u.name
-									}))}
-									bind:value={selectedAssigneeIds}
-									placeholder={m['projects.assign_user_label']()}
-								/>
-								<input type="hidden" name="assignedToUserIds" value={selectedAssigneeIds.join(',')} />
-							</div>
+						{#if $isAdmin}
+							<div class="space-y-4">
+								<!-- Assignee -->
+								<div class="grid gap-2">
+									<Label>{m['projects.assign_user_label']()}</Label>
+									<MultiSelect
+										groups={[
+											{
+												label: 'Admins',
+												options: data.users
+													.filter((u) => u.type === 'admin')
+													.map((u) => ({ value: u.id, label: u.name }))
+											},
+											{
+												label: 'Klienti',
+												options: data.users
+													.filter((u) => u.type === 'client')
+													.map((u) => ({ value: u.id, label: u.name }))
+											}
+										]}
+										bind:value={selectedAssigneeIds}
+										placeholder={m['projects.assign_user_label']()}
+									/>
+									<input
+										type="hidden"
+										name="assignedToUserIds"
+										value={selectedAssigneeIds.join(',')}
+									/>
+								</div>
 
-							
 								<!-- Seamstress -->
 								<div class="grid gap-2">
 									<Label>{m['projects.seamstress_label']()}</Label>
@@ -208,31 +224,35 @@
 										</Select.Content>
 									</Select.Root>
 								</div>
-						
 
-							<!-- Materials -->
-							<div class="grid gap-2">
-								<Label>{m['projects.materials_label']()}</Label>
-								<MultiSelect
-									options={data.materials.map((i) => ({
-										value: i.id,
-										label: `${i.title} (${i.remaining})`
-									}))}
-									bind:value={selectedMaterialIds}
-									placeholder={m['projects.materials_placeholder']()}
-								/>
-								{#each selectedMaterialIds as id}
-									<input type="hidden" name="materials" value={id} />
-								{/each}
+								<!-- Materials -->
+								<div class="grid gap-2">
+									<Label>{m['projects.materials_label']()}</Label>
+									<MultiSelect
+										options={data.materials.map((i) => ({
+											value: i.id,
+											label: `${i.title} (${i.remaining})`
+										}))}
+										bind:value={selectedMaterialIds}
+										placeholder={m['projects.materials_placeholder']()}
+									/>
+									{#each selectedMaterialIds as id}
+										<input type="hidden" name="materials" value={id} />
+									{/each}
+								</div>
 							</div>
-						</div>
 						{/if}
 						<!-- Products List (Moved from Execution section) -->
 						<div class="flex-1">
-					<ProductList products={data.products} bind:totalPrice bind:totalCost isAdmin={$isAdmin} />
-				</div>
+							<ProductList
+								products={data.products}
+								bind:totalPrice
+								bind:totalCost
+								isAdmin={$isAdmin}
+							/>
+						</div>
 					</div>
-				
+
 					<!-- Left (65%) - Description -->
 					<!-- Flex col to allow internal growth -->
 					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
@@ -280,8 +300,7 @@
 						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
 					</div>
 					{#if $isAdmin}
-
-						<div class="flex items-center gap-2 border-l pl-4 ml-2">
+						<div class="ml-2 flex items-center gap-2 border-l pl-4">
 							<span class="whitespace-nowrap">Pielāgota cena (€):</span>
 							<Input
 								id="customPrice"
@@ -292,7 +311,7 @@
 								class="w-32"
 							/>
 						</div>
-						<div class="flex items-center gap-2 border-l pl-4 ml-2">
+						<div class="ml-2 flex items-center gap-2 border-l pl-4">
 							{m['projects.total_cost']()}: €{formatPrice(totalCost)}
 						</div>
 					{/if}

@@ -8,7 +8,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import { CalendarIcon, Save, X, Printer, FileText, Clock } from '@lucide/svelte';
-    import * as Sheet from '$lib/components/ui/sheet';
+	import * as Sheet from '$lib/components/ui/sheet';
 	import {
 		DateFormatter,
 		type DateValue,
@@ -67,11 +67,11 @@
 		const prod = data.products.find((p: any) => p.id === tp.productId);
 		if (!prod) return sum;
 		const effectivePrice = prod.clientPrice ?? prod.price;
-		return sum + (effectivePrice * tp.count);
+		return sum + effectivePrice * tp.count;
 	}, 0);
 
 	let customPriceInput = $state<string>(
-		(data.item.price !== null && data.item.price !== initialProductTotalCents)
+		data.item.price !== null && data.item.price !== initialProductTotalCents
 			? (data.item.price / 100).toFixed(2)
 			: ''
 	);
@@ -83,7 +83,10 @@
 	);
 	let selectedAssigneeName = $derived(
 		selectedAssigneeIds.length > 0
-			? data.users.filter((u: { id: any }) => selectedAssigneeIds.includes(u.id)).map((u: any) => u.name).join(', ')
+			? data.users
+					.filter((u: { id: any }) => selectedAssigneeIds.includes(u.id))
+					.map((u: any) => u.name)
+					.join(', ')
 			: undefined
 	);
 
@@ -112,7 +115,7 @@
 					isOpen: false
 				}))
 			: undefined
-    );
+	);
 
 	// Prepare existing files for FileUpload
 	// FileUpload expects { name, path, size, type? }
@@ -126,8 +129,6 @@
 
 	import ProjectPrintView from '$lib/components/project-print-view.svelte';
 	import HistoryList from '$lib/components/history-list.svelte';
-
-
 </script>
 
 <ProjectPrintView
@@ -158,8 +159,6 @@
 	<div
 		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
 	>
-
-
 		<form method="POST" use:enhance enctype="multipart/form-data" class="flex h-full flex-col">
 			<!-- Sticky Header inside Modal -->
 			<div class="flex items-center gap-4 border-b bg-background px-6 py-4">
@@ -176,7 +175,7 @@
 				</div>
 
 				<!-- Client -->
-				<div >
+				<div>
 					<input type="hidden" name="clientId" value={selectedClientId} />
 					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={$isClient} />
 				</div>
@@ -215,20 +214,20 @@
 				<!-- History Toggle -->
 				<Sheet.Root>
 					<Sheet.Trigger>
-                        {#snippet child({ props })}
-                            <Button
-                                {...props}
-                                variant="ghost"
-                                size="icon"
-                                class="text-muted-foreground hover:text-foreground"
-                                title={m['history.title']()}
-                            >
-                                <Clock class="size-5" />
-                                <span class="sr-only">History</span>
-                            </Button>
-                        {/snippet}
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class="text-muted-foreground hover:text-foreground"
+								title={m['history.title']()}
+							>
+								<Clock class="size-5" />
+								<span class="sr-only">History</span>
+							</Button>
+						{/snippet}
 					</Sheet.Trigger>
-					<Sheet.Content side="right" class="w-[400px] sm:w-[540px] overflow-y-auto z-[100]">
+					<Sheet.Content side="right" class="z-[100] w-[400px] overflow-y-auto sm:w-[540px]">
 						<Sheet.Header>
 							<Sheet.Title>{m['history.title']()}</Sheet.Title>
 						</Sheet.Header>
@@ -257,23 +256,36 @@
 					<!-- Right (35%) - Assignment & Products -->
 					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
 						{#if $isAdmin}
-						<!-- Assignment Controls -->
-						<div class="space-y-4">
-							<!-- Assignee -->
-							<div class="grid gap-2">
-								<Label>{m['projects.assign_user_label']()}</Label>
-								<MultiSelect
-									options={data.users.map((u: any) => ({
-										value: u.id,
-										label: u.name
-									}))}
-									bind:value={selectedAssigneeIds}
-									placeholder={m['projects.assign_user_label']()}
-								/>
-								<input type="hidden" name="assignedToUserIds" value={selectedAssigneeIds.join(',')} />
-							</div>
+							<!-- Assignment Controls -->
+							<div class="space-y-4">
+								<!-- Assignee -->
+								<div class="grid gap-2">
+									<Label>{m['projects.assign_user_label']()}</Label>
+									<MultiSelect
+										groups={[
+											{
+												label: 'Admins',
+												options: data.users
+													.filter((u: any) => u.type === 'admin')
+													.map((u: any) => ({ value: u.id, label: u.name }))
+											},
+											{
+												label: 'Klienti',
+												options: data.users
+													.filter((u: any) => u.type === 'client')
+													.map((u: any) => ({ value: u.id, label: u.name }))
+											}
+										]}
+										bind:value={selectedAssigneeIds}
+										placeholder={m['projects.assign_user_label']()}
+									/>
+									<input
+										type="hidden"
+										name="assignedToUserIds"
+										value={selectedAssigneeIds.join(',')}
+									/>
+								</div>
 
-						
 								<!-- Seamstress -->
 								<div class="grid gap-2">
 									<Label>{m['projects.seamstress_label']()}</Label>
@@ -291,35 +303,34 @@
 										</Select.Content>
 									</Select.Root>
 								</div>
-						
 
-							<!-- Materials -->
-							<div class="grid gap-2">
-								<Label>{m['projects.materials_label']()}</Label>
-								<MultiSelect
-									options={data.materials.map((i: { id: any; title: any; remaining: any }) => ({
-										value: i.id,
-										label: `${i.title} (${i.remaining})`
-									}))}
-									bind:value={selectedMaterialIds}
-									placeholder={m['projects.materials_placeholder']()}
-								/>
-								{#each selectedMaterialIds as id}
-									<input type="hidden" name="materials" value={id} />
-								{/each}
+								<!-- Materials -->
+								<div class="grid gap-2">
+									<Label>{m['projects.materials_label']()}</Label>
+									<MultiSelect
+										options={data.materials.map((i: { id: any; title: any; remaining: any }) => ({
+											value: i.id,
+											label: `${i.title} (${i.remaining})`
+										}))}
+										bind:value={selectedMaterialIds}
+										placeholder={m['projects.materials_placeholder']()}
+									/>
+									{#each selectedMaterialIds as id}
+										<input type="hidden" name="materials" value={id} />
+									{/each}
+								</div>
 							</div>
-						</div>
 						{/if}
 						<!-- Products List -->
 						<div class="flex-1">
-						<ProductList
-							products={data.products}
-							bind:totalPrice
-							bind:totalCost
-							initialEntries={initialProductEntries}
-							isAdmin={$isAdmin}
-						/>
-					</div>
+							<ProductList
+								products={data.products}
+								bind:totalPrice
+								bind:totalCost
+								initialEntries={initialProductEntries}
+								isAdmin={$isAdmin}
+							/>
+						</div>
 					</div>
 					<!-- Left (65%) - Description -->
 					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
@@ -340,10 +351,13 @@
 						<Label class="text-lg">Rēķini</Label>
 						<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 							{#each data.taskInvoices as inv}
-								<a href={`/rekini/labot/${inv.id}`} class="block rounded-lg border p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors">
-									<div class="flex justify-between items-center mb-2">
+								<a
+									href={`/rekini/labot/${inv.id}`}
+									class="block rounded-lg border bg-gray-50/50 p-4 transition-colors hover:bg-gray-50"
+								>
+									<div class="mb-2 flex items-center justify-between">
 										<span class="font-bold">{inv.invoiceNumber}</span>
-										<span class="text-xs px-2 py-1 rounded bg-gray-200">{inv.status}</span>
+										<span class="rounded bg-gray-200 px-2 py-1 text-xs">{inv.status}</span>
 									</div>
 									<div class="text-sm">
 										<div>Summa: {formatPrice(inv.total)} €</div>
@@ -362,7 +376,7 @@
 					<div class="col-span-12 lg:col-span-4">
 						<div class="grid gap-2">
 							<Label for="files">{m['projects.files_label']()}</Label>
-							<FileUpload bind:files />
+							<FileUpload bind:files zipFilename={data.item.title} />
 						</div>
 					</div>
 					<!-- Left (65%) - Large Visual Reference -->
@@ -378,9 +392,7 @@
 						</div>
 					</div>
 				</div>
-
 			</div>
-
 
 			<!-- Sticky Footer inside Modal -->
 			<div
@@ -391,8 +403,7 @@
 						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
 					</div>
 					{#if $isAdmin}
-
-						<div class="flex items-center gap-2 border-l pl-4 ml-2">
+						<div class="ml-2 flex items-center gap-2 border-l pl-4">
 							<span class="whitespace-nowrap">{m['projects.adjusted_price']()} (€):</span>
 							<Input
 								id="customPrice"
@@ -404,7 +415,7 @@
 								class="w-32"
 							/>
 						</div>
-												<div class="flex items-center gap-2 border-l pl-4 ml-2">
+						<div class="ml-2 flex items-center gap-2 border-l pl-4">
 							{m['projects.total_cost']()}: €{formatPrice(totalCost)}
 						</div>
 					{/if}

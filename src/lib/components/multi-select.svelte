@@ -6,18 +6,27 @@
 	import { Check, ChevronsUpDown } from '@lucide/svelte';
 	import { cn } from '$lib/utils';
 	import * as m from '$lib/paraglide/messages';
-
 	let {
 		options = [],
+		groups = [],
 		value = $bindable([]),
 		placeholder = 'Select items...',
 		disabled = false
 	} = $props<{
-		options: { value: string | number; label: string }[];
+		options?: { value: string | number; label: string }[];
+		groups?: { label: string; options: { value: string | number; label: string }[] }[];
 		value: (string | number)[];
 		placeholder?: string;
 		disabled?: boolean;
 	}>();
+	// Flatten all options for label lookup (covers both grouped and ungrouped)
+	const allOptions = $derived(
+		groups.length > 0
+			? groups.flatMap(
+					(g: { label: string; options: { value: string | number; label: string }[] }) => g.options
+				)
+			: options
+	);
 
 	let open = $state(false);
 
@@ -31,13 +40,13 @@
 </script>
 
 <Popover.Root bind:open>
-	<Popover.Trigger disabled={disabled}>
+	<Popover.Trigger {disabled}>
 		{#snippet child({ props })}
 			<Button
 				variant="outline"
 				role="combobox"
 				aria-expanded={open}
-				disabled={disabled}
+				{disabled}
 				class="h-auto min-h-10 w-full !justify-between hover:bg-background"
 				{...props}
 			>
@@ -50,7 +59,7 @@
 						</Badge>
 					{:else}
 						{#each value as v}
-							{@const option = options.find((o: any) => o.value === v)}
+							{@const option = allOptions.find((o: any) => o.value === v)}
 							{#if option}
 								<Badge variant="secondary" class="rounded-sm px-1 font-normal">
 									{option.label}
@@ -68,24 +77,37 @@
 			<Command.Input placeholder={m['projects.search_placeholder']()} />
 			<Command.List class="max-h-[300px] overflow-y-auto">
 				<Command.Empty>{m['projects.no_item_found']()}</Command.Empty>
-				<Command.Group>
-					{#each options as option}
-						<Command.Item
-							value={option.label}
-							onSelect={() => {
-								toggleSelection(option.value);
-							}}
-						>
-							<Check
-								class={cn(
-									'mr-2 h-4 w-4',
-									value.includes(option.value) ? 'opacity-100' : 'opacity-0'
-								)}
-							/>
-							{option.label}
-						</Command.Item>
+				{#if groups.length > 0}
+					{#each groups as group}
+						<Command.Group heading={group.label}>
+							{#each group.options as option}
+								<Command.Item value={option.label} onSelect={() => toggleSelection(option.value)}>
+									<Check
+										class={cn(
+											'mr-2 h-4 w-4',
+											value.includes(option.value) ? 'opacity-100' : 'opacity-0'
+										)}
+									/>
+									{option.label}
+								</Command.Item>
+							{/each}
+						</Command.Group>
 					{/each}
-				</Command.Group>
+				{:else}
+					<Command.Group>
+						{#each options as option}
+							<Command.Item value={option.label} onSelect={() => toggleSelection(option.value)}>
+								<Check
+									class={cn(
+										'mr-2 h-4 w-4',
+										value.includes(option.value) ? 'opacity-100' : 'opacity-0'
+									)}
+								/>
+								{option.label}
+							</Command.Item>
+						{/each}
+					</Command.Group>
+				{/if}
 			</Command.List>
 		</Command.Root>
 	</Popover.Content>

@@ -10,9 +10,12 @@
 		"image": "Attēls",
 		"edit": "Rediģēt",
 		"delete": "Dzēst",
+		"copy": "Kopēt",
+		"view": "Skatīt",
 		"empty": "Neviens produkts netika atrasts.",
 		"add_product": "Pievienot jaunu produktu",
 		"edit_product": "Rediģēt produktu {title}",
+		"copy_product": "Kopēt produktu",
 		"description_placeholder": "Futbola krekls uz F02 auduma",
 		"name_placeholder": "Futbola krekls",
 		"errors": {
@@ -20,6 +23,8 @@
 			"update_failed": "Neizdevās atjaunināt produktu."
 		},
 		"price": "Cena",
-		"client_specific_prices": "Klientiem Pielāgotās Cenas"
+		"client_specific_prices": "Klientiem Pielāgotās Cenas",
+		"no_image": "Nav attēla",
+		"view_client_title": "Produktu Katalogs"
 	}
 }

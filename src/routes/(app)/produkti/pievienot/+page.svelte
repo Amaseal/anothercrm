@@ -15,15 +15,24 @@
 	import FormError from '$lib/components/form-error.svelte';
 	import { locales, getLocale } from '@/paraglide/runtime.js';
 	import ClientSelect from '$lib/components/client-select.svelte';
+	import ImageDropzone from '$lib/components/image-dropzone.svelte';
+	import type { ProductTranslation, ClientProductPrice } from '$lib/server/db/schema.js';
 
 	let { data, form } = $props();
 
 	const getLanguageName = (code: string) => {
 		return new Intl.DisplayNames([getLocale()], { type: 'language' }).of(code) || code;
 	};
-
-	let clientPrices: { id: number; clientId: string | null; price: number }[] = $state([]);
-	let nextId = 0;
+	let clientPrices: { id: number; clientId: string | null; price: number }[] = $state(
+		data.copyFrom?.clientPrices
+			? data.copyFrom.clientPrices.map((cp: ClientProductPrice, i: number) => ({
+					id: i,
+					clientId: String(cp.clientId),
+					price: cp.price
+				}))
+			: []
+	);
+	let nextId = data.copyFrom?.clientPrices?.length ?? 0;
 
 	function addClientPrice() {
 		clientPrices = [...clientPrices, { id: nextId++, clientId: null, price: 0 }];
@@ -32,6 +41,16 @@
 	function removeClientPrice(id: number) {
 		clientPrices = clientPrices.filter((cp) => cp.id !== id);
 	}
+
+	function getCopyValue(field: 'title' | 'description', locale: string): string {
+		if (!data.copyFrom) return '';
+		const translation = data.copyFrom.translations?.find(
+			(t: ProductTranslation) => t.language === locale
+		);
+		if (translation && translation[field]) return translation[field];
+		if (locale === 'lv') return data.copyFrom[field] ?? '';
+		return '';
+	}
 </script>
 
 <svelte:head>
@@ -39,8 +58,8 @@
 </svelte:head>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-	<div class="max-h-[90vh] w-full max-w-md overflow-hidden rounded-lg">
-		<Card.Root class="custom-scroll relative max-h-[90vh] w-full max-w-md gap-2 overflow-y-auto">
+	<div class="max-h-[90vh] w-[30vw] overflow-hidden rounded-lg">
+		<Card.Root class="custom-scroll relative max-h-[90vh] w-full  gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
 					href="/produkti"
@@ -48,28 +67,57 @@
 					><X /></a
 				>
 
-				<h2 class=" text-lg font-semibold">{m['products.add_product']()}</h2>
+				<h2 class=" text-lg font-semibold">
+					{data.copyFrom ? m['products.copy_product']() : m['products.add_product']()}
+				</h2>
 			</Card.Header>
 			<Card.Content class="p-6 pb-2">
 				<form method="POST" use:enhance>
+					<div class="flex gap-4">
+						{#each locales as locale}
+							<div class="flex-1">
+								<Label>{m['products.name']()} ({getLanguageName(locale)})</Label>
+								<Input
+									placeholder={m['products.name_placeholder']()}
+									name="title-{locale}"
+									value={getCopyValue('title', locale)}
+									required
+								/>
+
+								<Label>{m['products.description']()} ({getLanguageName(locale)})</Label>
+								<Textarea
+									class="mb-4"
+									placeholder={m['products.description_placeholder']()}
+									name="description-{locale}"
+									value={getCopyValue('description', locale)}
+								/>
+							</div>
+						{/each}
+					</div>
 					<!-- Locales Loop for Title and Description -->
-					{#each locales as locale}
-						<Label>{m['products.name']()} ({getLanguageName(locale)})</Label>
-						<Input placeholder={m['products.name_placeholder']()} name="title-{locale}" required />
+					<div class="flex gap-4">
+						<div class="flex-1">
+							<Label>{m['products.cost']()}</Label>
+							<MoneyInput
+								currency="EUR"
+								placeholder="5.70"
+								name="cost"
+								value={data.copyFrom?.cost}
+							/>
+						</div>
+						<div class="flex-1">
+							<Label>{m['products.price']()}</Label>
+							<MoneyInput
+								currency="EUR"
+								placeholder="10.00"
+								name="price"
+								value={data.copyFrom?.price}
+							/>
+						</div>
+					</div>
 
-						<Label>{m['products.description']()} ({getLanguageName(locale)})</Label>
-						<Textarea
-							class="mb-4"
-							placeholder={m['products.description_placeholder']()}
-							name="description-{locale}"
-						/>
-					{/each}
-
-					<Label>{m['products.cost']()}</Label>
-					<MoneyInput currency="EUR" placeholder="5.70" name="cost" />
-
-					<Label class="mt-4">{m['products.price']()}</Label>
-					<MoneyInput currency="EUR" placeholder="10.00" name="price" />
+					<Label class="mt-4">{m['products.image']()}</Label>
+					<ImageDropzone initialImagePath={data.copyFrom?.image ?? null} />
 
 					<!-- Client Specific Prices -->
 					<div class="mt-6">
@@ -84,12 +132,8 @@
 
 						{#each clientPrices as cp (cp.id)}
 							<div class="mb-2 flex items-center gap-2">
-								<div class="w-60!">
-									<ClientSelect
-								
-										bind:value={cp.clientId as string}
-										clients={data.btbClients}
-									/>
+								<div class="w-full!">
+									<ClientSelect bind:value={cp.clientId as string} clients={data.btbClients} />
 								</div>
 								<div class="w-24">
 									<MoneyInput currency="EUR" placeholder="0.00" bind:value={cp.price} />

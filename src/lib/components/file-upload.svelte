@@ -17,21 +17,21 @@
 		size?: number;
 		type?: string;
 	};
-
 	let {
 		files = $bindable([]),
 		label = '',
 		readonly = false,
+		zipFilename = 'files',
 		...restProps
 	} = $props<{
 		files?: FileData[];
 		label?: string;
 		readonly?: boolean;
+		zipFilename?: string;
 	}>();
 
-
-
 	let isUploading = $state(false);
+	let isZipping = $state(false);
 	let uploadProgress = $state<Record<string, number>>({});
 	let fileInputElement: HTMLInputElement;
 	let dragOver = $state(false);
@@ -158,33 +158,37 @@
 
 		files = files.filter((_: unknown, i: number) => i !== index);
 	}
-
 	async function downloadAll() {
-		if (files.length === 0) return;
+		if (files.length === 0 || isZipping) return;
 
-		const zip = new JSZip();
-		const folder = zip.folder('files');
+		isZipping = true;
+		try {
+			const zip = new JSZip();
+			const folder = zip.folder('files');
 
-		// Fetch all files
-		const promises = files.map(async (file: FileData) => {
-			try {
-				const response = await fetch(file.path);
-				const blob = await response.blob();
-				folder?.file(file.name, blob);
-			} catch (e) {
-				console.error(`Failed to download ${file.name}`, e);
-			}
-		});
+			// Fetch all files
+			const promises = files.map(async (file: FileData) => {
+				try {
+					const response = await fetch(file.path);
+					const blob = await response.blob();
+					folder?.file(file.name, blob);
+				} catch (e) {
+					console.error(`Failed to download ${file.name}`, e);
+				}
+			});
 
-		await Promise.all(promises);
+			await Promise.all(promises);
 
-		const content = await zip.generateAsync({ type: 'blob' });
-		const url = URL.createObjectURL(content);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = 'files.zip';
-		a.click();
-		URL.revokeObjectURL(url);
+			const content = await zip.generateAsync({ type: 'blob' });
+			const url = URL.createObjectURL(content);
+			const a = document.createElement('a');
+			a.href = url;
+			a.download = `${zipFilename}.zip`;
+			a.click();
+			URL.revokeObjectURL(url);
+		} finally {
+			isZipping = false;
+		}
 	}
 
 	function downloadFile(file: FileData) {
@@ -319,12 +323,16 @@
 			{/each}
 		</div>
 	{/if}
-
 	<!-- Download All -->
 	{#if files.length > 1}
-		<Button variant="outline" size="sm" class="w-full" onclick={downloadAll}>
-			<Download class="mr-2 h-4 w-4" />
-			Download All ({files.length})
+		<Button variant="outline" size="sm" class="w-full" onclick={downloadAll} disabled={isZipping}>
+			{#if isZipping}
+				<Loader2 class="mr-2 h-4 w-4 animate-spin" />
+				Preparing zip...
+			{:else}
+				<Download class="mr-2 h-4 w-4" />
+				Download All ({files.length})
+			{/if}
 		</Button>
 	{/if}
 </div>

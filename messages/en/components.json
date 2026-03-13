@@ -34,10 +34,10 @@
 			"logout": "Logout",
 			"light": "Light",
 			"dark": "Dark"
-		},
-		"search": "Search...",
+		},		"search": "Search...",
 		"add": "Add",
 		"cancel": "Cancel",
+		"back": "Back",
 		"delete": "Delete",
 		"edit": "Edit",
 		"view": "View",

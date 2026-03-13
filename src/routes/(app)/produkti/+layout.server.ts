@@ -60,13 +60,13 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 			}
 		}
 	});
-
 	let products = productData.map((product) => {
 		return {
 			id: product.id,
 			title: product.title,
 			description: product.description,
 			translations: product.translations,
+			image: product.image,
 			cost: (product.cost / 100).toFixed(2),
 			price: (product.price / 100).toFixed(2),
 			clientPrices: product.clientPrices.map((cp) => ({

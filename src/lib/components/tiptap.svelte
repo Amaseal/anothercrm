@@ -32,7 +32,11 @@
 	import Rows2 from '@lucide/svelte/icons/rows-2';
 	import { X } from '@lucide/svelte';
 
-	let { value = $bindable(''), editable = true, class: className } = $props<{ value?: string; editable?: boolean; class?: string }>();
+	let {
+		value = $bindable(''),
+		editable = true,
+		class: className
+	} = $props<{ value?: string; editable?: boolean; class?: string }>();
 	let editor = $state() as Readable<Editor | null>;
 	let isInternalUpdate = false;
 	let skipNextUpdate = false;
@@ -117,8 +121,8 @@
 				TableHeader,
 				TableCell,
 				Highlight.configure({ multicolor: true }),
-				TextStyle,
-				Color
+				TextStyle.configure({ mergeNestedSpanStyles: true }),
+				Color.configure({ types: ['textStyle'] })
 			],
 			content: value,
 			onUpdate: ({ editor }: { editor: CoreEditor }) => {
@@ -190,187 +194,186 @@
 			}
 		});
 	});
-
 </script>
 
 <div class="flex h-full w-full flex-col overflow-hidden bg-background">
 	{#if $editor && editable}
-		<div class="flex flex-wrap items-center gap-1 border-b bg-muted/40 p-1 shrink-0">
-		<!-- Formatting -->
-		<Toggle
-			size="sm"
-			pressed={$editor.isActive('bold')}
-			onPressedChange={() => $editor.chain().focus().toggleBold().run()}
-			aria-label="Bold"
-		>
-			<Bold class="h-4 w-4" />
-		</Toggle>
-		<Toggle
-			size="sm"
-			pressed={$editor.isActive('italic')}
-			onPressedChange={() => $editor.chain().focus().toggleItalic().run()}
-			aria-label="Italic"
-		>
-			<Italic class="h-4 w-4" />
-		</Toggle>
-		<Toggle
-			size="sm"
-			pressed={$editor.isActive('strike')}
-			onPressedChange={() => $editor.chain().focus().toggleStrike().run()}
-			aria-label="Strikethrough"
-		>
-			<Strikethrough class="h-4 w-4" />
-		</Toggle>
+		<div class="flex shrink-0 flex-wrap items-center gap-1 border-b bg-muted/40 p-1">
+			<!-- Formatting -->
+			<Toggle
+				size="sm"
+				pressed={$editor.isActive('bold')}
+				onPressedChange={() => $editor.chain().focus().toggleBold().run()}
+				aria-label="Bold"
+			>
+				<Bold class="h-4 w-4" />
+			</Toggle>
+			<Toggle
+				size="sm"
+				pressed={$editor.isActive('italic')}
+				onPressedChange={() => $editor.chain().focus().toggleItalic().run()}
+				aria-label="Italic"
+			>
+				<Italic class="h-4 w-4" />
+			</Toggle>
+			<Toggle
+				size="sm"
+				pressed={$editor.isActive('strike')}
+				onPressedChange={() => $editor.chain().focus().toggleStrike().run()}
+				aria-label="Strikethrough"
+			>
+				<Strikethrough class="h-4 w-4" />
+			</Toggle>
 
-		<div class="mx-1 h-4 w-[1px] bg-border"></div>
+			<div class="mx-1 h-4 w-[1px] bg-border"></div>
 
-		<!-- Lists -->
-		<Toggle
-			size="sm"
-			pressed={$editor.isActive('bulletList')}
-			onPressedChange={() => $editor.chain().focus().toggleBulletList().run()}
-			aria-label="Bullet List"
-		>
-			<List class="h-4 w-4" />
-		</Toggle>
-		<Toggle
-			size="sm"
-			pressed={$editor.isActive('orderedList')}
-			onPressedChange={() => $editor.chain().focus().toggleOrderedList().run()}
-			aria-label="Ordered List"
-		>
-			<ListOrdered class="h-4 w-4" />
-		</Toggle>
+			<!-- Lists -->
+			<Toggle
+				size="sm"
+				pressed={$editor.isActive('bulletList')}
+				onPressedChange={() => $editor.chain().focus().toggleBulletList().run()}
+				aria-label="Bullet List"
+			>
+				<List class="h-4 w-4" />
+			</Toggle>
+			<Toggle
+				size="sm"
+				pressed={$editor.isActive('orderedList')}
+				onPressedChange={() => $editor.chain().focus().toggleOrderedList().run()}
+				aria-label="Ordered List"
+			>
+				<ListOrdered class="h-4 w-4" />
+			</Toggle>
 
-		<div class="mx-1 h-4 w-[1px] bg-border"></div>
+			<div class="mx-1 h-4 w-[1px] bg-border"></div>
 
-		<!-- Colors & Highlight -->
-		<Toggle
-			size="sm"
-			pressed={$editor.isActive('highlight')}
-			onPressedChange={() => $editor.chain().focus().toggleHighlight().run()}
-			aria-label="Highlight"
-		>
-			<Highlighter class="h-4 w-4" />
-		</Toggle>
+			<!-- Colors & Highlight -->
+			<Toggle
+				size="sm"
+				pressed={$editor.isActive('highlight')}
+				onPressedChange={() => $editor.chain().focus().toggleHighlight().run()}
+				aria-label="Highlight"
+			>
+				<Highlighter class="h-4 w-4" />
+			</Toggle>
 
-		<Popover.Root>
-			<Popover.Trigger>
-				<Button
-					variant="ghost"
-					size="sm"
-					class={$editor.isActive('textStyle', { color: /.*/ }) ? 'bg-accent' : ''}
-				>
-					<Palette class="h-4 w-4" />
-				</Button>
-			</Popover.Trigger>
-			<Popover.Content class="w-40 p-2">
-				<div class="grid grid-cols-5 gap-1">
-					{#each ['#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#94a3b8'] as color}
+			<Popover.Root>
+				<Popover.Trigger>
+					<Button
+						variant="ghost"
+						size="sm"
+						class={$editor.isActive('textStyle', { color: /.*/ }) ? 'bg-accent' : ''}
+					>
+						<Palette class="h-4 w-4" />
+					</Button>
+				</Popover.Trigger>
+				<Popover.Content class="w-40 p-2">
+					<div class="grid grid-cols-5 gap-1">
+						{#each ['#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#94a3b8'] as color}
+							<button
+								class="h-6 w-6 rounded-full border border-muted ring-offset-background transition-all hover:scale-110 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
+								style="background-color: {color}"
+								onclick={() => $editor.chain().focus().setColor(color).run()}
+								aria-label="Color {color}"
+							></button>
+						{/each}
 						<button
-							class="h-6 w-6 rounded-full border border-muted ring-offset-background transition-all hover:scale-110 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
-							style="background-color: {color}"
-							onclick={() => $editor.chain().focus().setColor(color).run()}
-							aria-label="Color {color}"
-						></button>
-					{/each}
-					<button
-						class="flex h-6 w-6 items-center justify-center rounded-full border border-muted bg-transparent"
-						onclick={() => $editor.chain().focus().unsetColor().run()}
-						title="Reset"
-					>
-						<X class="h-3 w-3" />
-					</button>
-				</div>
-			</Popover.Content>
-		</Popover.Root>
+							class="flex h-6 w-6 items-center justify-center rounded-full border border-muted bg-transparent"
+							onclick={() => $editor.chain().focus().unsetColor().run()}
+							title="Reset"
+						>
+							<X class="h-3 w-3" />
+						</button>
+					</div>
+				</Popover.Content>
+			</Popover.Root>
 
-		<div class="mx-1 h-4 w-[1px] bg-border"></div>
+			<div class="mx-1 h-4 w-[1px] bg-border"></div>
 
-		<!-- Media & Tables -->
-		<Button variant="ghost" size="sm" onclick={addImage} title="Add Image">
-			<ImageIcon class="h-4 w-4" />
-		</Button>
+			<!-- Media & Tables -->
+			<Button variant="ghost" size="sm" onclick={addImage} title="Add Image">
+				<ImageIcon class="h-4 w-4" />
+			</Button>
 
-		<Popover.Root>
-			<Popover.Trigger>
-				<Button
-					variant="ghost"
-					size="sm"
-					class={$editor.isActive('table') ? 'bg-accent' : ''}
-					title="Table"
-				>
-					<TableIcon class="h-4 w-4" />
-				</Button>
-			</Popover.Trigger>
-			<Popover.Content class="w-48 p-1">
-				<div class="flex flex-col gap-1">
+			<Popover.Root>
+				<Popover.Trigger>
 					<Button
 						variant="ghost"
 						size="sm"
-						class="h-8 w-full justify-start gap-2 px-2"
-						onclick={addTable}
+						class={$editor.isActive('table') ? 'bg-accent' : ''}
+						title="Table"
 					>
-						<Plus class="h-3 w-3" /> Insert Table
+						<TableIcon class="h-4 w-4" />
 					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						class="h-8 w-full justify-start gap-2 px-2"
-						onclick={addColumn}
-						disabled={!$editor?.can().addColumnAfter()}
-					>
-						<Columns2 class="h-3 w-3" /> Add Column
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						class="h-8 w-full justify-start gap-2 px-2"
-						onclick={deleteColumn}
-						disabled={!$editor?.can().deleteColumn()}
-					>
-						<Trash2 class="h-3 w-3" /> Delete Column
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						class="h-8 w-full justify-start gap-2 px-2"
-						onclick={addRow}
-						disabled={!$editor?.can().addRowAfter()}
-					>
-						<Rows2 class="h-3 w-3" /> Add Row
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						class="h-8 w-full justify-start gap-2 px-2"
-						onclick={deleteRow}
-						disabled={!$editor?.can().deleteRow()}
-					>
-						<Trash2 class="h-3 w-3" /> Delete Row
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						class="h-8 w-full justify-start gap-2 px-2 text-destructive hover:text-destructive"
-						onclick={deleteTable}
-						disabled={!$editor?.can().deleteTable()}
-					>
-						<Trash2 class="h-3 w-3" /> Delete Table
-					</Button>
-				</div>
-			</Popover.Content>
-		</Popover.Root>
-	</div>
-{/if}
-{#if $editor}
-	<EditorContent class="flex-1 max-h-[600px] custom-scroll overflow-y-auto" editor={$editor} />
-{/if}
-<input
-	type="file"
-	class="hidden"
-	accept="image/*"
-	bind:this={fileInput}
-	onchange={handleImageSelect}
-/>
+				</Popover.Trigger>
+				<Popover.Content class="w-48 p-1">
+					<div class="flex flex-col gap-1">
+						<Button
+							variant="ghost"
+							size="sm"
+							class="h-8 w-full justify-start gap-2 px-2"
+							onclick={addTable}
+						>
+							<Plus class="h-3 w-3" /> Insert Table
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							class="h-8 w-full justify-start gap-2 px-2"
+							onclick={addColumn}
+							disabled={!$editor?.can().addColumnAfter()}
+						>
+							<Columns2 class="h-3 w-3" /> Add Column
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							class="h-8 w-full justify-start gap-2 px-2"
+							onclick={deleteColumn}
+							disabled={!$editor?.can().deleteColumn()}
+						>
+							<Trash2 class="h-3 w-3" /> Delete Column
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							class="h-8 w-full justify-start gap-2 px-2"
+							onclick={addRow}
+							disabled={!$editor?.can().addRowAfter()}
+						>
+							<Rows2 class="h-3 w-3" /> Add Row
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							class="h-8 w-full justify-start gap-2 px-2"
+							onclick={deleteRow}
+							disabled={!$editor?.can().deleteRow()}
+						>
+							<Trash2 class="h-3 w-3" /> Delete Row
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							class="h-8 w-full justify-start gap-2 px-2 text-destructive hover:text-destructive"
+							onclick={deleteTable}
+							disabled={!$editor?.can().deleteTable()}
+						>
+							<Trash2 class="h-3 w-3" /> Delete Table
+						</Button>
+					</div>
+				</Popover.Content>
+			</Popover.Root>
+		</div>
+	{/if}
+	{#if $editor}
+		<EditorContent class="custom-scroll max-h-[600px] flex-1 overflow-y-auto" editor={$editor} />
+	{/if}
+	<input
+		type="file"
+		class="hidden"
+		accept="image/*"
+		bind:this={fileInput}
+		onchange={handleImageSelect}
+	/>
 </div>

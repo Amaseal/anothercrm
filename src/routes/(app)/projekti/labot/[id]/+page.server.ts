@@ -1,6 +1,6 @@
 // Skipping edit for now to investigate where tab moves happen.
 import { db } from '$lib/server/db';
-import { task, material, product, taskMaterial, taskProduct, file, invoice, userClient, taskAssignee } from '$lib/server/db/schema';
+import { task, client, user, material, product, taskMaterial, taskProduct, file, invoice, userClient, taskAssignee } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir, unlink } from 'fs/promises';
 import { join } from 'path';
@@ -8,12 +8,10 @@ import type { Actions, PageServerLoad } from './$types';
 import { eq, and, inArray, desc } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-    const taskId = Number(params.id);
-
-    // Fetch required data for dropdowns
+    const taskId = Number(params.id);    // Fetch required data for dropdowns
     const clients = await db.query.client.findMany();
     const users = await db.query.user.findMany({
-        where: (u, { eq }) => eq(u.type, 'admin')
+        columns: { id: true, name: true, type: true }
     });
     const materials = await db.query.material.findMany();
     const products = await db.query.product.findMany({

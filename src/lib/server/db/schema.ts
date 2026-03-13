@@ -196,6 +196,7 @@ export const product = pgTable('products', {
 	description: text('description'), // Product description (optional)
 	cost: integer('cost').notNull(), // Product cost (likely in cents)
 	price: integer('price').notNull().default(0), // Selling price (in cents)
+	image: text('image'), // Product image URL/path (optional)
 	...timestamps // Includes created_at and updated_at
 });
 

@@ -6,7 +6,7 @@ import * as m from '$lib/paraglide/messages';
 import { locales } from '@/paraglide/runtime';
 import { eq } from 'drizzle-orm';
 
-export const load = async () => {
+export const load = async ({ url }) => {
 	// Load all users of type client and their associated client records
 	const usersDb = await db.query.user.findMany({
 		where: eq(user.type, 'client'),
@@ -27,16 +27,34 @@ export const load = async () => {
 		}))
 	);
 
+	// If ?kopet=id is present, load that product to prefill the form
+	const copyId = url.searchParams.get('kopet');
+	let copyFrom = null;
+	if (copyId) {
+		copyFrom = await db.query.product.findFirst({
+			where: eq(product.id, Number(copyId)),
+			with: {
+				translations: true,
+				clientPrices: true
+			}
+		});
+	}
+
 	return {
-		btbClients
+		btbClients,
+		copyFrom: copyFrom ?? null
 	};
 };
 
 export const actions: Actions = {
-	default: async ({ request, cookies }) => {
+	default: async ({ request, locals }) => {
+		if (locals.user?.type === 'client') {
+			return fail(403, { message: 'Forbidden' });
+		}
 		const form = await request.formData();
 		const cost = form.get('cost');
 		const price = form.get('price');
+		const image = form.get('image') as string | null;
 		const clientPricesJson = form.get('clientPrices') as string;
 
 		let clientPrices: { clientId: string | null; price: number }[] = [];
@@ -64,7 +82,8 @@ export const actions: Actions = {
 						title: fallbackTitle,
 						description: fallbackDescription,
 						cost: Number(cost),
-						price: Number(price) || 0
+						price: Number(price) || 0,
+						image: image || null
 					})
 					.returning({ id: product.id });
 

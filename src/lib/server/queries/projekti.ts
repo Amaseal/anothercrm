@@ -65,8 +65,13 @@ export async function getProjectBoardData(
                 with: taskRelations,
                 columns: taskColumns,
                 orderBy: (t, { asc }) => [asc(t.endDate)]
-            });
-        } else {
+            });        } else {
+            // Admin default view:
+            // A1. Tasks created by me
+            // A2. Tasks assigned to me
+            // A3. Tasks created by any client user with NO assignees
+            // A4. Client-created tasks WITH assignees → only if I am one of them (covered by A2)
+            // A5. Tasks created by other admins → NOT visible unless assigned to me (covered by A2)
             const clientUsers = await db.query.user.findMany({
                 where: eq(user.type, 'client'),
                 columns: { id: true }
@@ -74,14 +79,28 @@ export async function getProjectBoardData(
             const clientIds = clientUsers.map(u => u.id);
 
             tasks = await db.query.task.findMany({
-                where: (t, { or, eq, inArray, and, ilike, isNull }) => {
+                where: (t, { or, eq, inArray, and, isNull }) => {
+                    const isAssignedToMe = exists(
+                        db.select({ id: taskAssignee.taskId })
+                            .from(taskAssignee)
+                            .where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id)))
+                    );
+                    const hasAnyAssignee = exists(
+                        db.select({ id: taskAssignee.taskId })
+                            .from(taskAssignee)
+                            .where(eq(taskAssignee.taskId, t.id))
+                    );
+
+                    // Client-created tasks that have no assignees yet (any admin can see these)
+                    const clientCreatedUnassigned = clientIds.length > 0
+                        ? and(inArray(t.createdById, clientIds), sql`NOT ${hasAnyAssignee}`)
+                        : sql`false`;
+
                     const baseConditions = [
-                        eq(t.createdById, currentUser.id),
-                        exists(db.select({ id: taskAssignee.taskId }).from(taskAssignee).where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id))))
+                        eq(t.createdById, currentUser.id), // A1: created by me
+                        isAssignedToMe,                    // A2 & A4: assigned to me
+                        clientCreatedUnassigned            // A3: client-created, no assignees
                     ];
-                    if (clientIds.length > 0) {
-                        baseConditions.push(inArray(t.createdById, clientIds));
-                    }
 
                     const conditions = [
                         or(...baseConditions),
@@ -95,15 +114,38 @@ export async function getProjectBoardData(
                 columns: taskColumns,
                 orderBy: (t, { asc }) => [asc(t.endDate)]
             });
-        }
-    } else {
-        // Client: Fetch Created By Me OR Assigned To Me
+        }    } else {
+        // Client visibility rules:
+        // C1. Creator always sees their own task (regardless of assignees)
+        // C2. Assignee always sees tasks assigned to them
+        // C3. Client user sees all tasks where task.clientId matches their linked client entry (regardless of assignees)
+        // C6. Tasks created by other client users are never visible
+
+        const userClientLinks = await db.query.userClient.findMany({
+            where: eq(userClient.userId, currentUser.id),
+            columns: { clientId: true }
+        });
+        const linkedClientIds = userClientLinks.map((uc) => uc.clientId);
+
         tasks = await db.query.task.findMany({
-            where: (t, { or, eq, and, ilike, isNull }) => {
-                const baseConditions = [
-                    eq(t.createdById, currentUser.id),
-                    exists(db.select({ id: taskAssignee.taskId }).from(taskAssignee).where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id))))
-                ];
+            where: (t, { or, eq, and, isNull }) => {
+                const isAssignedToMe = exists(
+                    db.select({ id: taskAssignee.taskId })
+                        .from(taskAssignee)
+                        .where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id)))
+                );
+
+                // C1: I created this task
+                const createdByMe = eq(t.createdById, currentUser.id);
+                // C2: I am assigned to this task
+                const assignedToMe = isAssignedToMe;
+                // C3: Task client matches my linked client entry
+                const myClientTask = linkedClientIds.length > 0
+                    ? inArray(t.clientId, linkedClientIds)
+                    : sql`false`;
+
+                const baseConditions = [createdByMe, assignedToMe, myClientTask];
+
                 const conditions = [
                     or(...baseConditions),
                     or(eq(t.isDone, false), isNull(t.isDone))
@@ -258,24 +300,29 @@ export async function getCompletedTasks(
 ) {
     const offset = page * pageSize;
     const filterConditions = [];
-    filterConditions.push(eq(task.isDone, true));
+    filterConditions.push(eq(task.isDone, true));    if (currentUser.type === 'client') {
+        // Client visibility rules (mirrors getProjectBoardData client rules):
+        // C1. Creator always sees their own task
+        // C2. Assignee always sees tasks assigned to them
+        // C3. Task client matches linked client entry → always visible
 
-    if (currentUser.type === 'client') {
-        // Client filtering logic
-        // 1. Get client IDs associated with this user
         const userClients = await db.query.userClient.findMany({
             where: eq(userClient.userId, currentUser.id),
             columns: { clientId: true }
         });
-        const clientIds = userClients.map((uc) => uc.clientId);
+        const linkedClientIds = userClients.map((uc) => uc.clientId);
+
+        const isAssignedToMe = exists(
+            db.select({ id: taskAssignee.taskId })
+                .from(taskAssignee)
+                .where(and(eq(taskAssignee.taskId, task.id), eq(taskAssignee.userId, currentUser.id)))
+        );
 
         const clientConditions = [
-            eq(task.createdById, currentUser.id)
+            eq(task.createdById, currentUser.id),  // C1
+            isAssignedToMe,                          // C2
+            ...(linkedClientIds.length > 0 ? [inArray(task.clientId, linkedClientIds)] : []) // C3
         ];
-
-        if (clientIds.length > 0) {
-            clientConditions.push(inArray(task.clientId, clientIds));
-        }
 
         filterConditions.push(or(...clientConditions));
     }

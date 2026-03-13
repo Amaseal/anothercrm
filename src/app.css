@@ -183,6 +183,11 @@ body {
 	}
 }
 
+/* Allow inline text colors to show through prose strong/bold styling */
+.prose :where(strong):not(:where([class~="not-prose"],[class~="not-prose"] *)) {
+	color: inherit;
+}
+
 @layer utilities {
 	.custom-scroll {
 		@apply overflow-y-auto;

@@ -197,6 +197,13 @@
       "when": 1772113314814,
       "tag": "0027_bumpy_wraith",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1773400222046,
+      "tag": "0028_blushing_pet_avengers",
+      "breakpoints": true
     }
   ]
 }

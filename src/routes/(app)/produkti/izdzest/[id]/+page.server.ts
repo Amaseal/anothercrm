@@ -14,7 +14,10 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ params }) => {
+	default: async ({ params, locals }) => {
+		if (locals.user?.type === 'client') {
+			return fail(403, { message: 'Forbidden' });
+		}
 		try {
 			await db.delete(product).where(eq(product.id, Number(params.id)));
 		} catch (error) {

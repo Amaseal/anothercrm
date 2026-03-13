@@ -7,7 +7,7 @@
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import { CalendarIcon, X, Printer, FileText, Clock } from '@lucide/svelte';
-    import * as Sheet from '$lib/components/ui/sheet';
+	import * as Sheet from '$lib/components/ui/sheet';
 	import {
 		DateFormatter,
 		type DateValue,
@@ -63,7 +63,10 @@
 	);
 	let selectedAssigneeName = $derived(
 		selectedAssigneeIds.length > 0
-			? data.users.filter((u: { id: any }) => selectedAssigneeIds.includes(u.id)).map((u: any) => u.name).join(', ')
+			? data.users
+					.filter((u: { id: any }) => selectedAssigneeIds.includes(u.id))
+					.map((u: any) => u.name)
+					.join(', ')
 			: undefined
 	);
 
@@ -91,7 +94,7 @@
 					isOpen: false
 				}))
 			: undefined
-    );
+	);
 
 	let files = $state(
 		data.item.files.map((f: { filename: any; downloadUrl: any; size: any }) => ({
@@ -103,7 +106,6 @@
 
 	import ProjectPrintView from '$lib/components/project-print-view.svelte';
 	import HistoryList from '$lib/components/history-list.svelte';
-
 </script>
 
 <ProjectPrintView
@@ -127,9 +129,13 @@
 />
 
 <!-- Modal Overlay -->
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:hidden">
+<div
+	class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:hidden"
+>
 	<!-- Inner Modal Container -->
-	<div class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl">
+	<div
+		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
+	>
 		<div class="flex h-full flex-col">
 			<!-- Sticky Header inside Modal -->
 			<div class="flex items-center gap-4 border-b bg-background px-6 py-4">
@@ -155,7 +161,7 @@
 					<Button
 						variant="outline"
 						class={cn(
-							'w-[240px] justify-start pl-4 text-left font-normal cursor-not-allowed opacity-50',
+							'w-[240px] cursor-not-allowed justify-start pl-4 text-left font-normal opacity-50',
 							!dateValue && 'text-muted-foreground'
 						)}
 						disabled
@@ -170,20 +176,20 @@
 				<!-- History Toggle -->
 				<Sheet.Root>
 					<Sheet.Trigger>
-                        {#snippet child({ props })}
-                            <Button
-                                {...props}
-                                variant="ghost"
-                                size="icon"
-                                class="text-muted-foreground hover:text-foreground"
-                                title={m['history.title']()}
-                            >
-                                <Clock class="size-5" />
-                                <span class="sr-only">History</span>
-                            </Button>
-                        {/snippet}
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class="text-muted-foreground hover:text-foreground"
+								title={m['history.title']()}
+							>
+								<Clock class="size-5" />
+								<span class="sr-only">History</span>
+							</Button>
+						{/snippet}
 					</Sheet.Trigger>
-					<Sheet.Content side="right" class="w-[400px] sm:w-[540px] overflow-y-auto z-[100]">
+					<Sheet.Content side="right" class="z-[100] w-[400px] overflow-y-auto sm:w-[540px]">
 						<Sheet.Header>
 							<Sheet.Title>{m['history.title']()}</Sheet.Title>
 						</Sheet.Header>
@@ -210,59 +216,59 @@
 				<!-- SECTION 1: Description & Products -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
 					<!-- Right (35%) - Assignment & Products -->
-               
+
 					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
-                              {#if $isAdmin}
-						<!-- Assignment Controls -->
-						<div class="space-y-4">
-							<!-- Assignee -->
-							<div class="grid gap-2">
-								<Label>{m['projects.assign_user_label']()}</Label>
-								<MultiSelect
-									options={data.users.map((u: any) => ({
-										value: u.id,
-										label: u.name
-									}))}
-									bind:value={selectedAssigneeIds}
-									placeholder={m['projects.assign_user_label']()}
-									disabled={true}
-								/>
-							</div>
-
-							{#if !$isClient}
-								<!-- Seamstress -->
+						{#if $isAdmin}
+							<!-- Assignment Controls -->
+							<div class="space-y-4">
+								<!-- Assignee -->
 								<div class="grid gap-2">
-									<Label>{m['projects.seamstress_label']()}</Label>
-									<Select.Root type="single" bind:value={selectedSeamstress} disabled>
-										<Select.Trigger class="w-full">
-											{selectedSeamstress || m['projects.seamstress_placeholder']()}
-										</Select.Trigger>
-										<Select.Content>
-											{#each seamstresses as s}
-												<Select.Item value={s.value} label={s.label}>
-													{s.label}
-												</Select.Item>
-											{/each}
-										</Select.Content>
-									</Select.Root>
+									<Label>{m['projects.assign_user_label']()}</Label>
+									<MultiSelect
+										options={data.users.map((u: any) => ({
+											value: u.id,
+											label: u.name
+										}))}
+										bind:value={selectedAssigneeIds}
+										placeholder={m['projects.assign_user_label']()}
+										disabled={true}
+									/>
 								</div>
-							{/if}
 
-							<!-- Materials -->
-							<div class="grid gap-2">
-								<Label>{m['projects.materials_label']()}</Label>
-								<MultiSelect
-									options={data.materials.map((i: { id: any; title: any; remaining: any }) => ({
-										value: i.id,
-										label: `${i.title} (${i.remaining})`
-									}))}
-									bind:value={selectedMaterialIds}
-									placeholder={m['projects.materials_placeholder']()}
-                                    disabled={true}
-								/>
+								{#if !$isClient}
+									<!-- Seamstress -->
+									<div class="grid gap-2">
+										<Label>{m['projects.seamstress_label']()}</Label>
+										<Select.Root type="single" bind:value={selectedSeamstress} disabled>
+											<Select.Trigger class="w-full">
+												{selectedSeamstress || m['projects.seamstress_placeholder']()}
+											</Select.Trigger>
+											<Select.Content>
+												{#each seamstresses as s}
+													<Select.Item value={s.value} label={s.label}>
+														{s.label}
+													</Select.Item>
+												{/each}
+											</Select.Content>
+										</Select.Root>
+									</div>
+								{/if}
+
+								<!-- Materials -->
+								<div class="grid gap-2">
+									<Label>{m['projects.materials_label']()}</Label>
+									<MultiSelect
+										options={data.materials.map((i: { id: any; title: any; remaining: any }) => ({
+											value: i.id,
+											label: `${i.title} (${i.remaining})`
+										}))}
+										bind:value={selectedMaterialIds}
+										placeholder={m['projects.materials_placeholder']()}
+										disabled={true}
+									/>
+								</div>
 							</div>
-						</div>
-                         {/if}
+						{/if}
 						<!-- Products List -->
 						<div class="flex-1">
 							<ProductList
@@ -270,12 +276,11 @@
 								bind:totalPrice
 								bind:totalCost
 								initialEntries={initialProductEntries}
-                                readonly={true}
+								readonly={true}
 								isAdmin={$isAdmin}
 							/>
 						</div>
 					</div>
-                
 
 					<!-- Left (65%) - Description -->
 					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
@@ -295,10 +300,13 @@
 						<Label class="text-lg">Rēķini</Label>
 						<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 							{#each data.taskInvoices as inv}
-								<a href={`/rekini/labot/${inv.id}`} class="block rounded-lg border p-4 bg-gray-50/50 hover:bg-gray-50 transition-colors">
-									<div class="flex justify-between items-center mb-2">
+								<a
+									href={`/rekini/labot/${inv.id}`}
+									class="block rounded-lg border bg-gray-50/50 p-4 transition-colors hover:bg-gray-50"
+								>
+									<div class="mb-2 flex items-center justify-between">
 										<span class="font-bold">{inv.invoiceNumber}</span>
-										<span class="text-xs px-2 py-1 rounded bg-gray-200">{inv.status}</span>
+										<span class="rounded bg-gray-200 px-2 py-1 text-xs">{inv.status}</span>
 									</div>
 									<div class="text-sm">
 										<div>Summa: {formatPrice(inv.total)} €</div>
@@ -317,7 +325,7 @@
 					<div class="col-span-12 lg:col-span-4">
 						<div class="grid gap-2">
 							<Label for="files">{m['projects.files_label']()}</Label>
-							<FileUpload bind:files readonly={true} />
+							<FileUpload bind:files readonly={true} zipFilename={data.item.title} />
 						</div>
 					</div>
 					<!-- Left (65%) - Large Visual Reference -->
@@ -329,16 +337,17 @@
 								preview={data.item.preview || undefined}
 								label={m['projects.preview_label']()}
 								class="h-full w-full object-contain"
-                                readonly={true}
+								readonly={true}
 							/>
 						</div>
 					</div>
 				</div>
-
 			</div>
 
 			<!-- Sticky Footer inside Modal -->
-			<div class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+			<div
+				class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"
+			>
 				<div class="flex items-center gap-4">
 					<div class="text-xl font-bold">
 						{m['projects.total_price']()}: €{formatPrice(totalPrice)}

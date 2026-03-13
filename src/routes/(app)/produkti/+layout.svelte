@@ -19,13 +19,22 @@
 	import * as m from '$lib/paraglide/messages';
 	import Pagination from '$lib/components/pagination.svelte';
 	import { getLocale } from '@/paraglide/runtime.js';
+	import { isClient, isAdmin } from '$lib/stores/user';
+	import ImageIcon from '@lucide/svelte/icons/image';
+	import Eye from '@lucide/svelte/icons/eye';
+	import Copy from '@lucide/svelte/icons/copy';
+	import * as Dialog from '$lib/components/ui/dialog/index.js';
 
 	let {
 		data,
 		children
 	}: {
 		data: {
-			products: (Product & { translations: ProductTranslation[], price: string | number, clientPrices: { clientName: string, price: string }[] })[];
+			products: (Product & {
+				translations: ProductTranslation[];
+				price: string | number;
+				clientPrices: { clientName: string; price: string }[];
+			})[];
 			pagination: {
 				page: number;
 				pageSize: number;
@@ -42,7 +51,6 @@
 	let sortColumn = $state(data.pagination.sortColumn as keyof Product | null);
 	let sortDirection = $state(data.pagination.sortDirection as 'asc' | 'desc');
 	let searchTerm = $state(data.pagination.search);
-
 	$effect(() => {
 		sortColumn = data.pagination.sortColumn as keyof Product | null;
 		sortDirection = data.pagination.sortDirection as 'asc' | 'desc';
@@ -55,7 +63,7 @@
 		debouncedSearch(target.value);
 	};
 
-const debouncedSearch = debounce((value: string) => {
+	const debouncedSearch = debounce((value: string) => {
 		updateUrlAndNavigate({ search: value, page: 0 });
 	}, 1200);
 
@@ -90,12 +98,28 @@ const debouncedSearch = debounce((value: string) => {
 			sortDirection: newDirection
 		});
 	}
-
-	function getLocalizedValue(item: Product & { translations: ProductTranslation[] }, field: 'title' | 'description', locale: string) {
-		const translation = item.translations?.find(t => t.language === locale);
+	function getLocalizedValue(
+		item: Product & { translations: ProductTranslation[] },
+		field: 'title' | 'description',
+		locale: string
+	) {
+		const translation = item.translations?.find((t) => t.language === locale);
 		if (translation && translation[field]) return translation[field];
-        if (locale === 'lv') return item[field]; // Base schema holds 'lv' string usually as fallback
+		if (locale === 'lv') return item[field]; // Base schema holds 'lv' string usually as fallback
 		return item[field];
+	}
+
+	let imageModalOpen = $state(false);
+	let imageModalSrc = $state<string | null>(null);
+	let imageModalAlt = $state('');
+
+	function openImageModal(
+		item: Product & { translations: ProductTranslation[]; image?: string | null }
+	) {
+		if (!item.image) return;
+		imageModalSrc = item.image;
+		imageModalAlt = getLocalizedValue(item, 'title', getLocale()) || '';
+		imageModalOpen = true;
 	}
 </script>
 
@@ -115,9 +139,11 @@ const debouncedSearch = debounce((value: string) => {
 			value={searchTerm}
 			oninput={handleSearchInput}
 		/>
-		<Button href="/produkti/pievienot" variant="outline" class="ml-auto flex items-center gap-2"
-			><Plus />{m['components.add']()}</Button
-		>
+		{#if !$isClient}
+			<Button href="/produkti/pievienot" variant="outline" class="ml-auto flex items-center gap-2"
+				><Plus />{m['components.add']()}</Button
+			>
+		{/if}
 	</div>
 </header>
 <div class="mb-4 space-y-4">
@@ -126,6 +152,7 @@ const debouncedSearch = debounce((value: string) => {
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
+					<Table.Head class="w-12">{m['products.image']()}</Table.Head>
 					<Table.Head class="w-[150px] cursor-pointer" onclick={() => handleSort('title')}>
 						<div class="flex items-center gap-1">
 							{m['products.name']()}
@@ -142,94 +169,157 @@ const debouncedSearch = debounce((value: string) => {
 					</Table.Head>
 					<Table.Head class="hidden md:table-cell">{m['products.description']()}</Table.Head>
 
-					<Table.Head
-						class="hidden cursor-pointer md:table-cell"
-						onclick={() => handleSort('cost')}
-					>
-						<div class="flex items-center gap-1">
-							{m['products.cost']()}
-							{#if sortColumn === 'cost'}
-								{#if sortDirection === 'asc'}
-									<ChevronUp size="14" />
+					{#if !$isClient}
+						<Table.Head
+							class="hidden cursor-pointer md:table-cell"
+							onclick={() => handleSort('cost')}
+						>
+							<div class="flex items-center gap-1">
+								{m['products.cost']()}
+								{#if sortColumn === 'cost'}
+									{#if sortDirection === 'asc'}
+										<ChevronUp size="14" />
+									{:else}
+										<ChevronDown size="14" />
+									{/if}
 								{:else}
 									<ChevronDown size="14" />
 								{/if}
-							{:else}
-								<ChevronDown size="14" />
-							{/if}
-						</div>
-					</Table.Head>
-					<Table.Head
-						class="hidden cursor-pointer md:table-cell"
-						onclick={() => handleSort('price')}
-					>
-						<div class="flex items-center gap-1">
-							{m['products.price']()}
-							{#if sortColumn === 'price'}
-								{#if sortDirection === 'asc'}
-									<ChevronUp size="14" />
+							</div>
+						</Table.Head>
+						<Table.Head
+							class="hidden cursor-pointer md:table-cell"
+							onclick={() => handleSort('price')}
+						>
+							<div class="flex items-center gap-1">
+								{m['products.price']()}
+								{#if sortColumn === 'price'}
+									{#if sortDirection === 'asc'}
+										<ChevronUp size="14" />
+									{:else}
+										<ChevronDown size="14" />
+									{/if}
 								{:else}
 									<ChevronDown size="14" />
 								{/if}
-							{:else}
-								<ChevronDown size="14" />
-							{/if}
-						</div>
-					</Table.Head>
-					<Table.Head class="hidden md:table-cell">{m['products.client_specific_prices']()}</Table.Head>
+							</div>
+						</Table.Head>
+						<Table.Head class="hidden md:table-cell"
+							>{m['products.client_specific_prices']()}</Table.Head
+						>
+					{/if}
+
 					<Table.Head class="hidden md:table-cell">{m['products.edited']()}</Table.Head>
-					<Table.Head class="w-12 text-center">{m['products.edit']()}</Table.Head>
-					<Table.Head class="w-12 text-center">{m['products.delete']()}</Table.Head>
+					{#if !$isClient}
+						<Table.Head class="w-12 text-center">{m['products.edit']()}</Table.Head>
+						<Table.Head class="w-12 text-center">{m['products.copy']()}</Table.Head>
+						<Table.Head class="w-12 text-center">{m['products.delete']()}</Table.Head>
+					{/if}
+					<Table.Head class="w-12 text-center">{m['products.view']()}</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
 				{#if data.products.length === 0}
 					<Table.Row>
-						<Table.Cell colspan={6} class="py-6 text-center">{m['products.empty']()}</Table.Cell>
+						<Table.Cell colspan={$isClient ? 4 : 9} class="py-6 text-center"
+							>{m['products.empty']()}</Table.Cell
+						>
 					</Table.Row>
 				{:else}
 					{#each data.products as item (item.id)}
 						<Table.Row class="cursor-pointer hover:bg-muted/50">
-							<Table.Cell class="font-medium">{getLocalizedValue(item, 'title', getLocale()) || '-'}</Table.Cell>
-							<Table.Cell class="hidden md:table-cell">{getLocalizedValue(item, 'description', getLocale()) || '-'}</Table.Cell>
-							<Table.Cell class="hidden md:table-cell">{item.cost} €</Table.Cell>
-							<Table.Cell class="hidden md:table-cell">{item.price} €</Table.Cell>
-							<Table.Cell class="hidden md:table-cell">
-								{#if item.clientPrices && item.clientPrices.length > 0}
-									<Tooltip.Provider delayDuration={150}>
-										<Tooltip.Root>
-											<Tooltip.Trigger class="cursor-help border-b border-dashed border-muted-foreground/60">{item.clientPrices.length}</Tooltip.Trigger>
-											<Tooltip.Content>
-												<div class="flex flex-col gap-1 max-h-[300px] overflow-y-auto w-[300px]">
-													<div class="font-semibold mb-1 border-b pb-1 px-1">{m['products.client_specific_prices']()}</div>
-													{#each item.clientPrices as cp}
-														<div class="flex justify-between gap-4 text-sm hover:bg-muted/50 rounded px-1 py-0.5 transition-colors">
-															<span class="truncate pr-4">{cp.clientName}</span>
-															<span class="font-medium whitespace-nowrap">{cp.price} €</span>
-														</div>
-													{/each}
-												</div>
-											</Tooltip.Content>
-										</Tooltip.Root>
-									</Tooltip.Provider>
+							<Table.Cell>
+								{#if item.image}
+									<button
+										class="flex cursor-pointer items-center"
+										onclick={(e) => {
+											e.stopPropagation();
+											openImageModal(item);
+										}}
+									>
+										<img
+											src={item.image}
+											alt={getLocalizedValue(item, 'title', getLocale())}
+											class="h-10 w-10 rounded object-cover"
+										/>
+									</button>
 								{:else}
-									<span class="text-muted-foreground">0</span>
+									<div
+										class="grid h-10 w-10 place-items-center rounded border bg-muted text-muted-foreground"
+									>
+										<ImageIcon size="16" />
+									</div>
 								{/if}
 							</Table.Cell>
+							<Table.Cell class="font-medium"
+								>{getLocalizedValue(item, 'title', getLocale()) || '-'}</Table.Cell
+							>
+							<Table.Cell class="hidden md:table-cell"
+								>{getLocalizedValue(item, 'description', getLocale()) || '-'}</Table.Cell
+							>
+
+							{#if !$isClient}
+								<Table.Cell class="hidden md:table-cell">{item.cost} €</Table.Cell>
+								<Table.Cell class="hidden md:table-cell">{item.price} €</Table.Cell>
+								<Table.Cell class="hidden md:table-cell">
+									{#if item.clientPrices && item.clientPrices.length > 0}
+										<Tooltip.Provider delayDuration={150}>
+											<Tooltip.Root>
+												<Tooltip.Trigger
+													class="cursor-help border-b border-dashed border-muted-foreground/60"
+													>{item.clientPrices.length}</Tooltip.Trigger
+												>
+												<Tooltip.Content>
+													<div class="flex max-h-[300px] w-[300px] flex-col gap-1 overflow-y-auto">
+														<div class="mb-1 border-b px-1 pb-1 font-semibold">
+															{m['products.client_specific_prices']()}
+														</div>
+														{#each item.clientPrices as cp}
+															<div
+																class="flex justify-between gap-4 rounded px-1 py-0.5 text-sm transition-colors hover:bg-muted/50"
+															>
+																<span class="truncate pr-4">{cp.clientName}</span>
+																<span class="font-medium whitespace-nowrap">{cp.price} €</span>
+															</div>
+														{/each}
+													</div>
+												</Tooltip.Content>
+											</Tooltip.Root>
+										</Tooltip.Provider>
+									{:else}
+										<span class="text-muted-foreground">0</span>
+									{/if}
+								</Table.Cell>
+							{/if}
 
 							<Table.Cell class="hidden md:table-cell">
 								{formatDate(item.updated_at || item.created_at)}
 							</Table.Cell>
-
-							<Table.Cell class="text-right">
-								<Button href="/produkti/labot/{item.id}" variant="ghost"><Pencil /></Button>
-							</Table.Cell>
-							<Table.Cell class="text-right">
-								<Button
-									href="/produkti/izdzest/{item.id}"
-									variant="ghost"
-									class="hover:bg-red-100 hover:text-red-600"><Trash2 /></Button
-								>
+							{#if !$isClient}
+								<Table.Cell class="text-right">
+									<Button href="/produkti/labot/{item.id}" variant="ghost"><Pencil /></Button>
+								</Table.Cell>
+								{#if $isAdmin}
+									<Table.Cell class="text-right">
+										<Button
+											href="/produkti/pievienot?kopet={item.id}"
+											variant="ghost"
+											class="hover:bg-blue-100 hover:text-blue-600"><Copy /></Button
+										>
+									</Table.Cell>
+								{:else}
+									<Table.Cell></Table.Cell>
+								{/if}
+								<Table.Cell class="text-right">
+									<Button
+										href="/produkti/izdzest/{item.id}"
+										variant="ghost"
+										class="hover:bg-red-100 hover:text-red-600"><Trash2 /></Button
+									>
+								</Table.Cell>
+							{/if}
+							<Table.Cell class="text-center">
+								<Button href="/produkti/skatit/{item.id}" variant="ghost"><Eye /></Button>
 							</Table.Cell>
 						</Table.Row>
 					{/each}
@@ -239,3 +329,19 @@ const debouncedSearch = debounce((value: string) => {
 	</div>
 	<Pagination pagination={data.pagination} />
 </div>
+
+<!-- Image lightbox -->
+<Dialog.Root bind:open={imageModalOpen}>
+	<Dialog.Content class="max-h-[90vh] max-w-[60vw]">
+		<Dialog.Header>
+			<Dialog.Title>{imageModalAlt}</Dialog.Title>
+		</Dialog.Header>
+		{#if imageModalSrc}
+			<img
+				class="max-h-[75vh] w-full rounded-xl object-contain"
+				src={imageModalSrc}
+				alt={imageModalAlt}
+			/>
+		{/if}
+	</Dialog.Content>
+</Dialog.Root>

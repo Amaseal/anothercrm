@@ -6,14 +6,21 @@
 	import X from '@lucide/svelte/icons/x';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
+	import Copy from '@lucide/svelte/icons/copy';
 	import MoneyInput from '$lib/components/ui/input/money-input.svelte';
-	import type { Product, ProductTranslation, ClientProductPrice, Client } from '$lib/server/db/schema';
+	import type {
+		Product,
+		ProductTranslation,
+		ClientProductPrice,
+		Client
+	} from '$lib/server/db/schema';
 	import { enhance } from '$app/forms';
 	import { Label } from '@/components/ui/label';
 	import * as m from '$lib/paraglide/messages';
 	import FormError from '$lib/components/form-error.svelte';
 	import { locales, getLocale } from '@/paraglide/runtime.js';
 	import ClientSelect from '$lib/components/client-select.svelte';
+	import ImageDropzone from '$lib/components/image-dropzone.svelte';
 
 	let { data, form } = $props();
 
@@ -28,11 +35,13 @@
 	// Svelte 5 pattern for initializing state from props without infinite loops
 	$effect(() => {
 		if (data.item.id !== initializedForId) {
-			clientPrices = (data.item.clientPrices || []).map((cp: ClientProductPrice, index: number) => ({
-				id: index,
-				clientId: String(cp.clientId),
-				price: cp.price
-			}));
+			clientPrices = (data.item.clientPrices || []).map(
+				(cp: ClientProductPrice, index: number) => ({
+					id: index,
+					clientId: String(cp.clientId),
+					price: cp.price
+				})
+			);
 			nextId = clientPrices.length;
 			initializedForId = data.item.id;
 		}
@@ -52,13 +61,18 @@
 </svelte:head>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-	<div class="max-h-[90vh] w-full max-w-md overflow-hidden rounded-lg">
-		<Card.Root class="custom-scroll relative max-h-[90vh] w-full max-w-md gap-2 overflow-y-auto">
+	<div class="max-h-[90vh] w-[30vw] overflow-hidden rounded-lg">
+		<Card.Root class="custom-scroll relative max-h-[90vh] w-full gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
 					href="/produkti"
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
+				>
+				<a
+					href="/produkti/pievienot?kopet={data.item.id}"
+					class="absolute top-7 right-12 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+					title={m['products.copy_product']()}><Copy size="18" /></a
 				>
 
 				<h2 class=" text-lg font-semibold">
@@ -67,32 +81,44 @@
 			</Card.Header>
 			<Card.Content class="p-6 pb-2">
 				<form method="POST" use:enhance>
-					<!-- Locales Loop for Title and Description -->
-					{#each locales as locale}
-						<Label>{m['products.name']()} ({getLanguageName(locale)})</Label>
-						<Input
-							placeholder={m['products.name_placeholder']()}
-							name="title-{locale}"
-							value={data.item.translations.find((t: ProductTranslation) => t.language === locale)?.title ||
-								(locale === 'lv' ? data.item.title : '')}
-							required
-						/>
+					<div class="flex gap-4">
+						{#each locales as locale}
+							<div class="flex-1">
+								<Label>{m['products.name']()} ({getLanguageName(locale)})</Label>
+								<Input
+									placeholder={m['products.name_placeholder']()}
+									name="title-{locale}"
+									value={data.item.translations.find(
+										(t: ProductTranslation) => t.language === locale
+									)?.title || (locale === 'lv' ? data.item.title : '')}
+									required
+								/>
 
-						<Label>{m['products.description']()} ({getLanguageName(locale)})</Label>
-						<Textarea
-							class="mb-4 bg-background"
-							placeholder={m['products.description_placeholder']()}
-							name="description-{locale}"
-							value={data.item.translations.find((t: ProductTranslation) => t.language === locale)?.description ||
-								(locale === 'lv' ? data.item.description || '' : '')}
-						/>
-					{/each}
+								<Label>{m['products.description']()} ({getLanguageName(locale)})</Label>
+								<Textarea
+									class="mb-4 bg-background"
+									placeholder={m['products.description_placeholder']()}
+									name="description-{locale}"
+									value={data.item.translations.find(
+										(t: ProductTranslation) => t.language === locale
+									)?.description || (locale === 'lv' ? data.item.description || '' : '')}
+								/>
+							</div>
+						{/each}
+					</div>
+					<div class="flex gap-4">
+						<div class="flex-1">
+							<Label>{m['products.cost']()}</Label>
+							<MoneyInput currency="EUR" placeholder="5.70" name="cost" value={data.item.cost} />
+						</div>
+						<div class="flex-1">
+							<Label>{m['products.price']()}</Label>
+							<MoneyInput currency="EUR" placeholder="10.00" name="price" value={data.item.price} />
+						</div>
+					</div>
 
-					<Label>{m['products.cost']()}</Label>
-					<MoneyInput currency="EUR" placeholder="5.70" name="cost" bind:value={data.item.cost} />
-
-					<Label class="mt-4">{m['products.price']()}</Label>
-					<MoneyInput currency="EUR" placeholder="10.00" name="price" bind:value={data.item.price} />
+					<Label class="mt-4">{m['products.image']()}</Label>
+					<ImageDropzone initialImagePath={data.item.image ?? null} />
 
 					<!-- Client Specific Prices -->
 					<div class="mt-6">
@@ -107,11 +133,8 @@
 
 						{#each clientPrices as cp (cp.id)}
 							<div class="mb-2 flex items-center gap-2">
-								<div class="w-60">
-									<ClientSelect
-										bind:value={cp.clientId as string}
-										clients={data.btbClients}
-									/>
+								<div class="w-full!">
+									<ClientSelect bind:value={cp.clientId as string} clients={data.btbClients} />
 								</div>
 								<div class="w-24">
 									<MoneyInput currency="EUR" placeholder="0.00" bind:value={cp.price} />
