@@ -523,9 +523,8 @@
 				</Card.Content>
 			</Card.Root>
 		</div>
-
 		<!-- Row 2: Top Managers, Top Responsible and Best Clients -->
-		<div class="flex flex-col gap-4 md:flex-row">
+		<div class="flex flex-col gap-4 md:h-[382px] md:flex-row">
 			<!-- Top Managers -->
 			<Card.Root class="flex-1">
 				<Card.Header class="flex flex-row items-start justify-between gap-2">
@@ -534,7 +533,9 @@
 						<Card.Description>
 							{data.managersRange === 'month'
 								? 'Šis mēnesis (aktīvie uzdevumi)'
-								: 'Visu laiku (visi uzdevumi)'}
+								: data.managersRange === 'month-all'
+									? 'Šis mēnesis (visi uzdevumi)'
+									: 'Visu laiku (visi uzdevumi)'}
 						</Card.Description>
 					</div>
 					<div class="flex shrink-0 gap-1 rounded-md border p-0.5">
@@ -547,6 +548,16 @@
 								u.searchParams.set('managersRange', 'month');
 								goto(u.toString(), { keepFocus: true, noScroll: true });
 							}}>Mēnesis</Button
+						>
+						<Button
+							variant={data.managersRange === 'month-all' ? 'default' : 'ghost'}
+							size="sm"
+							class="h-7 px-2 text-xs"
+							onclick={() => {
+								const u = new URL(page.url);
+								u.searchParams.set('managersRange', 'month-all');
+								goto(u.toString(), { keepFocus: true, noScroll: true });
+							}}>Mēnesis (visi)</Button
 						>
 						<Button
 							variant={data.managersRange === 'alltime' ? 'default' : 'ghost'}
@@ -586,14 +597,16 @@
 				</Card.Content>
 			</Card.Root>
 			<!-- Top Responsible Persons -->
-			<Card.Root class="flex-1">
+			<Card.Root class="flex-1 overflow-hidden">
 				<Card.Header class="flex flex-row items-start justify-between gap-2">
 					<div>
 						<Card.Title>Labākās atbildīgās personas</Card.Title>
 						<Card.Description>
 							{data.assigneesRange === 'month'
 								? 'Šis mēnesis (aktīvie uzdevumi)'
-								: 'Visu laiku (visi uzdevumi)'}
+								: data.assigneesRange === 'month-all'
+									? 'Šis mēnesis (visi uzdevumi)'
+									: 'Visu laiku (visi uzdevumi)'}
 						</Card.Description>
 					</div>
 					<div class="flex shrink-0 gap-1 rounded-md border p-0.5">
@@ -606,6 +619,16 @@
 								u.searchParams.set('assigneesRange', 'month');
 								goto(u.toString(), { keepFocus: true, noScroll: true });
 							}}>Mēnesis</Button
+						>
+						<Button
+							variant={data.assigneesRange === 'month-all' ? 'default' : 'ghost'}
+							size="sm"
+							class="h-7 px-2 text-xs"
+							onclick={() => {
+								const u = new URL(page.url);
+								u.searchParams.set('assigneesRange', 'month-all');
+								goto(u.toString(), { keepFocus: true, noScroll: true });
+							}}>Mēnesis (visi)</Button
 						>
 						<Button
 							variant={data.assigneesRange === 'alltime' ? 'default' : 'ghost'}
@@ -642,47 +665,73 @@
 					</div>
 				</Card.Content>
 			</Card.Root>
-
 			<!-- Best Clients -->
-			<Card.Root class="flex-1">
-				<Card.Header>
-					<Card.Title>Labākie klienti</Card.Title>
-					<Card.Description>Pēc kopējā pasūtījumu apjoma</Card.Description>
+			<Card.Root class="flex h-full flex-1 flex-col overflow-hidden">
+				<Card.Header class="flex shrink-0 flex-row items-start justify-between gap-2">
+					<div>
+						<Card.Title>Labākie klienti</Card.Title>
+						<Card.Description>Pēc kopējā pasūtījumu apjoma</Card.Description>
+					</div>
+					<div class="flex shrink-0 items-center gap-1">
+						<span class="text-xs text-muted-foreground">Rādīt:</span>
+						<select
+							class="h-7 rounded-md border bg-background px-2 text-xs"
+							value={data.clientsLimit}
+							onchange={(e) => {
+								const u = new URL(page.url);
+								u.searchParams.set('clientsLimit', (e.target as HTMLSelectElement).value);
+								goto(u.toString(), { keepFocus: true, noScroll: true });
+							}}
+						>
+							{#each [5, 10, 20, 30, 50] as n}
+								<option value={n}>{n}</option>
+							{/each}
+						</select>
+					</div>
 				</Card.Header>
-				<Card.Content>
-					<div class="space-y-3">
-						{#each data.bestClients as client, index}
-							<div class="flex items-center justify-between">
-								<div class="flex items-center gap-2">
-									<Badge
-										variant="secondary"
-										class="flex h-6 w-6 items-center justify-center p-0 text-xs"
+				<Card.Content class="min-h-0 flex-1 p-0 pb-4">
+					<div class="custom-scroll h-full overflow-y-auto px-6">
+						<div class="space-y-1">
+							{#each data.bestClients as client, index}
+								<div class="flex items-center justify-between py-1.5">
+									<div class="flex items-center gap-3">
+										<div
+											class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground"
+										>
+											{index + 1}
+										</div>
+										<div class="flex flex-col">
+											<span class="text-sm font-medium">{client.name}</span>
+											<span class="text-xs text-muted-foreground"
+												>{Number(client.taskCount)} uzdevumi</span
+											>
+										</div>
+									</div>
+									<span class="shrink-0 text-sm font-bold"
+										>{formatCurrency(client.totalOrdered || 0)}</span
 									>
-										{index + 1}
-									</Badge>
-									<span class="font-medium">{client.name}</span>
 								</div>
-								<Badge variant="outline">{formatCurrency(client.totalOrdered || 0)}</Badge>
-							</div>
-						{:else}
-							<p class="text-sm text-muted-foreground">Nav klientu ar pasūtījumiem</p>
-						{/each}
+							{:else}
+								<p class="py-4 text-center text-sm text-muted-foreground">
+									Nav klientu ar pasūtījumiem
+								</p>
+							{/each}
+						</div>
 					</div>
 				</Card.Content>
 			</Card.Root>
 		</div>
-
 		<!-- Row 3: Tab Groups Pie Chart & Specific Tab Tasks -->
-		<div class="flex flex-col gap-4 md:flex-row">
+		<div class="flex flex-col gap-4 md:flex-row md:items-stretch">
 			<!-- Pie chart for tabgroups -->
-			<Card.Root class="flex-1">
-				<Card.Header>
+			<Card.Root class="flex flex-1 flex-col">
+				<Card.Header class="shrink-0">
 					<Card.Title>{m.dashboard_stats_tabgroups()}</Card.Title>
 				</Card.Header>
-				<Card.Content class="flex items-center justify-center gap-8 py-6">
+				<Card.Content class="flex flex-1 items-center justify-center gap-8 py-6">
 					{#if conicGradient}
 						<div
-							class="relative h-48 w-48 flex-shrink-0 overflow-hidden rounded-full border shadow-sm"
+							class="relative h-76 w-76 flex-shrink-0 overflow-hidden rounded-full border shadow-sm"
 							style="background: {conicGradient}"
 						>
 							<div
@@ -697,7 +746,7 @@
 							</div>
 						</div>
 						<!-- Legend -->
-						<div class="flex flex-col gap-2">
+						<div class="flex flex-col gap-4">
 							{#each data.tabGroupsStats as group}
 								{#if group.taskCount > 0}
 									<div class="flex items-center justify-between gap-4">
@@ -767,7 +816,7 @@
 							<span class="text-primary">{formatCurrency(data.selectedTabTasks.totalPrice)}</span>
 						</div>
 					</div>
-					<div class="max-h-[300px] overflow-auto rounded-md border">
+					<div class="custom-scroll max-h-[300px] overflow-auto rounded-md border">
 						<Table.Root>
 							<Table.Header class="sticky top-0 z-10 bg-background">
 								<Table.Row>

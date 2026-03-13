@@ -37,15 +37,29 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
             hiddenTabGroups = [];
         }
     }    const alwaysHiddenGroups = [41, 62];
-    const allHiddenGroups = Array.from(new Set([...alwaysHiddenGroups, ...hiddenTabGroups]));
+    const allHiddenGroups = Array.from(new Set([...alwaysHiddenGroups, ...hiddenTabGroups]));    // Range toggles for managers and assignees (default: 'month')
+    // 'month'      = this month, active tasks only
+    // 'month-all'  = this month, including done tasks
+    // 'alltime'    = all time, including done tasks
+    const validRanges = ['month', 'month-all', 'alltime'] as const;
+    type Range = typeof validRanges[number];
+    const managersRange: Range = validRanges.includes(url.searchParams.get('managersRange') as Range)
+        ? url.searchParams.get('managersRange') as Range : 'month';
+    const assigneesRange: Range = validRanges.includes(url.searchParams.get('assigneesRange') as Range)
+        ? url.searchParams.get('assigneesRange') as Range : 'month';
 
-    // Range toggles for managers and assignees (default: 'month')
-    const managersRange = url.searchParams.get('managersRange') === 'alltime' ? 'alltime' : 'month';
-    const assigneesRange = url.searchParams.get('assigneesRange') === 'alltime' ? 'alltime' : 'month';    // Get top managers (users with highest total task prices)
-    // month: active tasks only this month | alltime: all tasks including done
+    // Get top managers (users with highest total task prices)
     const managersValueExpr = managersRange === 'month'
         ? sql<number>`COALESCE(SUM(CASE WHEN ${task.isDone} IS NOT TRUE THEN ${task.price} ELSE 0 END), 0)`
         : sql<number>`COALESCE(SUM(${task.price}), 0)`;
+
+    const managersJoinCondition = managersRange === 'alltime'
+        ? eq(task.createdById, user.id)
+        : and(
+            eq(task.createdById, user.id),
+            gte(task.created_at, currentMonthStart),
+            lte(task.created_at, currentMonthEnd)
+        );
 
     const topManagers = await db
         .select({
@@ -54,20 +68,27 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
             totalValue: managersValueExpr
         })
         .from(user)
-        .leftJoin(
-            task,
-            managersRange === 'month'
-                ? and(
-                    eq(task.createdById, user.id),
-                    gte(task.created_at, currentMonthStart),
-                    lte(task.created_at, currentMonthEnd)
-                )
-                : eq(task.createdById, user.id)
-        )
+        .leftJoin(task, managersJoinCondition)
         .groupBy(user.id, user.name)
         .orderBy(desc(managersValueExpr))
-        .limit(5);    // Get top responsible persons (users with most assigned tasks)
-    // month: active tasks only this month | alltime: all tasks including done
+        .limit(5);
+
+    // Get top responsible persons (users with most assigned tasks)
+    const assigneesJoinCondition = assigneesRange === 'alltime'
+        ? eq(task.id, taskAssignee.taskId)
+        : assigneesRange === 'month-all'
+            ? and(
+                eq(task.id, taskAssignee.taskId),
+                gte(task.created_at, currentMonthStart),
+                lte(task.created_at, currentMonthEnd)
+            )
+            : and( // 'month': active only
+                eq(task.id, taskAssignee.taskId),
+                ne(task.isDone, true),
+                gte(task.created_at, currentMonthStart),
+                lte(task.created_at, currentMonthEnd)
+            );
+
     const topResponsiblePersons = await db
         .select({
             id: user.id,
@@ -76,17 +97,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         })
         .from(user)
         .leftJoin(taskAssignee, eq(taskAssignee.userId, user.id))
-        .leftJoin(
-            task,
-            assigneesRange === 'month'
-                ? and(
-                    eq(task.id, taskAssignee.taskId),
-                    ne(task.isDone, true),
-                    gte(task.created_at, currentMonthStart),
-                    lte(task.created_at, currentMonthEnd)
-                )
-                : eq(task.id, taskAssignee.taskId) // all-time: include done tasks
-        )
+        .leftJoin(task, assigneesJoinCondition)
         .groupBy(user.id, user.name)
         .orderBy(desc(count(task.id)))
         .limit(5);
@@ -103,13 +114,22 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         .from(task)
         .where(ne(task.isDone, true))
         .then((res) => res[0].count);    // Get total tasks count for responsible person share calculation
-    // month: active tasks this month | alltime: all tasks including done
+    // month: active tasks this month | month-all: all tasks this month | alltime: all tasks including done
     const totalTasksSnapshot = assigneesRange === 'month'
         ? await db
             .select({ count: count() })
             .from(task)
             .where(and(
                 ne(task.isDone, true),
+                gte(task.created_at, currentMonthStart),
+                lte(task.created_at, currentMonthEnd)
+            ))
+            .then(res => res[0].count)
+        : assigneesRange === 'month-all'
+        ? await db
+            .select({ count: count() })
+            .from(task)
+            .where(and(
                 gte(task.created_at, currentMonthStart),
                 lte(task.created_at, currentMonthEnd)
             ))
@@ -156,19 +176,25 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         )
         .groupBy(task.id, task.title, task.endDate, client.name, tab.id)
         .orderBy(task.endDate)
-        .limit(5);
+        .limit(5);    // Get best clients by total ordered, with task count
+    const clientsLimitRaw = parseInt(url.searchParams.get('clientsLimit') || '5');
+    const clientsLimit = Number.isFinite(clientsLimitRaw) && clientsLimitRaw >= 1
+        ? Math.min(clientsLimitRaw, 50)
+        : 5;
 
-    // Get best clients by total ordered
     const bestClients = await db
         .select({
             id: client.id,
             name: client.name,
-            totalOrdered: client.totalOrdered
+            totalOrdered: client.totalOrdered,
+            taskCount: sql<number>`COUNT(DISTINCT ${task.id})`
         })
         .from(client)
+        .leftJoin(task, eq(task.clientId, client.id))
         .where(sql`${client.totalOrdered} > 0`)
+        .groupBy(client.id, client.name, client.totalOrdered)
         .orderBy(desc(client.totalOrdered))
-        .limit(5);
+        .limit(clientsLimit);
 
     // Get all monthly profit data with product costs subtracted
     const monthlyProfits = await db
@@ -364,6 +390,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         hiddenTabGroups,
         managersRange,
         assigneesRange,
+        clientsLimit,
         selectedTabTasks: {
             id: selectedTabId,
             tasks: selectedTabTasksData,
