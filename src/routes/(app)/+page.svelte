@@ -150,12 +150,12 @@
 	const currentTabId = $derived(data.selectedTabTasks.id.toString());
 	const lang = getLocale();
 
-	function getGroupTranslation(group: { translations: any[], id: number|string }) {
+	function getGroupTranslation(group: { translations: any[]; id: number | string }) {
 		const trans = group.translations.find((t: any) => t.language === lang);
 		return trans ? trans.name : group.id.toString();
 	}
 
-	function getTabTranslation(tab: { translations: any[], id: number|string }) {
+	function getTabTranslation(tab: { translations: any[]; id: number | string }) {
 		const trans = tab.translations.find((t: any) => t.language === lang);
 		return trans ? trans.name : tab.id.toString();
 	}
@@ -197,9 +197,9 @@
 				<div class="text-2xl font-bold">{formatCurrency(data.currentMonthProfit as number)}</div>
 				<p class="text-xs text-muted-foreground">
 					{#if data.profitChange > 0}
-						<span class="text-green-600">+{data.profitChange.toFixed(1)}%</span> no pagājušā mēneša
+						<span class="text-green-600">+{data.profitChange}%</span> no pagājušā mēneša
 					{:else if data.profitChange < 0}
-						<span class="text-red-600">{data.profitChange.toFixed(1)}%</span> no pagājušā mēneša
+						<span class="text-red-600">{data.profitChange}%</span> no pagājušā mēneša
 					{:else}
 						Nav izmaiņu pret pagājušo mēnesi
 					{/if}
@@ -237,7 +237,7 @@
 							</Button>
 						{/snippet}
 					</DropdownMenu.Trigger>
-					<DropdownMenu.Content align="end" class="w-56 max-h-[300px] overflow-y-auto">
+					<DropdownMenu.Content align="end" class="max-h-[300px] w-56 overflow-y-auto">
 						<DropdownMenu.Label>Grupas (rindas)</DropdownMenu.Label>
 						<DropdownMenu.Separator />
 						{#each data.tabGroupsStats as group}
@@ -311,7 +311,12 @@
 								</Badge>
 							</Table.Cell>
 							<Table.Cell class="pr-6 text-right">
-								<Button href={`/projekti/labot/${task.id}`} variant="link" size="sm" class="font-medium text-primary">Skatīt</Button>
+								<Button
+									href={`/projekti/labot/${task.id}`}
+									variant="link"
+									size="sm"
+									class="font-medium text-primary">Skatīt</Button
+								>
 							</Table.Cell>
 						</Table.Row>
 					{:else}
@@ -331,7 +336,7 @@
 		<!-- Row 1: Charts -->
 		<div class="flex flex-col gap-4 lg:flex-row">
 			<!-- Monthly Earnings Chart -->
-			<Card.Root class="flex flex-1 flex-col relative min-h-[350px]">
+			<Card.Root class="relative flex min-h-[350px] flex-1 flex-col">
 				<Card.Header class="flex shrink-0 flex-row items-center justify-between">
 					<div>
 						<Card.Title>Mēneša peļņa</Card.Title>
@@ -342,7 +347,7 @@
 						<Button variant="outline" size="sm">{new Date().getFullYear()}</Button>
 					</div>
 				</Card.Header>
-				<Card.Content class="relative flex-1 min-h-0 p-0">
+				<Card.Content class="relative min-h-0 flex-1 p-0">
 					<div class="absolute inset-0 flex flex-col p-6 pt-0">
 						{#if chartData.length > 0}
 							{@const yScale = scaleLinear()
@@ -353,10 +358,10 @@
 								.range([0, 100])
 								.padding(0.3)}
 
-							<div class="flex-1 w-full min-h-0 relative">
+							<div class="relative min-h-0 w-full flex-1">
 								<!-- Grid Background (SVG) -->
 								<svg
-									class="absolute inset-0 w-full h-full"
+									class="absolute inset-0 h-full w-full"
 									viewBox="0 0 100 100"
 									preserveAspectRatio="none"
 								>
@@ -379,7 +384,7 @@
 								<div class="absolute inset-0">
 									{#each chartData as d}
 										<div
-											class="absolute bottom-0 bg-primary transition-opacity hover:opacity-80 rounded-t-sm group"
+											class="group absolute bottom-0 rounded-t-sm bg-primary transition-opacity hover:opacity-80"
 											style="
 												left: {xScale(d.month) ?? 0}%;
 												width: {xScale.bandwidth()}%;
@@ -388,7 +393,7 @@
 										>
 											<!-- Tooltip -->
 											<div
-												class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50"
+												class="absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 											>
 												<div class="flex justify-center">
 													<div
@@ -405,10 +410,10 @@
 							</div>
 
 							<!-- X Axis Labels (HTML) -->
-							<div class="h-6 w-full relative mt-2 select-none">
+							<div class="relative mt-2 h-6 w-full select-none">
 								{#each chartData as d}
 									<div
-										class="absolute text-[10px] text-muted-foreground text-center -translate-x-1/2 whitespace-nowrap"
+										class="absolute -translate-x-1/2 text-center text-[10px] whitespace-nowrap text-muted-foreground"
 										style="left: {(xScale(d.month) ?? 0) + xScale.bandwidth() / 2}%; width: auto;"
 									>
 										{d.month}
@@ -425,7 +430,7 @@
 			</Card.Root>
 
 			<!-- Monthly Tasks Chart -->
-			<Card.Root class="flex flex-1 flex-col relative min-h-[350px]">
+			<Card.Root class="relative flex min-h-[350px] flex-1 flex-col">
 				<Card.Header class="flex shrink-0 flex-row items-center justify-between">
 					<div>
 						<Card.Title>Mēneša uzdevumi</Card.Title>
@@ -436,7 +441,7 @@
 						<Button variant="outline" size="sm">{new Date().getFullYear()}</Button>
 					</div>
 				</Card.Header>
-				<Card.Content class="relative flex-1 min-h-0 p-0">
+				<Card.Content class="relative min-h-0 flex-1 p-0">
 					<div class="absolute inset-0 flex flex-col p-6 pt-0">
 						{#if chartData.length > 0}
 							{@const yScale = scaleLinear()
@@ -447,10 +452,10 @@
 								.range([0, 100])
 								.padding(0.3)}
 
-							<div class="flex-1 w-full min-h-0 relative">
+							<div class="relative min-h-0 w-full flex-1">
 								<!-- Grid Background (SVG) -->
 								<svg
-									class="absolute inset-0 w-full h-full"
+									class="absolute inset-0 h-full w-full"
 									viewBox="0 0 100 100"
 									preserveAspectRatio="none"
 								>
@@ -473,7 +478,7 @@
 								<div class="absolute inset-0">
 									{#each chartData as d}
 										<div
-											class="absolute bottom-0 bg-primary transition-opacity hover:opacity-80 rounded-t-sm group"
+											class="group absolute bottom-0 rounded-t-sm bg-primary transition-opacity hover:opacity-80"
 											style="
 												left: {xScale(d.month) ?? 0}%;
 												width: {xScale.bandwidth()}%;
@@ -482,7 +487,7 @@
 										>
 											<!-- Tooltip -->
 											<div
-												class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-50"
+												class="absolute bottom-full left-1/2 z-50 mb-2 hidden -translate-x-1/2 group-hover:block"
 											>
 												<div class="flex justify-center">
 													<div
@@ -499,10 +504,10 @@
 							</div>
 
 							<!-- X Axis Labels (HTML) -->
-							<div class="h-6 w-full relative mt-2 select-none">
+							<div class="relative mt-2 h-6 w-full select-none">
 								{#each chartData as d}
 									<div
-										class="absolute text-[10px] text-muted-foreground text-center -translate-x-1/2 whitespace-nowrap"
+										class="absolute -translate-x-1/2 text-center text-[10px] whitespace-nowrap text-muted-foreground"
 										style="left: {(xScale(d.month) ?? 0) + xScale.bandwidth() / 2}%; width: auto;"
 									>
 										{d.month}
@@ -523,9 +528,37 @@
 		<div class="flex flex-col gap-4 md:flex-row">
 			<!-- Top Managers -->
 			<Card.Root class="flex-1">
-				<Card.Header>
-					<Card.Title>Labākie vadītāji</Card.Title>
-					<Card.Description>Pēc uzdevumu kopvērtības</Card.Description>
+				<Card.Header class="flex flex-row items-start justify-between gap-2">
+					<div>
+						<Card.Title>Labākie vadītāji</Card.Title>
+						<Card.Description>
+							{data.managersRange === 'month'
+								? 'Šis mēnesis (aktīvie uzdevumi)'
+								: 'Visu laiku (visi uzdevumi)'}
+						</Card.Description>
+					</div>
+					<div class="flex shrink-0 gap-1 rounded-md border p-0.5">
+						<Button
+							variant={data.managersRange === 'month' ? 'default' : 'ghost'}
+							size="sm"
+							class="h-7 px-2 text-xs"
+							onclick={() => {
+								const u = new URL(page.url);
+								u.searchParams.set('managersRange', 'month');
+								goto(u.toString(), { keepFocus: true, noScroll: true });
+							}}>Mēnesis</Button
+						>
+						<Button
+							variant={data.managersRange === 'alltime' ? 'default' : 'ghost'}
+							size="sm"
+							class="h-7 px-2 text-xs"
+							onclick={() => {
+								const u = new URL(page.url);
+								u.searchParams.set('managersRange', 'alltime');
+								goto(u.toString(), { keepFocus: true, noScroll: true });
+							}}>Visu laiku</Button
+						>
+					</div>
 				</Card.Header>
 				<Card.Content>
 					<div class="space-y-4">
@@ -543,20 +576,48 @@
 									</div>
 								</div>
 								<div class="flex flex-col items-end">
-									<span class="text-sm font-bold">{formatCurrency(manager.totalValue || 0)}</span>
-	
+									<span class="text-sm font-bold"
+										>{formatCurrency(Number(manager.totalValue) || 0)}</span
+									>
 								</div>
 							</div>
 						{/each}
 					</div>
 				</Card.Content>
 			</Card.Root>
-
 			<!-- Top Responsible Persons -->
 			<Card.Root class="flex-1">
-				<Card.Header>
-					<Card.Title>Labākās atbildīgās personas</Card.Title>
-					<Card.Description>Pēc uzdevumu skaita daļas</Card.Description>
+				<Card.Header class="flex flex-row items-start justify-between gap-2">
+					<div>
+						<Card.Title>Labākās atbildīgās personas</Card.Title>
+						<Card.Description>
+							{data.assigneesRange === 'month'
+								? 'Šis mēnesis (aktīvie uzdevumi)'
+								: 'Visu laiku (visi uzdevumi)'}
+						</Card.Description>
+					</div>
+					<div class="flex shrink-0 gap-1 rounded-md border p-0.5">
+						<Button
+							variant={data.assigneesRange === 'month' ? 'default' : 'ghost'}
+							size="sm"
+							class="h-7 px-2 text-xs"
+							onclick={() => {
+								const u = new URL(page.url);
+								u.searchParams.set('assigneesRange', 'month');
+								goto(u.toString(), { keepFocus: true, noScroll: true });
+							}}>Mēnesis</Button
+						>
+						<Button
+							variant={data.assigneesRange === 'alltime' ? 'default' : 'ghost'}
+							size="sm"
+							class="h-7 px-2 text-xs"
+							onclick={() => {
+								const u = new URL(page.url);
+								u.searchParams.set('assigneesRange', 'alltime');
+								goto(u.toString(), { keepFocus: true, noScroll: true });
+							}}>Visu laiku</Button
+						>
+					</div>
 				</Card.Header>
 				<Card.Content>
 					<div class="space-y-4">
@@ -572,7 +633,9 @@
 									</div>
 								</div>
 								<Badge variant="secondary" class="bg-green-100 text-green-800 hover:bg-green-100"
-									>{person.share}% no visiem uzdevumiem</Badge
+									>{person.share}% no {data.assigneesRange === 'month'
+										? 'aktīvajiem'
+										: 'visiem'}</Badge
 								>
 							</div>
 						{/each}
@@ -616,13 +679,20 @@
 				<Card.Header>
 					<Card.Title>{m.dashboard_stats_tabgroups()}</Card.Title>
 				</Card.Header>
-				<Card.Content class="flex items-center justify-center py-6 gap-8">
+				<Card.Content class="flex items-center justify-center gap-8 py-6">
 					{#if conicGradient}
-						<div class="w-48 h-48 rounded-full border shadow-sm relative overflow-hidden flex-shrink-0" style="background: {conicGradient}">
-							<div class="absolute inset-8 bg-card rounded-full shadow-inner flex items-center justify-center">
-								<div class="text-sm font-semibold flex flex-col items-center">
+						<div
+							class="relative h-48 w-48 flex-shrink-0 overflow-hidden rounded-full border shadow-sm"
+							style="background: {conicGradient}"
+						>
+							<div
+								class="absolute inset-8 flex items-center justify-center rounded-full bg-card shadow-inner"
+							>
+								<div class="flex flex-col items-center text-sm font-semibold">
 									<span>{data.tabGroupsStats.reduce((acc, g) => acc + g.taskCount, 0)}</span>
-									<span class="text-[10px] text-muted-foreground uppercase">{m.dashboard_tasks_count().replace(':','')}</span>
+									<span class="text-[10px] text-muted-foreground uppercase"
+										>{m.dashboard_tasks_count().replace(':', '')}</span
+									>
 								</div>
 							</div>
 						</div>
@@ -632,10 +702,15 @@
 								{#if group.taskCount > 0}
 									<div class="flex items-center justify-between gap-4">
 										<div class="flex items-center gap-2">
-											<div class="w-4 h-4 rounded-sm border" style="background-color: {group.color || '#ccc'}"></div>
+											<div
+												class="h-4 w-4 rounded-sm border"
+												style="background-color: {group.color || '#ccc'}"
+											></div>
 											<span class="text-sm font-medium">{getGroupTranslation(group)}</span>
 										</div>
-										<span class="text-xs text-muted-foreground font-semibold px-2 py-0.5 bg-muted rounded-full">
+										<span
+											class="rounded-full bg-muted px-2 py-0.5 text-xs font-semibold text-muted-foreground"
+										>
 											{group.taskCount}
 										</span>
 									</div>
@@ -643,7 +718,9 @@
 							{/each}
 						</div>
 					{:else}
-						<div class="text-muted-foreground text-sm flex items-center h-48">{m.dashboard_no_tasks()}</div>
+						<div class="flex h-48 items-center text-sm text-muted-foreground">
+							{m.dashboard_no_tasks()}
+						</div>
 					{/if}
 				</Card.Content>
 			</Card.Root>
@@ -651,40 +728,48 @@
 			<!-- Specific Tab tasks -->
 			<Card.Root class="flex-1">
 				<Card.Header class="pb-2">
-					<div class="flex justify-between items-center gap-4">
+					<div class="flex items-center justify-between gap-4">
 						<Card.Title>{m.dashboard_stats_tabs()}</Card.Title>
-						<Select.Root type="single" value={currentTabId} onValueChange={(val) => { 
-							const url = new URL(page.url);
-							url.searchParams.set('tabId', val.toString());
-							goto(url.toString(), { keepFocus: true, noScroll: true }) 
-						}}>
+						<Select.Root
+							type="single"
+							value={currentTabId}
+							onValueChange={(val) => {
+								const url = new URL(page.url);
+								url.searchParams.set('tabId', val.toString());
+								goto(url.toString(), { keepFocus: true, noScroll: true });
+							}}
+						>
 							<Select.Trigger class="w-[220px]">
 								{data.allTabsForSelect.find((t) => t.id.toString() === currentTabId)
-									? getTabTranslation(data.allTabsForSelect.find((t) => t.id.toString() === currentTabId)!)
+									? getTabTranslation(
+											data.allTabsForSelect.find((t) => t.id.toString() === currentTabId)!
+										)
 									: m.dashboard_no_tab_selected()}
 							</Select.Trigger>
 							<Select.Content class="max-h-[300px]">
 								{#each data.allTabsForSelect as st}
-									<Select.Item value={st.id.toString()} label={getTabTranslation(st)}>{getTabTranslation(st)}</Select.Item>
+									<Select.Item value={st.id.toString()} label={getTabTranslation(st)}
+										>{getTabTranslation(st)}</Select.Item
+									>
 								{/each}
 							</Select.Content>
 						</Select.Root>
 					</div>
 				</Card.Header>
 				<Card.Content>
-					<div class="flex justify-between items-center mb-4 px-2 py-2 bg-muted/50 rounded-lg">
-						<div class="text-sm font-medium flex gap-2">
+					<div class="mb-4 flex items-center justify-between rounded-lg bg-muted/50 px-2 py-2">
+						<div class="flex gap-2 text-sm font-medium">
 							<span class="text-muted-foreground">{m.dashboard_tasks_count()}</span>
 							<span>{data.selectedTabTasks.tasks.length}</span>
 						</div>
-						<div class="text-sm font-bold flex gap-2">
+						<div class="flex gap-2 text-sm font-bold">
 							<span class="text-muted-foreground">{m.dashboard_total_price()}</span>
 							<span class="text-primary">{formatCurrency(data.selectedTabTasks.totalPrice)}</span>
 						</div>
 					</div>
 					<div class="max-h-[300px] overflow-auto rounded-md border">
 						<Table.Root>
-							<Table.Header class="sticky top-0 bg-background z-10">
+							<Table.Header class="sticky top-0 z-10 bg-background">
 								<Table.Row>
 									<Table.Head>UZDEVUMA NOSAUKUMS</Table.Head>
 									<Table.Head class="text-right">SUMMA</Table.Head>
@@ -692,26 +777,32 @@
 							</Table.Header>
 							<Table.Body>
 								{#each data.selectedTabTasks.tasks as task}
-								<Table.Row>
-									<Table.Cell class="font-medium">
-										<div class="flex flex-col">
-											<a href={`/projekti/labot/${task.id}`} class="hover:underline hover:text-primary transition-colors">{task.title}</a>
-											{#if task.clientName}
-												<span class="text-xs text-muted-foreground">{task.clientName}</span>
-											{/if}
-										</div>
-									</Table.Cell>
-									<Table.Cell class="text-right font-medium">{formatCurrency(task.price || 0)}</Table.Cell>
-								</Table.Row>
+									<Table.Row>
+										<Table.Cell class="font-medium">
+											<div class="flex flex-col">
+												<a
+													href={`/projekti/labot/${task.id}`}
+													class="transition-colors hover:text-primary hover:underline"
+													>{task.title}</a
+												>
+												{#if task.clientName}
+													<span class="text-xs text-muted-foreground">{task.clientName}</span>
+												{/if}
+											</div>
+										</Table.Cell>
+										<Table.Cell class="text-right font-medium"
+											>{formatCurrency(task.price || 0)}</Table.Cell
+										>
+									</Table.Row>
 								{:else}
-								<Table.Row>
-									<Table.Cell colspan={2} class="text-center py-8 text-muted-foreground">
-										<div class="flex flex-col items-center gap-2">
-											<ListTodo class="w-8 h-8 opacity-20" />
-											<span>{m.dashboard_no_tasks()}</span>
-										</div>
-									</Table.Cell>
-								</Table.Row>
+									<Table.Row>
+										<Table.Cell colspan={2} class="text-center py-8 text-muted-foreground">
+											<div class="flex flex-col items-center gap-2">
+												<ListTodo class="w-8 h-8 opacity-20" />
+												<span>{m.dashboard_no_tasks()}</span>
+											</div>
+										</Table.Cell>
+									</Table.Row>
 								{/each}
 							</Table.Body>
 						</Table.Root>

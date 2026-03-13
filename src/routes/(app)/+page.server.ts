@@ -36,24 +36,38 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         } catch (e) {
             hiddenTabGroups = [];
         }
-    }
-    const alwaysHiddenGroups = [41, 62];
+    }    const alwaysHiddenGroups = [41, 62];
     const allHiddenGroups = Array.from(new Set([...alwaysHiddenGroups, ...hiddenTabGroups]));
 
-    // Get top managers (users with highest total task prices all time)
+    // Range toggles for managers and assignees (default: 'month')
+    const managersRange = url.searchParams.get('managersRange') === 'alltime' ? 'alltime' : 'month';
+    const assigneesRange = url.searchParams.get('assigneesRange') === 'alltime' ? 'alltime' : 'month';    // Get top managers (users with highest total task prices)
+    // month: active tasks only this month | alltime: all tasks including done
+    const managersValueExpr = managersRange === 'month'
+        ? sql<number>`COALESCE(SUM(CASE WHEN ${task.isDone} IS NOT TRUE THEN ${task.price} ELSE 0 END), 0)`
+        : sql<number>`COALESCE(SUM(${task.price}), 0)`;
+
     const topManagers = await db
         .select({
             id: user.id,
             name: user.name,
-            totalValue: sql<number>`COALESCE(SUM(${task.price}), 0)`
+            totalValue: managersValueExpr
         })
         .from(user)
-        .leftJoin(task, eq(task.createdById, user.id))
+        .leftJoin(
+            task,
+            managersRange === 'month'
+                ? and(
+                    eq(task.createdById, user.id),
+                    gte(task.created_at, currentMonthStart),
+                    lte(task.created_at, currentMonthEnd)
+                )
+                : eq(task.createdById, user.id)
+        )
         .groupBy(user.id, user.name)
-        .orderBy(desc(sql`COALESCE(SUM(${task.price}), 0)`))
-        .limit(5);
-
-    // Get top responsible persons (users with most responsible tasks all time)
+        .orderBy(desc(managersValueExpr))
+        .limit(5);    // Get top responsible persons (users with most assigned tasks)
+    // month: active tasks only this month | alltime: all tasks including done
     const topResponsiblePersons = await db
         .select({
             id: user.id,
@@ -62,7 +76,17 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         })
         .from(user)
         .leftJoin(taskAssignee, eq(taskAssignee.userId, user.id))
-        .leftJoin(task, eq(task.id, taskAssignee.taskId))
+        .leftJoin(
+            task,
+            assigneesRange === 'month'
+                ? and(
+                    eq(task.id, taskAssignee.taskId),
+                    ne(task.isDone, true),
+                    gte(task.created_at, currentMonthStart),
+                    lte(task.created_at, currentMonthEnd)
+                )
+                : eq(task.id, taskAssignee.taskId) // all-time: include done tasks
+        )
         .groupBy(user.id, user.name)
         .orderBy(desc(count(task.id)))
         .limit(5);
@@ -78,10 +102,22 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         .select({ count: count() })
         .from(task)
         .where(ne(task.isDone, true))
-        .then((res) => res[0].count);
-
-    // Get total tasks count for responsible person share calculation
-    const totalTasksSnapshot = await db.select({ count: count() }).from(task).then(res => res[0].count);
+        .then((res) => res[0].count);    // Get total tasks count for responsible person share calculation
+    // month: active tasks this month | alltime: all tasks including done
+    const totalTasksSnapshot = assigneesRange === 'month'
+        ? await db
+            .select({ count: count() })
+            .from(task)
+            .where(and(
+                ne(task.isDone, true),
+                gte(task.created_at, currentMonthStart),
+                lte(task.created_at, currentMonthEnd)
+            ))
+            .then(res => res[0].count)
+        : await db
+            .select({ count: count() })
+            .from(task)
+            .then(res => res[0].count);
     const totalTasksCount = Number(totalTasksSnapshot) || 1; // Avoid division by zero
 
     // Get urgent tasks (due today, tomorrow, or overdue)
@@ -155,7 +191,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 
     // Calculate profit by month (task price - product costs)
     const monthlyProfitSums = monthlyProfits.reduce((acc, item) => {
-        const profit = (item.taskPrice || 0) - (item.productCost || 0);
+        const profit = (item.taskPrice || 0) - Number(item.productCost || 0);
         if (!acc[item.month]) {
             acc[item.month] = 0;
         }
@@ -216,7 +252,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 
     // Calculate total profit for current month
     const currentMonthProfit = currentMonthTasks.reduce((total, taskData) => {
-        const profit = (taskData.taskPrice || 0) - (taskData.productCost || 0);
+        const profit = (taskData.taskPrice || 0) - Number(taskData.productCost || 0);
         return total + profit;
     }, 0);
 
@@ -243,13 +279,13 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         .groupBy(task.id, task.price);
 
     const previousMonthProfit = previousMonthTasks.reduce((total, taskData) => {
-        const profit = (taskData.taskPrice || 0) - (taskData.productCost || 0);
+        const profit = (taskData.taskPrice || 0) - Number(taskData.productCost || 0);
         return total + profit;
     }, 0);
 
     let profitChange = 0;
     if (previousMonthProfit !== 0) {
-        profitChange = ((currentMonthProfit - previousMonthProfit) / previousMonthProfit) * 100;
+        profitChange = Math.round(((currentMonthProfit - previousMonthProfit) / Math.abs(previousMonthProfit)) * 100);
     } else if (currentMonthProfit > 0) {
         profitChange = 100; // 100% increase if previous was 0 and current is positive
     }
@@ -313,9 +349,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         )
         .orderBy(desc(task.created_at));
 
-    const selectedTabTotalPrice = selectedTabTasksData.reduce((sum, t) => sum + (t.price || 0), 0);
-
-    return {
+    const selectedTabTotalPrice = selectedTabTasksData.reduce((sum, t) => sum + (t.price || 0), 0);    return {
         topManagers,
         topResponsiblePersons: topResponsiblePersonsWithShare,
         bestClients: bestClients.filter((client) => client.totalOrdered),
@@ -328,6 +362,8 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         tabGroupsStats,
         allTabsForSelect,
         hiddenTabGroups,
+        managersRange,
+        assigneesRange,
         selectedTabTasks: {
             id: selectedTabId,
             tasks: selectedTabTasksData,
