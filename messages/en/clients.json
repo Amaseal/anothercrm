@@ -33,11 +33,46 @@
 		"add_client": "Add new client",
 		"edit_client": "Edit client {name}",
 		"sport_type": "Sport Type",
-		"sport_type_placeholder": "Enter sport type",
+		"sport_type_placeholder": "Enter sport type",		"merge": "Merge",
+		"merge_select": "Select clients to merge",
+		"merge_cancel": "Cancel",
+		"merge_confirm": "Merge clients",
+		"merge_title": "Merge clients",
+		"merge_description": "Choose which client becomes the primary (surviving) record. All task, invoice, and other references will be re-pointed to this client.",
+		"merge_primary": "Primary client",
+		"merge_primary_badge": "Primary",
+		"merge_linked_user": "Linked to user",
+		"merge_select_min": "Please select at least 2 clients to merge.",
+		"merge_success": "Clients merged successfully.",		"merge_mode": "Selection mode",
+		"breakdown": {
+			"title": "Profit breakdown",
+			"revenue": "Revenue",
+			"costs": "Costs",
+			"profit": "Profit",
+			"tasks": "Tasks",
+			"task_title": "Task",
+			"source": "Invoice",
+			"done": "Done",
+			"no_price": "No price",
+			"no_invoice": "No invoice",
+			"product": "Product",
+			"count": "Qty",
+			"unit_cost": "Unit cost",
+			"unit_price": "Unit price",
+			"total_cost": "Total cost",
+			"standalone_invoices": "Standalone invoices",
+			"invoice_number": "Invoice #",
+			"issue_date": "Date",
+			"status": "Status",
+			"empty": "This client has no tasks or invoices."
+		},
 		"errors": {
 			"name_required": "Name is required.",
 			"contacts_invalid": "Name or phone is required.",
-			"something_went_wrong": "Something went wrong."
+			"something_went_wrong": "Something went wrong.",
+			"merge_multiple_user_clients": "Multiple selected clients have linked users. Cannot merge.",
+			"merge_min_clients": "At least 2 clients are required to merge.",
+			"merge_primary_not_in_selection": "The primary client must be one of the selected clients."
 		}
 	}
 }

@@ -14,6 +14,8 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Separator } from '$lib/components/ui/separator';
 	import Pagination from '@/components/pagination.svelte';
+	import Merge from '@lucide/svelte/icons/git-merge';
+	import X from '@lucide/svelte/icons/x';
 
 	import * as m from '$lib/paraglide/messages';
 
@@ -58,7 +60,7 @@
 		debouncedSearch(target.value);
 	};
 
-const debouncedSearch = debounce((value: string) => {
+	const debouncedSearch = debounce((value: string) => {
 		updateUrlAndNavigate({ search: value, page: 0 });
 	}, 1200);
 
@@ -66,7 +68,6 @@ const debouncedSearch = debounce((value: string) => {
 	function updateUrlAndNavigate(params: Record<string, any>) {
 		const url = new URL(page.url);
 
-		// Update the provided parameters
 		Object.entries(params).forEach(([key, value]) => {
 			if (value !== null && value !== undefined && value !== '') {
 				url.searchParams.set(key, value.toString());
@@ -79,22 +80,41 @@ const debouncedSearch = debounce((value: string) => {
 			url.searchParams.set('clear', 'true');
 		}
 
-		// Navigate to the new URL
 		goto(url.toString(), { replaceState: true });
 	}
 
 	// Handle sorting
 	function handleSort(column: keyof Client) {
-		// Check if the column is sortable
 		const sortableColumns: (keyof Client)[] = ['name', 'type', 'totalOrdered'];
 		if (!sortableColumns.includes(column)) return;
 
 		const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
 
-		updateUrlAndNavigate({
-			sortColumn: column,
-			sortDirection: newDirection
-		});
+		updateUrlAndNavigate({ sortColumn: column, sortDirection: newDirection });
+	}
+
+	// Merge mode
+	let mergeMode = $state(false);
+	let selectedIds = $state<Set<number>>(new Set());
+
+	function toggleMergeMode() {
+		mergeMode = !mergeMode;
+		selectedIds = new Set();
+	}
+
+	function toggleSelect(id: number) {
+		const next = new Set(selectedIds);
+		if (next.has(id)) {
+			next.delete(id);
+		} else {
+			next.add(id);
+		}
+		selectedIds = next;
+	}
+
+	function goToMerge() {
+		const ids = [...selectedIds].join(',');
+		goto(`/klienti/saplust?ids=${ids}`);
 	}
 </script>
 
@@ -114,9 +134,38 @@ const debouncedSearch = debounce((value: string) => {
 			value={searchTerm}
 			oninput={handleSearchInput}
 		/>
-		<Button href="/klienti/pievienot" variant="outline" class="ml-auto flex items-center gap-2"
-			><Plus />{m['components.add']()}</Button
-		>
+		{#if mergeMode}
+			<span class="text-sm whitespace-nowrap text-muted-foreground"
+				>{m['clients.merge_select']()}</span
+			>
+		{/if}
+		<Button href="/klienti/pievienot" variant="outline" class="ml-auto flex items-center gap-2">
+			<Plus />{m['components.add']()}
+		</Button>
+		{#if mergeMode}
+			<Button
+				variant="default"
+				class="flex items-center gap-2"
+				disabled={selectedIds.size < 2}
+				onclick={goToMerge}
+			>
+				<Merge class="h-4 w-4" />
+				{m['clients.merge_confirm']()}{selectedIds.size >= 2 ? ` (${selectedIds.size})` : ''}
+			</Button>
+			<Button
+				variant="ghost"
+				size="icon"
+				onclick={toggleMergeMode}
+				title={m['clients.merge_cancel']()}
+			>
+				<X class="h-4 w-4" />
+			</Button>
+		{:else}
+			<Button variant="outline" class="flex items-center gap-2" onclick={toggleMergeMode}>
+				<Merge class="h-4 w-4" />
+				{m['clients.merge']()}
+			</Button>
+		{/if}
 	</div>
 </header>
 <div class="mb-4 space-y-4">
@@ -124,6 +173,9 @@ const debouncedSearch = debounce((value: string) => {
 		<Table.Root>
 			<Table.Header>
 				<Table.Row>
+					{#if mergeMode}
+						<Table.Head class="w-10"></Table.Head>
+					{/if}
 					<Table.Head class="w-[150px] cursor-pointer" onclick={() => handleSort('name')}>
 						<div class="flex items-center gap-1">
 							{m['clients.name']()}
@@ -172,36 +224,63 @@ const debouncedSearch = debounce((value: string) => {
 							{/if}
 						</div>
 					</Table.Head>
-					<Table.Head class="w-12 text-center">{m['components.edit']()}</Table.Head>
-					<Table.Head class="w-12 text-center">{m['components.delete']()}</Table.Head>
+					{#if !mergeMode}
+						<Table.Head class="w-12 text-center">{m['components.edit']()}</Table.Head>
+						<Table.Head class="w-12 text-center">{m['components.delete']()}</Table.Head>
+					{/if}
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
 				{#if data.clients.length === 0}
 					<Table.Row>
-						<Table.Cell colspan={8} class="py-6 text-center">{m['clients.empty']()}</Table.Cell>
+						<Table.Cell colspan={mergeMode ? 6 : 8} class="py-6 text-center"
+							>{m['clients.empty']()}</Table.Cell
+						>
 					</Table.Row>
 				{:else}
 					{#each data.clients as item (item.id)}
-						<Table.Row class="cursor-pointer hover:bg-muted/50">
+						<Table.Row
+							class="cursor-pointer hover:bg-muted/50 {mergeMode && selectedIds.has(item.id)
+								? 'bg-primary/5'
+								: ''}"
+							onclick={mergeMode ? () => toggleSelect(item.id) : () => goto(`/klienti/${item.id}`)}
+						>
+							{#if mergeMode}
+								<Table.Cell class="text-center">
+									<input
+										type="checkbox"
+										checked={selectedIds.has(item.id)}
+										class="h-4 w-4 cursor-pointer accent-primary"
+										onclick={(e) => e.stopPropagation()}
+										onchange={() => toggleSelect(item.id)}
+									/>
+								</Table.Cell>
+							{/if}
 							<Table.Cell class="font-medium">{item.name || '-'}</Table.Cell>
 							<Table.Cell>{item.phone || '-'}</Table.Cell>
 							<Table.Cell class="hidden md:table-cell">{item.email || '-'}</Table.Cell>
 							<Table.Cell class="hidden md:table-cell">{item.description || '-'}</Table.Cell>
 							<Table.Cell class="hidden md:table-cell">{item.type || '-'}</Table.Cell>
-							<Table.Cell class="hidden md:table-cell"
-								>{toCurrency(item.totalOrdered as number) || '-'} €</Table.Cell
-							>
-							<Table.Cell class="text-center">
-								<Button href="/klienti/labot/{item.id}" variant="ghost"><Pencil /></Button>
+							<Table.Cell class="hidden md:table-cell">
+								{toCurrency(item.totalOrdered as number) || '-'} €
 							</Table.Cell>
-							<Table.Cell class="text-center">
-								<Button
-									href="/klienti/izdzest/{item.id}"
-									variant="ghost"
-									class="hover:bg-red-100 hover:text-red-600"><Trash2 /></Button
-								>
-							</Table.Cell>
+							{#if !mergeMode}
+								<Table.Cell class="text-center">
+									<Button
+										href="/klienti/labot/{item.id}"
+										variant="ghost"
+										onclick={(e) => e.stopPropagation()}><Pencil /></Button
+									>
+								</Table.Cell>
+								<Table.Cell class="text-center">
+									<Button
+										href="/klienti/izdzest/{item.id}"
+										variant="ghost"
+										class="hover:bg-red-100 hover:text-red-600"
+										onclick={(e) => e.stopPropagation()}><Trash2 /></Button
+									>
+								</Table.Cell>
+							{/if}
 						</Table.Row>
 					{/each}
 				{/if}
@@ -209,6 +288,6 @@ const debouncedSearch = debounce((value: string) => {
 		</Table.Root>
 	</div>
 
-	<!-- Enhanced Pagination Controls -->
+	<!-- Pagination -->
 	<Pagination pagination={data.pagination} />
 </div>
