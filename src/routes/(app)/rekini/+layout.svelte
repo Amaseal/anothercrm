@@ -29,7 +29,8 @@
 	import { DateFormatter, type DateValue, getLocalTimeZone } from '@internationalized/date';
 	import { buttonVariants } from '$lib/components/ui/button';
 	import { cn } from '$lib/utils.js';
-	import {isAdmin} from '$lib/stores/user';
+	import { isAdmin } from '$lib/stores/user';
+	import Copy from '@lucide/svelte/icons/copy';
 
 	let importing = $state(false);
 	let fileInput: HTMLInputElement;
@@ -180,7 +181,7 @@
 		debouncedSearch(target.value);
 	};
 
-const debouncedSearch = debounce((value: string) => {
+	const debouncedSearch = debounce((value: string) => {
 		updateUrlAndNavigate({ search: value, page: 0 });
 	}, 1200);
 
@@ -252,102 +253,112 @@ const debouncedSearch = debounce((value: string) => {
 		/>
 
 		{#if $isAdmin}
-		<Button
-			variant="outline"
-			class="ml-auto flex items-center gap-2"
-			onclick={() => fileInput?.click()}
-			disabled={importing}
-		>
-			{#if importing}
-				<Loader2 class="animate-spin" /> {m['invoices.import_button']()}
-			{:else}
-				<FileSpreadsheet /> {m['invoices.import_button']()}
-			{/if}
-		</Button>
+			<Button
+				variant="outline"
+				class="ml-auto flex items-center gap-2"
+				onclick={() => fileInput?.click()}
+				disabled={importing}
+			>
+				{#if importing}
+					<Loader2 class="animate-spin" /> {m['invoices.import_button']()}
+				{:else}
+					<FileSpreadsheet /> {m['invoices.import_button']()}
+				{/if}
+			</Button>
 
-		<!-- Export PDF button + date-range dialog -->
-		<Dialog.Root bind:open={exportDialogOpen}>
-			<Dialog.Trigger>
-				{#snippet child({ props })}
-					<Button
-						variant="outline"
-						class="flex items-center gap-2"
-						disabled={exporting}
-						{...props}
-					>
-						{#if exporting}
-							<Loader2 class="animate-spin" /> Sagatavo...
-						{:else}
-							<Download size="16" /> Export PDF
-						{/if}
-					</Button>
-				{/snippet}
-			</Dialog.Trigger>
-			<Dialog.Content class="sm:max-w-sm">
-				<Dialog.Header>
-					<Dialog.Title>Export invoices as PDF</Dialog.Title>
-					<Dialog.Description>Select a date range. All invoices with an issue date in this range will be exported as a ZIP of PDFs.</Dialog.Description>
-				</Dialog.Header>
-				<div class="grid gap-4 py-4">
-					<div class="grid grid-cols-4 items-center gap-4">
-						<Label for="export-from" class="text-right">From</Label>
-						<Popover.Root>
-							<Popover.Trigger
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'col-span-3 justify-start pl-4 text-left font-normal',
-									!exportFromValue && 'text-muted-foreground'
-								)}
-							>
-								{exportFromValue ? df.format(exportFromValue.toDate(getLocalTimeZone())) : 'Pick a date'}
-								<CalendarIcon class="ml-auto size-4 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0" side="bottom">
-								<Calendar
-									type="single"
-									value={exportFromValue}
-									onValueChange={(v) => { exportFromValue = v; }}
-								/>
-							</Popover.Content>
-						</Popover.Root>
+			<!-- Export PDF button + date-range dialog -->
+			<Dialog.Root bind:open={exportDialogOpen}>
+				<Dialog.Trigger>
+					{#snippet child({ props })}
+						<Button
+							variant="outline"
+							class="flex items-center gap-2"
+							disabled={exporting}
+							{...props}
+						>
+							{#if exporting}
+								<Loader2 class="animate-spin" /> Sagatavo...
+							{:else}
+								<Download size="16" /> Export PDF
+							{/if}
+						</Button>
+					{/snippet}
+				</Dialog.Trigger>
+				<Dialog.Content class="sm:max-w-sm">
+					<Dialog.Header>
+						<Dialog.Title>Export invoices as PDF</Dialog.Title>
+						<Dialog.Description
+							>Select a date range. All invoices with an issue date in this range will be exported
+							as a ZIP of PDFs.</Dialog.Description
+						>
+					</Dialog.Header>
+					<div class="grid gap-4 py-4">
+						<div class="grid grid-cols-4 items-center gap-4">
+							<Label for="export-from" class="text-right">From</Label>
+							<Popover.Root>
+								<Popover.Trigger
+									class={cn(
+										buttonVariants({ variant: 'outline' }),
+										'col-span-3 justify-start pl-4 text-left font-normal',
+										!exportFromValue && 'text-muted-foreground'
+									)}
+								>
+									{exportFromValue
+										? df.format(exportFromValue.toDate(getLocalTimeZone()))
+										: 'Pick a date'}
+									<CalendarIcon class="ml-auto size-4 opacity-50" />
+								</Popover.Trigger>
+								<Popover.Content class="w-auto p-0" side="bottom">
+									<Calendar
+										type="single"
+										value={exportFromValue}
+										onValueChange={(v) => {
+											exportFromValue = v;
+										}}
+									/>
+								</Popover.Content>
+							</Popover.Root>
+						</div>
+						<div class="grid grid-cols-4 items-center gap-4">
+							<Label for="export-to" class="text-right">To</Label>
+							<Popover.Root>
+								<Popover.Trigger
+									class={cn(
+										buttonVariants({ variant: 'outline' }),
+										'col-span-3 justify-start pl-4 text-left font-normal',
+										!exportToValue && 'text-muted-foreground'
+									)}
+								>
+									{exportToValue
+										? df.format(exportToValue.toDate(getLocalTimeZone()))
+										: 'Pick a date'}
+									<CalendarIcon class="ml-auto size-4 opacity-50" />
+								</Popover.Trigger>
+								<Popover.Content class="w-auto p-0" side="bottom">
+									<Calendar
+										type="single"
+										value={exportToValue}
+										onValueChange={(v) => {
+											exportToValue = v;
+										}}
+									/>
+								</Popover.Content>
+							</Popover.Root>
+						</div>
 					</div>
-					<div class="grid grid-cols-4 items-center gap-4">
-						<Label for="export-to" class="text-right">To</Label>
-						<Popover.Root>
-							<Popover.Trigger
-								class={cn(
-									buttonVariants({ variant: 'outline' }),
-									'col-span-3 justify-start pl-4 text-left font-normal',
-									!exportToValue && 'text-muted-foreground'
-								)}
-							>
-								{exportToValue ? df.format(exportToValue.toDate(getLocalTimeZone())) : 'Pick a date'}
-								<CalendarIcon class="ml-auto size-4 opacity-50" />
-							</Popover.Trigger>
-							<Popover.Content class="w-auto p-0" side="bottom">
-								<Calendar
-									type="single"
-									value={exportToValue}
-									onValueChange={(v) => { exportToValue = v; }}
-								/>
-							</Popover.Content>
-						</Popover.Root>
-					</div>
-				</div>
-				<Dialog.Footer>
-					<Button variant="outline" onclick={() => (exportDialogOpen = false)}>Cancel</Button>
-					<Button onclick={handleExport} disabled={!exportFromValue || !exportToValue}>
-						<Download size="14" class="mr-1" /> Export ZIP
-					</Button>
-				</Dialog.Footer>
-			</Dialog.Content>
-		</Dialog.Root>
+					<Dialog.Footer>
+						<Button variant="outline" onclick={() => (exportDialogOpen = false)}>Cancel</Button>
+						<Button onclick={handleExport} disabled={!exportFromValue || !exportToValue}>
+							<Download size="14" class="mr-1" /> Export ZIP
+						</Button>
+					</Dialog.Footer>
+				</Dialog.Content>
+			</Dialog.Root>
 
-				<Button href="/rekini/pievienot" variant="outline" class="flex items-center gap-2"
-			><Plus />{m['components.add']()}</Button
-		>
+			<Button href="/rekini/pievienot" variant="outline" class="flex items-center gap-2"
+				><Plus />{m['components.add']()}</Button
+			>
 		{/if}
-
 	</div>
 </header>
 <div class="mb-4 space-y-4">
@@ -402,8 +413,9 @@ const debouncedSearch = debounce((value: string) => {
 					<Table.Head class="w-12 text-center">PDF</Table.Head>
 					<Table.Head class="w-12 text-center">Send</Table.Head>
 					{#if $isAdmin}
-					<Table.Head class="w-12 text-center">{m['components.edit']()}</Table.Head>
-					<Table.Head class="w-12 text-center">{m['components.delete']()}</Table.Head>
+						<Table.Head class="w-12 text-center">Duplicate</Table.Head>
+						<Table.Head class="w-12 text-center">{m['components.edit']()}</Table.Head>
+						<Table.Head class="w-12 text-center">{m['components.delete']()}</Table.Head>
 					{/if}
 				</Table.Row>
 			</Table.Header>
@@ -442,19 +454,29 @@ const debouncedSearch = debounce((value: string) => {
 								>
 							</Table.Cell>
 							{#if $isAdmin}
-							<Table.Cell class="text-center">
-								<Button href="/rekini/labot/{item.id}" variant="ghost" size="icon"
-									><Pencil size="16" /></Button
-								>
-							</Table.Cell>
-							<Table.Cell class="text-center">
-								<Button
-									href="/rekini/izdzest/{item.id}"
-									variant="ghost"
-									size="icon"
-									class="hover:bg-red-100 hover:text-red-600"><Trash2 size="16" /></Button
-								>
-							</Table.Cell>
+								<Table.Cell class="text-center">
+									<Button
+										href="/rekini/pievienot?duplicateId={item.id}"
+										variant="ghost"
+										size="icon"
+										title="Duplicate invoice"
+									>
+										<Copy size="16" />
+									</Button>
+								</Table.Cell>
+								<Table.Cell class="text-center">
+									<Button href="/rekini/labot/{item.id}" variant="ghost" size="icon"
+										><Pencil size="16" /></Button
+									>
+								</Table.Cell>
+								<Table.Cell class="text-center">
+									<Button
+										href="/rekini/izdzest/{item.id}"
+										variant="ghost"
+										size="icon"
+										class="hover:bg-red-100 hover:text-red-600"><Trash2 size="16" /></Button
+									>
+								</Table.Cell>
 							{/if}
 						</Table.Row>
 					{/each}

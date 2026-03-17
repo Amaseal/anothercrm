@@ -25,7 +25,9 @@
 	let isNewClient = $state(false);
 	let selectedClientId = $state('');
 	let clientOpen = $state(false); // Popover state
-	let items = $state([{ description: '', unit: 'gab.', quantity: 1, price: 0, isAutoFilled: false }]);
+	let items = $state([
+		{ description: '', unit: 'gab.', quantity: 1, price: 0, isAutoFilled: false }
+	]);
 	let vatRate = $state(21);
 	let language = $state('lv');
 
@@ -41,7 +43,10 @@
 	let total = $derived(subtotal + taxAmount);
 
 	function addItem() {
-		items = [...items, { description: '', unit: 'gab.', quantity: 1, price: 0, isAutoFilled: false }];
+		items = [
+			...items,
+			{ description: '', unit: 'gab.', quantity: 1, price: 0, isAutoFilled: false }
+		];
 	}
 
 	function removeItem(index: number) {
@@ -68,7 +73,9 @@
 		// Check for exact match in products
 		const match = products.find((p: any) => p.title === val);
 		if (match) {
-			const clientPriceEntry = selectedClientId ? match.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId) : null;
+			const clientPriceEntry = selectedClientId
+				? match.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)
+				: null;
 			items[index].price = clientPriceEntry ? clientPriceEntry.price : match.price;
 			items[index].isAutoFilled = true;
 		}
@@ -86,28 +93,30 @@
 			clientVatNo = selectedClientDetails.vatNumber || '';
 			clientAddress = selectedClientDetails.address || '';
 			clientEmail = selectedClientDetails.email || '';
-			
+
 			// Recalculate auto-filled item prices for the new client.
 			// Read items via untrack so this effect doesn't subscribe to `items` as a
 			// dependency — otherwise writing items would immediately re-trigger the effect.
 			const snapshot = untrack(() => items);
-			items = snapshot.map(item => {
+			items = snapshot.map((item) => {
 				if (item.isAutoFilled) {
 					const match = products.find((p: any) => p.title === item.description);
 					if (match) {
-						const clientPriceEntry = match.clientPrices?.find((cp: any) => cp.clientId === selectedClientDetails!.id);
+						const clientPriceEntry = match.clientPrices?.find(
+							(cp: any) => cp.clientId === selectedClientDetails!.id
+						);
 						item.price = clientPriceEntry ? clientPriceEntry.price : match.price;
 					}
 				}
 				return item;
 			});
 		} else if (!isNewClient) {
-             // Reset if no client selected and not in new client mode
-            clientRegNo = '';
-            clientVatNo = '';
-            clientAddress = '';
-            clientEmail = '';
-        }
+			// Reset if no client selected and not in new client mode
+			clientRegNo = '';
+			clientVatNo = '';
+			clientAddress = '';
+			clientEmail = '';
+		}
 	});
 
 	$effect(() => {
@@ -143,6 +152,27 @@
 		}
 	});
 
+	$effect(() => {
+		// Auto-fill from a duplicated invoice — run once on mount.
+		if (data.prefillInvoice) {
+			untrack(() => {
+				const src = data.prefillInvoice!;
+				if (src.clientId) selectedClientId = src.clientId.toString();
+				if (src.taxRate != null) vatRate = src.taxRate;
+				if (src.language) language = src.language;
+				if (src.items && src.items.length > 0) {
+					items = src.items.map((i: any) => ({
+						description: i.description,
+						unit: i.unit,
+						quantity: i.quantity,
+						price: i.price,
+						isAutoFilled: false
+					}));
+				}
+			});
+		}
+	});
+
 	const formatMoney = (cents: number) => (cents / 100).toFixed(2);
 </script>
 
@@ -151,454 +181,456 @@
 </svelte:head>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-	<div class="max-h-[90vh] w-full max-w-[70vw] overflow-y-scroll custom-scroll rounded-lg">
+	<div class="custom-scroll max-h-[90vh] w-full max-w-[70vw] overflow-y-scroll rounded-lg">
+		<!-- Paper Container -->
+		<div
+			class="relative mx-auto bg-white p-12 font-sans text-black shadow-md"
+			style="font-family: Arial, sans-serif;"
+		>
+			<form method="POST" use:enhance>
+				{#if form?.message}
+					<div class="absolute top-0 right-0 left-0 -mt-12">
+						<FormError error={form.message} />
+					</div>
+				{/if}
 
+				{#if data.prefillTask}
+					<input type="hidden" name="taskId" value={data.prefillTask.id} />
+				{/if}
 
-			<!-- Paper Container -->
-			<div
-				class="relative mx-auto bg-white p-12 font-sans text-black shadow-md"
-				style="font-family: Arial, sans-serif;"
-			>
-				<form method="POST" use:enhance>
-					{#if form?.message}
-						<div class="absolute top-0 right-0 left-0 -mt-12">
-							<FormError error={form.message} />
-						</div>
-					{/if}
-
-					{#if data.prefillTask}
-						<input type="hidden" name="taskId" value={data.prefillTask.id} />
-					{/if}
-
-					<!-- 1. Header Row -->
-					<div class="mb-2 flex items-start justify-between">
-						<!-- Logo -->
-						<div class="w-1/2">
-							<FastBreakLogo />
-						</div>
-
-						<!-- Invoice Meta Table -->
-						<div class="flex w-1/2 flex-col items-end">
-							<h1 class="mb-2 text-xl font-bold">Rēķins/Pavadzīme</h1>
-							<table class="w-full max-w-[300px] border-collapse border border-black text-sm">
-								<tbody>
-									<tr>
-										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
-											>{m['invoices.issue_date']()}:</td
-										>
-										<td class="border border-black px-0 py-0">
-											<input
-												type="date"
-												name="issueDate"
-												class="relative w-full border-none bg-transparent px-2 py-0.5 pl-6 text-right text-sm focus:ring-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
-												value={new Date().toISOString().split('T')[0]}
-												required
-											/>
-										</td>
-									</tr>
-									<tr>
-										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
-											>{m['invoices.number']()}:</td
-										>
-										<td
-											class="border border-black px-2 py-0.5 text-right font-bold text-gray-400 italic"
-										>
-											(Auto-generated)
-										</td>
-									</tr>
-									<tr>
-										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
-											>{m['invoices.due_date']()}:</td
-										>
-										<td class="border border-black px-0 py-0">
-											<input
-												type="date"
-												name="dueDate"
-												class="relative w-full border-none bg-transparent px-2 py-0.5 pl-6 text-right text-sm focus:ring-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
-												value={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-													.toISOString()
-													.split('T')[0]}
-												required
-											/>
-										</td>
-									</tr>
-									<tr>
-										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">Language:</td>
-										<td class="border border-black px-0 py-0">
-											<select
-												name="language"
-												bind:value={language}
-												class="w-full appearance-none border-none bg-transparent px-1 py-0.5 text-right text-sm focus:ring-0"
-											>
-												<option value="lv">Latviešu</option>
-												<option value="en">English</option>
-											</select>
-										</td>
-									</tr>
-									<tr>
-										<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">VAT (%):</td>
-										<td class="border border-black px-0 py-0">
-											<input
-												type="number"
-												step="0.1"
-												name="vatRate"
-												bind:value={vatRate}
-												class="w-full border-none bg-transparent px-2 py-0.5 text-right text-sm focus:ring-0"
-												required
-											/>
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
+				<!-- 1. Header Row -->
+				<div class="mb-2 flex items-start justify-between">
+					<!-- Logo -->
+					<div class="w-1/2">
+						<FastBreakLogo />
 					</div>
 
-					<!-- 2. Supplier (Piegādātājs) -->
-					<div class="mb-2">
-						<div class="flex">
-							<div class="w-32 font-bold">{m['invoices.supplier']()}</div>
-							<div class="font-bold">{company?.name}</div>
-						</div>
-						<div class="flex text-sm">
-							<div class="w-32">{m['invoices.registration_number']()}</div>
-							<div>{company?.registrationNumber}</div>
-						</div>
-						<div class="flex text-sm">
-							<div class="w-32">{m['invoices.vat_number']()}</div>
-							<div>{company?.vatNumber}</div>
-						</div>
-						<div class="flex text-sm">
-							<div class="w-32">{m['invoices.address']()}</div>
-							<div>{company?.address}</div>
-						</div>
-					</div>
-
-					<!-- 3. Client (Maksātājs) - EDITABLE -->
-					<div class="mb-2">
-						<div class="mb-2 flex items-center justify-between">
-							<div class="flex items-center">
-								<div class="w-32 font-bold">{m['invoices.payer']()}</div>
-
-								{#if !isNewClient}
-									<Popover.Root bind:open={clientOpen}>
-										<Popover.Trigger>
-											{#snippet child({ props })}
-												<Button
-													variant="outline"
-													role="combobox"
-													aria-expanded={clientOpen}
-													class="w-[300px] justify-between font-bold"
-													{...props}
-												>
-													{selectedClientId
-														? clients.find((c) => c.id.toString() === selectedClientId)?.name
-														: m['clients.search']()}
-													<ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-												</Button>
-											{/snippet}
-										</Popover.Trigger>
-										<Popover.Content class="w-[300px] p-0">
-											<Command.Root>
-												<Command.Input placeholder="Search client..." />
-												<Command.List>
-													<Command.Empty>{m['clients.empty']()}</Command.Empty>
-													<Command.Group>
-														{#each clients as client}
-															<Command.Item
-																value={client.name}
-																onSelect={() => {
-																	selectedClientId = client.id.toString();
-																	clientOpen = false;
-																}}
-															>
-																<Check
-																	class={cn(
-																		'mr-2 h-4 w-4',
-																		selectedClientId === client.id.toString()
-																			? 'opacity-100'
-																			: 'opacity-0'
-																	)}
-																/>
-																{client.name}
-															</Command.Item>
-														{/each}
-													</Command.Group>
-												</Command.List>
-											</Command.Root>
-										</Popover.Content>
-									</Popover.Root>
-									<input type="hidden" name="clientId" value={selectedClientId} />
-								{:else}
-									<Input
-										name="newClientName"
-										placeholder="Enter Client Name"
-										class="h-8 w-[300px] border-gray-400 bg-white font-bold"
-										required
-									/>
-								{/if}
-							</div>
-
-							<div class="flex items-center gap-2 text-xs">
-								<Label for="new-client-mode">{m['invoices.new_client']()}</Label>
-								<Switch
-									id="new-client-mode"
-									checked={isNewClient}
-									onCheckedChange={(v) => {
-										isNewClient = v;
-										if (v) selectedClientId = '';
-									}}
-								/>
-								<input type="hidden" name="isNewClient" value={isNewClient} />
-							</div>
-						</div>
-
-						<!-- Client Details Display/Edit -->
-						{#if isNewClient}
-							<!-- Editable Fields for New Client -->
-							<div class="space-y-1">
-								<div class="flex items-center text-sm">
-									<Label class="w-32 text-gray-500">{m["invoices.registration_number"]()}</Label>
-									<Input name="newClientRegNo" class="h-6 w-48 text-sm" placeholder="Reg. Number" />
-								</div>
-								<div class="flex items-center text-sm">
-									<Label class="w-32 text-gray-500">{m["invoices.vat_number"]()}</Label>
-									<Input name="newClientVatNo" class="h-6 w-48 text-sm" placeholder="VAT Number" />
-								</div>
-								<div class="flex items-center text-sm">
-									<Label class="w-32 text-gray-500">{m["invoices.address"]()}</Label>
-									<Input
-										name="newClientAddress"
-										class="h-6 w-full max-w-md text-sm"
-										placeholder="Full Address"
-									/>
-								</div>
-								<div class="flex items-center text-sm">
-									<Label class="w-32 text-gray-500">{m["invoices.email"]()}</Label>
-									<Input
-										name="newClientEmail"
-										type="email"
-										class="h-6 w-64 text-sm"
-										placeholder="Email (for sending)"
-									/>
-								</div>
-							</div>
-						{:else if selectedClientDetails}
-							<!-- Editable View for Selected Client -->
-							<div class=" space-y-1">
-								<div class="flex items-center text-sm">
-									<Label class="w-32 text-gray-500">{m["invoices.registration_number"]()}</Label>
-									<Input
-										name="clientRegNo"
-										bind:value={clientRegNo}
-										class="h-6 w-48 text-sm"
-										placeholder="Reg. Number"
-									/>
-								</div>
-								<div class="flex items-center text-sm">
-									<Label class="w-32 text-gray-500">{m["invoices.vat_number"]()}</Label>
-									<Input
-										name="clientVatNo"
-										bind:value={clientVatNo}
-										class="h-6 w-48 text-sm"
-										placeholder="VAT Number"
-									/>
-								</div>
-								<div class="flex items-center text-sm">
-									<Label class="w-32 text-gray-500">{m["invoices.address"]()}</Label>
-									<Input
-										name="clientAddress"
-										bind:value={clientAddress}
-										class="h-6 w-full max-w-md text-sm"
-										placeholder="Full Address"
-									/>
-								</div>
-								<div class="flex items-center text-sm">
-									<Label class="w-32 text-gray-500">{m["invoices.email"]()}</Label>
-									<Input
-										name="clientEmail"
-										type="email"
-										bind:value={clientEmail}
-										class="h-6 w-64 text-sm"
-										placeholder="Email"
-									/>
-								</div>
-                                <div class="flex items-center pt-2">
-                                    <div class="flex items-center space-x-2">
-                                        <input
-                                            type="checkbox"
-                                            id="updateClientDetails"
-                                            name="updateClientDetails"
-                                            class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                                            checked
-                                        />
-                                        <label
-                                            for="updateClientDetails"
-                                            class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                                        >
-                                            {m['invoices.update_client_details']()}
-                                        </label>
-                                    </div>
-                                </div>
-							</div>
-						{:else}
-							<div class="ml-32 text-sm text-gray-400 italic">
-								{m['invoices.select_client_to_see_details']()}
-							</div>
-						{/if}
-					</div>
-
-					<!-- Datalist for Items -->
-					<datalist id="products-list">
-						{#each products as product}
-							{#if selectedClientId && product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)}
-								<option value={product.title}>{product.title} - {toCurrency(product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)?.price || 0)} €</option>
-							{:else}
-								<option value={product.title}>{product.title} - {toCurrency(product.price)} €</option>
-							{/if}
-						{/each}
-					</datalist>
-
-					<!-- 4. Items Table (Interactive) -->
-					<table class="mb-4 w-full border-collapse border border-black bg-white">
-						<thead>
-							<tr class="bg-gray-50 text-sm">
-								<th class="w-10 border border-black px-2 py-1 text-center italic"
-									>{m['invoices.items.nr']()}</th
-								>
-								<th class="border border-black px-2 py-1 text-left italic"
-									>{m['invoices.items.description']()}</th
-								>
-								<th class="w-24 border border-black px-2 py-1 text-center italic"
-									>{m['invoices.items.unit']()}</th
-								>
-								<th class="w-20 border border-black px-2 py-1 text-center italic"
-									>{m['invoices.items.quantity']()}</th
-								>
-								<th class="w-24 border border-black px-2 py-1 text-center italic"
-									>{m['invoices.items.price']()} €</th
-								>
-								<th class="w-24 border border-black px-2 py-1 text-center italic"
-									>{m['invoices.items.amount']()} €</th
-								>
-								<th
-									class="w-8 border border-t-0 border-r-0 border-b-0 border-l-0 border-black bg-transparent"
-								></th>
-							</tr>
-						</thead>
-						<tbody class="text-sm">
-							{#each items as item, i}
-								<tr class="group hover:bg-slate-50">
-									<td class="border border-black px-2 py-1 text-center">{i + 1}</td>
+					<!-- Invoice Meta Table -->
+					<div class="flex w-1/2 flex-col items-end">
+						<h1 class="mb-2 text-xl font-bold">Rēķins/Pavadzīme</h1>
+						<table class="w-full max-w-[300px] border-collapse border border-black text-sm">
+							<tbody>
+								<tr>
+									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
+										>{m['invoices.issue_date']()}:</td
+									>
 									<td class="border border-black px-0 py-0">
 										<input
-											value={item.description}
-											oninput={(e) => handleDescriptionInput(e, i)}
-											placeholder={m['invoices.items.description']()}
-											list="products-list"
-											class="h-full w-full border-none bg-transparent px-2 py-1 text-sm focus:bg-white focus:ring-0"
+											type="date"
+											name="issueDate"
+											class="relative w-full border-none bg-transparent px-2 py-0.5 pl-6 text-right text-sm focus:ring-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
+											value={new Date().toISOString().split('T')[0]}
+											required
 										/>
-									</td>
-									<td class="border border-black px-0 py-0">
-										<input
-											bind:value={item.unit}
-											placeholder="gab."
-											class="h-full w-full border-none bg-transparent px-2 py-1 text-center text-sm focus:bg-white focus:ring-0"
-										/>
-									</td>
-									<td class="border border-black px-0 py-0">
-										<input
-											type="number"
-											step="0.01"
-											value={item.quantity}
-											oninput={(e) => handleQtyInput(e, i)}
-											class="h-full w-full border-none bg-transparent px-2 py-1 text-center text-sm focus:bg-white focus:ring-0"
-										/>
-									</td>
-									<td class="border border-black px-0 py-0">
-										<input
-											type="number"
-											step="0.01"
-											value={item.price / 100}
-											oninput={(e) => handlePriceInput(e, i)}
-											class="h-full w-full border-none bg-transparent px-2 py-1 text-right text-sm focus:bg-white focus:ring-0"
-										/>
-									</td>
-									<td class="border border-black px-2 py-1 text-right font-bold">
-										{formatMoney(item.quantity * item.price)}
-									</td>
-									<td class="border-none pl-2">
-										<button
-											type="button"
-											onclick={() => removeItem(i)}
-											class="text-gray-300 transition-colors hover:text-red-500"
-										>
-											<Trash2 size="16" />
-										</button>
 									</td>
 								</tr>
-							{/each}
-						</tbody>
-					</table>
+								<tr>
+									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
+										>{m['invoices.number']()}:</td
+									>
+									<td
+										class="border border-black px-2 py-0.5 text-right font-bold text-gray-400 italic"
+									>
+										(Auto-generated)
+									</td>
+								</tr>
+								<tr>
+									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
+										>{m['invoices.due_date']()}:</td
+									>
+									<td class="border border-black px-0 py-0">
+										<input
+											type="date"
+											name="dueDate"
+											class="relative w-full border-none bg-transparent px-2 py-0.5 pl-6 text-right text-sm focus:ring-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:left-0"
+											value={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+												.toISOString()
+												.split('T')[0]}
+											required
+										/>
+									</td>
+								</tr>
+								<tr>
+									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">Language:</td>
+									<td class="border border-black px-0 py-0">
+										<select
+											name="language"
+											bind:value={language}
+											class="w-full appearance-none border-none bg-transparent px-1 py-0.5 text-right text-sm focus:ring-0"
+										>
+											<option value="lv">Latviešu</option>
+											<option value="en">English</option>
+										</select>
+									</td>
+								</tr>
+								<tr>
+									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">VAT (%):</td>
+									<td class="border border-black px-0 py-0">
+										<input
+											type="number"
+											step="0.1"
+											name="vatRate"
+											bind:value={vatRate}
+											class="w-full border-none bg-transparent px-2 py-0.5 text-right text-sm focus:ring-0"
+											required
+										/>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
 
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						class="mb-6 w-full border-dashed"
-						onclick={addItem}
-					>
-						<Plus size="14" class="mr-2" />
-						{m['invoices.items.add_row']()}
-					</Button>
-					<div class="flex gap-4">
-						<div class="mb-4 w-full">
-							<Label class="mb-1 block text-sm font-bold">{m['invoices.notes']()}:</Label>
-							<Textarea
-								name="notes"
-								placeholder={m['invoices.notes']()}
-								class="h-16 resize-none text-sm"
+				<!-- 2. Supplier (Piegādātājs) -->
+				<div class="mb-2">
+					<div class="flex">
+						<div class="w-32 font-bold">{m['invoices.supplier']()}</div>
+						<div class="font-bold">{company?.name}</div>
+					</div>
+					<div class="flex text-sm">
+						<div class="w-32">{m['invoices.registration_number']()}</div>
+						<div>{company?.registrationNumber}</div>
+					</div>
+					<div class="flex text-sm">
+						<div class="w-32">{m['invoices.vat_number']()}</div>
+						<div>{company?.vatNumber}</div>
+					</div>
+					<div class="flex text-sm">
+						<div class="w-32">{m['invoices.address']()}</div>
+						<div>{company?.address}</div>
+					</div>
+				</div>
+
+				<!-- 3. Client (Maksātājs) - EDITABLE -->
+				<div class="mb-2">
+					<div class="mb-2 flex items-center justify-between">
+						<div class="flex items-center">
+							<div class="w-32 font-bold">{m['invoices.payer']()}</div>
+
+							{#if !isNewClient}
+								<Popover.Root bind:open={clientOpen}>
+									<Popover.Trigger>
+										{#snippet child({ props })}
+											<Button
+												variant="outline"
+												role="combobox"
+												aria-expanded={clientOpen}
+												class="w-[300px] justify-between font-bold"
+												{...props}
+											>
+												{selectedClientId
+													? clients.find((c) => c.id.toString() === selectedClientId)?.name
+													: m['clients.search']()}
+												<ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
+											</Button>
+										{/snippet}
+									</Popover.Trigger>
+									<Popover.Content class="w-[300px] p-0">
+										<Command.Root>
+											<Command.Input placeholder="Search client..." />
+											<Command.List>
+												<Command.Empty>{m['clients.empty']()}</Command.Empty>
+												<Command.Group>
+													{#each clients as client}
+														<Command.Item
+															value={client.name}
+															onSelect={() => {
+																selectedClientId = client.id.toString();
+																clientOpen = false;
+															}}
+														>
+															<Check
+																class={cn(
+																	'mr-2 h-4 w-4',
+																	selectedClientId === client.id.toString()
+																		? 'opacity-100'
+																		: 'opacity-0'
+																)}
+															/>
+															{client.name}
+														</Command.Item>
+													{/each}
+												</Command.Group>
+											</Command.List>
+										</Command.Root>
+									</Popover.Content>
+								</Popover.Root>
+								<input type="hidden" name="clientId" value={selectedClientId} />
+							{:else}
+								<Input
+									name="newClientName"
+									placeholder="Enter Client Name"
+									class="h-8 w-[300px] border-gray-400 bg-white font-bold"
+									required
+								/>
+							{/if}
+						</div>
+
+						<div class="flex items-center gap-2 text-xs">
+							<Label for="new-client-mode">{m['invoices.new_client']()}</Label>
+							<Switch
+								id="new-client-mode"
+								checked={isNewClient}
+								onCheckedChange={(v) => {
+									isNewClient = v;
+									if (v) selectedClientId = '';
+								}}
 							/>
-						</div>
-						<!-- 5. Totals -->
-						<div class="mb-6 flex flex-col items-end text-sm font-bold">
-							<Label class="mb-1 block text-sm font-bold">{m['invoices.total']()}:</Label>
-							<div
-								class="flex w-64 justify-between border-t border-r border-b border-l border-black bg-white px-2"
-							>
-								<span>{m['invoices.summary.subtotal']()}</span>
-								<span>{formatMoney(subtotal)}</span>
-							</div>
-							<div
-								class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
-							>
-								<span>{m['invoices.summary.vat']()} {vatRate}%</span>
-								<span>{formatMoney(taxAmount)}</span>
-							</div>
-							<div
-								class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
-							>
-								<span>{m['invoices.summary.total']()} EUR</span>
-								<span>{formatMoney(total)}</span>
-							</div>
+							<input type="hidden" name="isNewClient" value={isNewClient} />
 						</div>
 					</div>
 
-					<!-- Footnote -->
-					<div class="mt-8 text-sm italic">
-						Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta
+					<!-- Client Details Display/Edit -->
+					{#if isNewClient}
+						<!-- Editable Fields for New Client -->
+						<div class="space-y-1">
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.registration_number']()}</Label>
+								<Input name="newClientRegNo" class="h-6 w-48 text-sm" placeholder="Reg. Number" />
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.vat_number']()}</Label>
+								<Input name="newClientVatNo" class="h-6 w-48 text-sm" placeholder="VAT Number" />
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.address']()}</Label>
+								<Input
+									name="newClientAddress"
+									class="h-6 w-full max-w-md text-sm"
+									placeholder="Full Address"
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.email']()}</Label>
+								<Input
+									name="newClientEmail"
+									type="email"
+									class="h-6 w-64 text-sm"
+									placeholder="Email (for sending)"
+								/>
+							</div>
+						</div>
+					{:else if selectedClientDetails}
+						<!-- Editable View for Selected Client -->
+						<div class=" space-y-1">
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.registration_number']()}</Label>
+								<Input
+									name="clientRegNo"
+									bind:value={clientRegNo}
+									class="h-6 w-48 text-sm"
+									placeholder="Reg. Number"
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.vat_number']()}</Label>
+								<Input
+									name="clientVatNo"
+									bind:value={clientVatNo}
+									class="h-6 w-48 text-sm"
+									placeholder="VAT Number"
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.address']()}</Label>
+								<Input
+									name="clientAddress"
+									bind:value={clientAddress}
+									class="h-6 w-full max-w-md text-sm"
+									placeholder="Full Address"
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.email']()}</Label>
+								<Input
+									name="clientEmail"
+									type="email"
+									bind:value={clientEmail}
+									class="h-6 w-64 text-sm"
+									placeholder="Email"
+								/>
+							</div>
+							<div class="flex items-center pt-2">
+								<div class="flex items-center space-x-2">
+									<input
+										type="checkbox"
+										id="updateClientDetails"
+										name="updateClientDetails"
+										class="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+										checked
+									/>
+									<label
+										for="updateClientDetails"
+										class="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+									>
+										{m['invoices.update_client_details']()}
+									</label>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<div class="ml-32 text-sm text-gray-400 italic">
+							{m['invoices.select_client_to_see_details']()}
+						</div>
+					{/if}
+				</div>
+
+				<!-- Datalist for Items -->
+				<datalist id="products-list">
+					{#each products as product}
+						{#if selectedClientId && product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)}
+							<option value={product.title}
+								>{product.title} - {toCurrency(
+									product.clientPrices?.find(
+										(cp: any) => cp.clientId.toString() === selectedClientId
+									)?.price || 0
+								)} €</option
+							>
+						{:else}
+							<option value={product.title}>{product.title} - {toCurrency(product.price)} €</option>
+						{/if}
+					{/each}
+				</datalist>
+
+				<!-- 4. Items Table (Interactive) -->
+				<table class="mb-4 w-full border-collapse border border-black bg-white">
+					<thead>
+						<tr class="bg-gray-50 text-sm">
+							<th class="w-10 border border-black px-2 py-1 text-center italic"
+								>{m['invoices.items.nr']()}</th
+							>
+							<th class="border border-black px-2 py-1 text-left italic"
+								>{m['invoices.items.description']()}</th
+							>
+							<th class="w-24 border border-black px-2 py-1 text-center italic"
+								>{m['invoices.items.unit']()}</th
+							>
+							<th class="w-20 border border-black px-2 py-1 text-center italic"
+								>{m['invoices.items.quantity']()}</th
+							>
+							<th class="w-24 border border-black px-2 py-1 text-center italic"
+								>{m['invoices.items.price']()} €</th
+							>
+							<th class="w-24 border border-black px-2 py-1 text-center italic"
+								>{m['invoices.items.amount']()} €</th
+							>
+							<th
+								class="w-8 border border-t-0 border-r-0 border-b-0 border-l-0 border-black bg-transparent"
+							></th>
+						</tr>
+					</thead>
+					<tbody class="text-sm">
+						{#each items as item, i}
+							<tr class="group hover:bg-slate-50">
+								<td class="border border-black px-2 py-1 text-center">{i + 1}</td>
+								<td class="border border-black px-0 py-0">
+									<input
+										value={item.description}
+										oninput={(e) => handleDescriptionInput(e, i)}
+										placeholder={m['invoices.items.description']()}
+										list="products-list"
+										class="h-full w-full border-none bg-transparent px-2 py-1 text-sm focus:bg-white focus:ring-0"
+									/>
+								</td>
+								<td class="border border-black px-0 py-0">
+									<input
+										bind:value={item.unit}
+										placeholder="gab."
+										class="h-full w-full border-none bg-transparent px-2 py-1 text-center text-sm focus:bg-white focus:ring-0"
+									/>
+								</td>
+								<td class="border border-black px-0 py-0">
+									<input
+										type="number"
+										step="0.01"
+										value={item.quantity}
+										oninput={(e) => handleQtyInput(e, i)}
+										class="h-full w-full border-none bg-transparent px-2 py-1 text-center text-sm focus:bg-white focus:ring-0"
+									/>
+								</td>
+								<td class="border border-black px-0 py-0">
+									<input
+										type="number"
+										step="0.01"
+										value={item.price / 100}
+										oninput={(e) => handlePriceInput(e, i)}
+										class="h-full w-full border-none bg-transparent px-2 py-1 text-right text-sm focus:bg-white focus:ring-0"
+									/>
+								</td>
+								<td class="border border-black px-2 py-1 text-right font-bold">
+									{formatMoney(item.quantity * item.price)}
+								</td>
+								<td class="border-none pl-2">
+									<button
+										type="button"
+										onclick={() => removeItem(i)}
+										class="text-gray-300 transition-colors hover:text-red-500"
+									>
+										<Trash2 size="16" />
+									</button>
+								</td>
+							</tr>
+						{/each}
+					</tbody>
+				</table>
+
+				<Button
+					type="button"
+					variant="outline"
+					size="sm"
+					class="mb-6 w-full border-dashed"
+					onclick={addItem}
+				>
+					<Plus size="14" class="mr-2" />
+					{m['invoices.items.add_row']()}
+				</Button>
+				<div class="flex gap-4">
+					<div class="mb-4 w-full">
+						<Label class="mb-1 block text-sm font-bold">{m['invoices.notes']()}:</Label>
+						<Textarea
+							name="notes"
+							placeholder={m['invoices.notes']()}
+							class="h-16 resize-none text-sm"
+						/>
 					</div>
-
-					<!-- Footer / Submit Area -->
-					<div class="mt-12 flex justify-end gap-4 border-t pt-6 print:hidden">
-						<!-- Hidden Task Linker (Optional for this layout, maybe keep it simple) -->
-						<input type="hidden" name="items" value={JSON.stringify(items)} />
-
-						<Button href="/rekini" variant="outline">{m['components.delete_modal.cancel']()}</Button
+					<!-- 5. Totals -->
+					<div class="mb-6 flex flex-col items-end text-sm font-bold">
+						<Label class="mb-1 block text-sm font-bold">{m['invoices.total']()}:</Label>
+						<div
+							class="flex w-64 justify-between border-t border-r border-b border-l border-black bg-white px-2"
 						>
-						<Button type="submit" class="cursor-pointer px-8">{m['components.save']()}</Button>
+							<span>{m['invoices.summary.subtotal']()}</span>
+							<span>{formatMoney(subtotal)}</span>
+						</div>
+						<div
+							class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
+						>
+							<span>{m['invoices.summary.vat']()} {vatRate}%</span>
+							<span>{formatMoney(taxAmount)}</span>
+						</div>
+						<div
+							class="flex w-64 justify-between border-r border-b border-l border-black bg-white px-2"
+						>
+							<span>{m['invoices.summary.total']()} EUR</span>
+							<span>{formatMoney(total)}</span>
+						</div>
 					</div>
-				</form>
-			</div>
-		</div>
+				</div>
 
+				<!-- Footnote -->
+				<div class="mt-8 text-sm italic">
+					Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta
+				</div>
+
+				<!-- Footer / Submit Area -->
+				<div class="mt-12 flex justify-end gap-4 border-t pt-6 print:hidden">
+					<!-- Hidden Task Linker (Optional for this layout, maybe keep it simple) -->
+					<input type="hidden" name="items" value={JSON.stringify(items)} />
+
+					<Button href="/rekini" variant="outline">{m['components.delete_modal.cancel']()}</Button>
+					<Button type="submit" class="cursor-pointer px-8">{m['components.save']()}</Button>
+				</div>
+			</form>
+		</div>
+	</div>
 </div>

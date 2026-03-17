@@ -5,53 +5,49 @@ import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ url }) => {
-    const clients = await db.query.client.findMany({
-        orderBy: [desc(client.created_at)]
-    });
-    const tasks = await db.query.task.findMany({
-        where: eq(task.isDone, true), // Only finished tasks? Or all? User said "items can be taken from a task"
-        with: {
-            client: true
-        }
-    });
-
-    // Fetch company settings for the UI
-    const company = await db.query.companySettings.findFirst();
-
-    // Fetch products for the item description combobox
-    const products = await db.query.product.findMany({
-        with: { clientPrices: true }
-    });
-
     const taskId = url.searchParams.get('taskId');
-    let prefillTask: any = null;
-    if (taskId) {
-        prefillTask = await db.query.task.findFirst({
-            where: eq(task.id, parseInt(taskId)),
-            with: {
-                client: true,
-                taskProducts: {
-                    with: {
-                        product: {
-                            with: { clientPrices: true }
-                        }
-                    }
-                }
-            }
-        });
+    const duplicateId = url.searchParams.get('duplicateId');
 
-        if (prefillTask && prefillTask.taskProducts) {
-            prefillTask.taskProducts = prefillTask.taskProducts.map((tp: any) => {
-                const clientPriceEntry = tp.product.clientPrices?.find(
-                    (cp: any) => cp.clientId === prefillTask!.clientId
-                );
-                tp.product.effectivePrice = clientPriceEntry ? clientPriceEntry.price : tp.product.price;
-                return tp;
-            });
-        }
+    // Run all independent queries in parallel
+    const [clients, company, products, prefillTaskRaw, prefillInvoiceRaw] = await Promise.all([
+        db.query.client.findMany({ orderBy: [desc(client.created_at)] }),
+        db.query.companySettings.findFirst(),
+        db.query.product.findMany({ with: { clientPrices: true } }),
+        taskId
+            ? db.query.task.findFirst({
+                  where: eq(task.id, parseInt(taskId)),
+                  with: {
+                      client: true,
+                      taskProducts: {
+                          with: {
+                              product: {
+                                  with: { clientPrices: true }
+                              }
+                          }
+                      }
+                  }
+              })
+            : Promise.resolve(null),
+        duplicateId
+            ? db.query.invoice.findFirst({
+                  where: eq(invoice.id, parseInt(duplicateId)),
+                  with: { items: true, client: true }
+              })
+            : Promise.resolve(null)
+    ]);
+
+    let prefillTask: any = prefillTaskRaw ?? null;
+    if (prefillTask?.taskProducts) {
+        prefillTask.taskProducts = prefillTask.taskProducts.map((tp: any) => {
+            const clientPriceEntry = tp.product.clientPrices?.find(
+                (cp: any) => cp.clientId === prefillTask!.clientId
+            );
+            tp.product.effectivePrice = clientPriceEntry ? clientPriceEntry.price : tp.product.price;
+            return tp;
+        });
     }
 
-    return { clients, tasks, company, products, prefillTask };
+    return { clients, company, products, prefillTask, prefillInvoice: prefillInvoiceRaw ?? null };
 };
 
 export const actions: Actions = {

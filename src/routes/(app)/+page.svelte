@@ -25,7 +25,6 @@
 	import { page } from '$app/state';
 
 	let { data } = $props();
-
 	// Chart configuration
 	const chartConfig = {
 		profit: {
@@ -33,14 +32,25 @@
 			color: '#db2777'
 		}
 	};
+	// Toggle between showing profit (revenue - costs) or raw revenue
+	// Driven by URL param + cookie on the server, reflected here as derived state
+	const profitMode = $derived(data.profitMode);
 
 	// Prepare chart data using $derived
 	const chartData = $derived(
-		data.chartData.map((item, index) => ({
+		data.chartData.map((item) => ({
 			month: formatMonth(item.month),
 			profit: Number(item.profit) / 100 || 0,
+			revenue: Number(item.revenue) / 100 || 0,
 			taskCount: Number(item.taskCount) || 0
 		}))
+	);
+	// The value used in the earnings chart depending on current mode
+	const currentMonthValue = $derived(
+		profitMode === 'profit' ? data.currentMonthProfit : data.currentMonthRevenue
+	);
+	const currentMonthChange = $derived(
+		profitMode === 'profit' ? data.profitChange : data.revenueChange
 	);
 
 	// Format month for display (helper functions omitted)
@@ -99,17 +109,20 @@
 			.toUpperCase()
 			.substring(0, 2);
 	}
-
 	function exportToCSV() {
-		const headers = ['Month', 'Profit'];
-		const rows = chartData.map((d) => [d.month, d.profit.toString()]);
+		const label = profitMode === 'profit' ? 'Profit' : 'Revenue';
+		const headers = ['Month', label];
+		const rows = chartData.map((d) => [
+			d.month,
+			(profitMode === 'profit' ? d.profit : d.revenue).toString()
+		]);
 		const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 
 		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
 		const url = URL.createObjectURL(blob);
 		const link = document.createElement('a');
 		link.setAttribute('href', url);
-		link.setAttribute('download', `monthly_profit_${new Date().getFullYear()}.csv`);
+		link.setAttribute('download', `monthly_${profitMode}_${new Date().getFullYear()}.csv`);
 		link.style.visibility = 'hidden';
 		document.body.appendChild(link);
 		link.click();
@@ -160,6 +173,12 @@
 		return trans ? trans.name : tab.id.toString();
 	}
 
+	function setProfitMode(mode: 'profit' | 'revenue') {
+		const u = new URL(page.url);
+		u.searchParams.set('profitMode', mode);
+		goto(u.toString(), { keepFocus: true, noScroll: true });
+	}
+
 	function toggleGroupVisibility(groupId: number) {
 		let newHiddenGroups = [...data.hiddenTabGroups];
 		if (newHiddenGroups.includes(groupId)) {
@@ -190,20 +209,40 @@
 	<div class="flex shrink-0 flex-col gap-4 md:flex-row">
 		<Card.Root class="flex-1">
 			<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
-				<Card.Title class="text-sm font-medium">Šī mēneša peļņa</Card.Title>
+				<Card.Title class="text-sm font-medium">
+					{profitMode === 'profit' ? 'Šī mēneša peļņa' : 'Šī mēneša apgrozījums'}
+				</Card.Title>
 				<DollarSign class="h-4 w-4 text-muted-foreground" />
 			</Card.Header>
 			<Card.Content>
-				<div class="text-2xl font-bold">{formatCurrency(data.currentMonthProfit as number)}</div>
-				<p class="text-xs text-muted-foreground">
-					{#if data.profitChange > 0}
-						<span class="text-green-600">+{data.profitChange}%</span> no pagājušā mēneša
-					{:else if data.profitChange < 0}
-						<span class="text-red-600">{data.profitChange}%</span> no pagājušā mēneša
-					{:else}
-						Nav izmaiņu pret pagājušo mēnesi
-					{/if}
-				</p>
+				<div class="text-2xl font-bold">{formatCurrency(currentMonthValue as number)}</div>
+				<div class="mt-1 flex items-center justify-between">
+					<p class="text-xs text-muted-foreground">
+						{#if currentMonthChange > 0}
+							<span class="text-green-600">+{currentMonthChange}%</span> no pagājušā mēneša
+						{:else if currentMonthChange < 0}
+							<span class="text-red-600">{currentMonthChange}%</span> no pagājušā mēneša
+						{:else}
+							Nav izmaiņu pret pagājušo mēnesi
+						{/if}
+					</p>
+					<div class="flex gap-0.5 rounded-md border p-0.5">
+						<button
+							class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors {profitMode ===
+							'profit'
+								? 'bg-primary text-primary-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => setProfitMode('profit')}>Peļņa</button
+						>
+						<button
+							class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors {profitMode ===
+							'revenue'
+								? 'bg-primary text-primary-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => setProfitMode('revenue')}>Apgrozījums</button
+						>
+					</div>
+				</div>
 			</Card.Content>
 		</Card.Root>
 		<Card.Root class="flex-1">
@@ -339,10 +378,12 @@
 			<Card.Root class="relative flex min-h-[350px] flex-1 flex-col">
 				<Card.Header class="flex shrink-0 flex-row items-center justify-between">
 					<div>
-						<Card.Title>Mēneša peļņa</Card.Title>
+						<Card.Title>
+							{profitMode === 'profit' ? 'Mēneša peļņa' : 'Mēneša apgrozījums'}
+						</Card.Title>
 						<Card.Description>Attīstība pēdējos 12 mēnešos</Card.Description>
 					</div>
-					<div class="flex gap-2">
+					<div class="flex items-center gap-2">
 						<Button variant="outline" size="sm" onclick={exportToCSV}>Export CSV</Button>
 						<Button variant="outline" size="sm">{new Date().getFullYear()}</Button>
 					</div>
@@ -350,8 +391,11 @@
 				<Card.Content class="relative min-h-0 flex-1 p-0">
 					<div class="absolute inset-0 flex flex-col p-6 pt-0">
 						{#if chartData.length > 0}
+							{@const yValues = chartData.map((d) =>
+								profitMode === 'profit' ? d.profit : d.revenue
+							)}
 							{@const yScale = scaleLinear()
-								.domain([0, Math.max(...chartData.map((d) => d.profit), 100)])
+								.domain([0, Math.max(...yValues, 100)])
 								.range([100, 0])}
 							{@const xScale = scaleBand()
 								.domain(chartData.map((d) => d.month))
@@ -365,7 +409,6 @@
 									viewBox="0 0 100 100"
 									preserveAspectRatio="none"
 								>
-									<!-- Grid lines -->
 									{#each yScale.ticks(5) as tick}
 										<line
 											x1="0"
@@ -383,12 +426,13 @@
 								<!-- HTML Bars & Tooltips -->
 								<div class="absolute inset-0">
 									{#each chartData as d}
+										{@const barValue = profitMode === 'profit' ? d.profit : d.revenue}
 										<div
 											class="group absolute bottom-0 rounded-t-sm bg-primary transition-opacity hover:opacity-80"
 											style="
 												left: {xScale(d.month) ?? 0}%;
 												width: {xScale.bandwidth()}%;
-												height: {100 - yScale(d.profit)}%;
+												height: {100 - yScale(barValue)}%;
 											"
 										>
 											<!-- Tooltip -->
@@ -400,7 +444,17 @@
 														class="rounded border bg-popover px-2 py-1 text-xs whitespace-nowrap text-popover-foreground shadow-md"
 													>
 														<div class="font-medium">{d.month}</div>
-														<div>{formatCurrency(d.profit * 100)}</div>
+														{#if profitMode === 'profit'}
+															<div>{formatCurrency(d.profit * 100)}</div>
+															<div class="text-muted-foreground">
+																Apgrozījums: {formatCurrency(d.revenue * 100)}
+															</div>
+														{:else}
+															<div>{formatCurrency(d.revenue * 100)}</div>
+															<div class="text-muted-foreground">
+																Peļņa: {formatCurrency(d.profit * 100)}
+															</div>
+														{/if}
 													</div>
 												</div>
 											</div>
@@ -535,7 +589,8 @@
 								? 'Šis mēnesis (aktīvie uzdevumi)'
 								: data.managersRange === 'month-all'
 									? 'Šis mēnesis (visi uzdevumi)'
-									: 'Visu laiku (visi uzdevumi)'}
+									: 'Visu laiku (visi uzdevumi)'} ·
+							{profitMode === 'profit' ? 'peļņa' : 'apgrozījums'}
 						</Card.Description>
 					</div>
 					<div class="flex shrink-0 gap-1 rounded-md border p-0.5">
@@ -670,7 +725,9 @@
 				<Card.Header class="flex shrink-0 flex-row items-start justify-between gap-2">
 					<div>
 						<Card.Title>Labākie klienti</Card.Title>
-						<Card.Description>Pēc kopējā pasūtījumu apjoma</Card.Description>
+						<Card.Description>
+							{profitMode === 'profit' ? 'Pēc peļņas (apgrozījums − izmaksas)' : 'Pēc apgrozījuma'}
+						</Card.Description>
 					</div>
 					<div class="flex shrink-0 items-center gap-1">
 						<span class="text-xs text-muted-foreground">Rādīt:</span>
@@ -708,7 +765,7 @@
 										</div>
 									</div>
 									<span class="shrink-0 text-sm font-bold"
-										>{formatCurrency(client.totalOrdered || 0)}</span
+										>{formatCurrency(client.totalValue || 0)}</span
 									>
 								</div>
 							{:else}

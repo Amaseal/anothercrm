@@ -5,13 +5,13 @@ import { client, invoice, task, invoiceItems } from '$lib/server/db/schema';
 import { desc, eq, sql } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params }) => {
-    // Fetch the invoice to edit
+    // Fetch the invoice first (needed to redirect early if not found)
     const item = await db.query.invoice.findFirst({
         where: eq(invoice.id, Number(params.id)),
         with: {
             client: true,
             task: true,
-            items: true // Fetch items
+            items: true
         }
     });
 
@@ -19,30 +19,16 @@ export const load: PageServerLoad = async ({ params }) => {
         throw redirect(303, '/rekini');
     }
 
-    // Fetch clients for dropdown
-    const clients = await db.query.client.findMany({
-        orderBy: desc(client.id)
-    });
-
-    // Fetch products
-    const products = await db.query.product.findMany();
-
-    // Fetch company settings
-    const company = await db.query.companySettings.findFirst();
-
-    // Fetch tasks
-    const tasks = await db.query.task.findMany({
-        with: {
-            client: true
-        },
-        orderBy: desc(task.id),
-        limit: 100
-    });
+    // Run all remaining independent queries in parallel
+    const [clients, products, company] = await Promise.all([
+        db.query.client.findMany({ orderBy: desc(client.id) }),
+        db.query.product.findMany(),
+        db.query.companySettings.findFirst()
+    ]);
 
     return {
         item,
         clients,
-        tasks,
         products,
         company
     };
