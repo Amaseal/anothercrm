@@ -1,6 +1,11 @@
 import type { RequestHandler } from '@sveltejs/kit';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import { writeFile } from 'fs/promises';
+import {
+	ensureUploadsDir,
+	getUploadPath,
+	makeTimestampFilename,
+	toUploadsUrl
+} from '$lib/server/upload-storage';
 
 export const POST: RequestHandler = async ({ request }) => {
 	const formData = await request.formData();
@@ -11,18 +16,13 @@ export const POST: RequestHandler = async ({ request }) => {
 		});
 	}
 	const buffer = Buffer.from(await file.arrayBuffer());
-	
-	// Always use uploads folder at project root in both dev and production
-	const uploadDir = 'uploads';
-	const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, '')}`;
-	const filePath = path.join(uploadDir, fileName);
+	const fileName = makeTimestampFilename(file.name);
+	const filePath = getUploadPath(fileName);
 
 	try {
-		// Ensure upload directory exists
-		await mkdir(uploadDir, { recursive: true });
+		await ensureUploadsDir();
 		await writeFile(filePath, buffer);
-		// Return URL that will be served by our uploads endpoint
-		const publicUrl = `/uploads/${fileName}`;
+		const publicUrl = toUploadsUrl(fileName);
 		return new Response(JSON.stringify({ success: true, path: publicUrl }), { status: 200 });
 	} catch (e) {
 		return new Response(JSON.stringify({ success: false, error: e }), { status: 500 });

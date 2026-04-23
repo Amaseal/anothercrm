@@ -26,7 +26,35 @@
 	}>();
 
 	let fileInputElement: HTMLInputElement;
-	let previewUrl = $state<string | null>(preview);
+
+	function normalizePreviewUrl(url: string | null | undefined): string | null {
+		if (!url) return null;
+
+		const trimmed = url.trim();
+		if (!trimmed) return null;
+
+		if (
+			trimmed.startsWith('blob:') ||
+			trimmed.startsWith('data:') ||
+			/^https?:\/\//i.test(trimmed)
+		) {
+			return trimmed;
+		}
+
+		// Accept legacy malformed values like "/ uploads / file.jpg " and normalize to "/uploads/file.jpg".
+		const legacyMatch = trimmed.match(/^\/?\s*uploads\s*\/\s*(.+)$/i);
+		if (legacyMatch) {
+			return `/uploads/${legacyMatch[1]}`;
+		}
+
+		if (trimmed.startsWith('/')) {
+			return trimmed;
+		}
+
+		return `/${trimmed}`;
+	}
+
+	let previewUrl = $state<string | null>(normalizePreviewUrl(preview));
 	let dragOver = $state(false);
 
 	function revokePreviewUrl(url: string | null) {
@@ -88,6 +116,10 @@
 	}
 
 	$effect(() => {
+		previewUrl = normalizePreviewUrl(preview);
+	});
+
+	$effect(() => {
 		return () => {
 			revokePreviewUrl(previewUrl);
 		};
@@ -114,7 +146,11 @@
 	<div
 		class={cn(
 			'relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
-			dragOver ? 'border-primary bg-primary/10' : (!readonly ? 'bg-input/20 hover:bg-accent/50' : 'bg-input/10 cursor-default border-solid'),
+			dragOver
+				? 'border-primary bg-primary/10'
+				: !readonly
+					? 'bg-input/20 hover:bg-accent/50'
+					: 'cursor-default border-solid bg-input/10',
 			previewUrl ? 'bg-background' : ''
 		)}
 		onmouseenter={() => (isHovering = true)}

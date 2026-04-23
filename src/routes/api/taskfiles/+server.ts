@@ -2,24 +2,29 @@ import { json } from '@sveltejs/kit';
 import { writeFile } from 'fs/promises';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { mkdir } from 'fs/promises';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
 import { file } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import {
+	UPLOADS_DIR,
+	ensureUploadsDir,
+	getUploadPath,
+	makeTaskFileFilename,
+	toUploadsUrl
+} from '$lib/server/upload-storage';
 
 // Get the directory path for upload storage
 function getUploadsDir() {
-	// Always use uploads folder at project root in both dev and production
-	return 'uploads';
+	return UPLOADS_DIR;
 }
 
 // Ensure the upload directory exists
 async function ensureUploadDir() {
 	const uploadDir = getUploadsDir();
 	try {
-		await mkdir(uploadDir, { recursive: true });
+		await ensureUploadsDir();
 	} catch (error) {
 		console.warn('Upload directory already exists or cannot be created', error);
 	}
@@ -41,37 +46,17 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ success: false, error: 'No file provided' }, { status: 400 });
 		}
 
-		// Sanitize the filename but preserve the original name
-		const sanitizedName = uploadedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+		const filename = makeTaskFileFilename(uploadedFile.name);
 
-		// Get the file name and extension
-		const lastDotIndex = sanitizedName.lastIndexOf('.');
-		let fileName = sanitizedName;
-		let fileExt = '';
-
-		if (lastDotIndex > 0) {
-			// If there's an extension
-			fileName = sanitizedName.substring(0, lastDotIndex);
-			fileExt = sanitizedName.substring(lastDotIndex); // includes the dot
-		}
-
-		// Add upload date in DD.MM.YY format
-		const now = new Date();
-		const day = String(now.getDate()).padStart(2, '0');
-		const month = String(now.getMonth() + 1).padStart(2, '0');
-		const year = String(now.getFullYear()).slice(-2);
-		const dateString = `${day}.${month}.${year}`;
-
-		// Format: filename-DD.MM.YY.ext
-		const filename = `${fileName}-${dateString}${fileExt}`; // Get upload directory and ensure it exists
+		// Get upload directory and ensure it exists
 		const uploadDir = await ensureUploadDir();
-		const filePath = join(uploadDir, filename);
+		const filePath = getUploadPath(filename);
 
 		// Write file to disk
 		await writeFile(filePath, Buffer.from(await uploadedFile.arrayBuffer()));
 
 		// Create the URL path - always /uploads regardless of environment
-		const fileUrl = `/uploads/${filename}`;
+		const fileUrl = toUploadsUrl(filename);
 
 		// Create a database entry for the file
 		let newFile;

@@ -157,7 +157,7 @@
 >
 	<!-- Inner Modal Container -->
 	<div
-		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
+		class="relative flex h-[90vh] w-[96vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl md:w-[90vw] 2xl:w-[80vw]"
 	>
 		<form method="POST" use:enhance enctype="multipart/form-data" class="flex h-full flex-col">
 			<!-- Sticky Header inside Modal -->
@@ -254,7 +254,7 @@
 				<!-- SECTION 1: Description & Products -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
 					<!-- Right (35%) - Assignment & Products -->
-					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
+					<div class="col-span-12 flex min-w-0 flex-col gap-6 xl:col-span-4">
 						{#if $isAdmin}
 							<!-- Assignment Controls -->
 							<div class="space-y-4">
@@ -333,9 +333,9 @@
 						</div>
 					</div>
 					<!-- Left (65%) - Description -->
-					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
+					<div class="col-span-12 flex min-w-0 flex-col gap-2 xl:col-span-8">
 						<Label>{m['projects.description_label']()}</Label>
-						<div class="min-h-[400px] flex-1 rounded-md border p-2">
+						<div class="min-h-[400px] min-w-0 flex-1 rounded-md border p-2">
 							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" />
 							<input type="hidden" name="description" value={descriptionContent} />
 						</div>
@@ -373,15 +373,15 @@
 				<!-- SECTION 2: Execution (Preview & Files) -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
 					<!-- Right (35%) - Files -->
-					<div class="col-span-12 lg:col-span-4">
-						<div class="grid gap-2">
+					<div class="col-span-12 min-w-0 xl:col-span-4">
+						<div class="grid min-w-0 gap-2">
 							<Label for="files">{m['projects.files_label']()}</Label>
 							<FileUpload bind:files zipFilename={data.item.title} />
 						</div>
 					</div>
 					<!-- Left (65%) - Large Visual Reference -->
-					<div class="col-span-12 lg:col-span-8">
-						<div class="h-full min-h-[400px]">
+					<div class="col-span-12 min-w-0 xl:col-span-8">
+						<div class="h-full min-h-[400px] min-w-0">
 							<ImagePreviewInput
 								id="preview"
 								name="preview"

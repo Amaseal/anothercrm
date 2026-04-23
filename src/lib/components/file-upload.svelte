@@ -9,6 +9,7 @@
 	import { browser } from '$app/environment';
 	import JSZip from 'jszip';
 	import { Button } from '$lib/components/ui/button';
+	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { cn } from '$lib/utils'; // Assuming this exists, standard shadcn
 
 	type FileData = {
@@ -33,7 +34,7 @@
 	let isUploading = $state(false);
 	let isZipping = $state(false);
 	let uploadProgress = $state<Record<string, number>>({});
-	let fileInputElement: HTMLInputElement;
+	let fileInputElement = $state<HTMLInputElement | undefined>(undefined);
 	let dragOver = $state(false);
 
 	// Local list to track files currently being uploaded (before they are fully confirmed/added to main list potentially, or just to show progress)
@@ -198,6 +199,24 @@
 		a.target = '_blank';
 		a.click();
 	}
+
+	const MAX_FILENAME_DISPLAY = 52;
+
+	function truncateFileName(name: string): string {
+		if (name.length <= MAX_FILENAME_DISPLAY) return name;
+
+		const lastDot = name.lastIndexOf('.');
+		const hasValidExt = lastDot > 0 && lastDot < name.length - 1;
+
+		if (!hasValidExt) {
+			return `${name.slice(0, MAX_FILENAME_DISPLAY - 1)}...`;
+		}
+
+		const ext = name.slice(lastDot);
+		const maxBaseLength = Math.max(8, MAX_FILENAME_DISPLAY - ext.length - 3);
+		return `${name.slice(0, maxBaseLength)}...${ext}`;
+	}
+
 	// Generate unique ID for label association
 	const uniqueId = `file-upload-${Math.random().toString(36).slice(2)}`;
 </script>
@@ -258,20 +277,31 @@
 		<div class="grid gap-2">
 			<!-- Existing Files -->
 			{#each files as file, i}
-				<div class="flex items-center justify-between rounded-lg border bg-card p-2 text-sm">
-					<div class="flex items-center gap-3 overflow-hidden">
+				<div
+					class="grid grid-cols-[minmax(0,1fr)_auto] items-center rounded-lg border bg-card p-2 text-sm"
+				>
+					<div class="flex min-w-0 items-center gap-3 overflow-hidden">
 						<div class="grid h-8 w-8 place-items-center rounded bg-muted">
 							<FileIcon class="h-4 w-4" />
 						</div>
-						<div class="flex flex-col truncate">
-							<span class="truncate font-medium">{file.name}</span>
+						<div class="flex min-w-0 flex-col truncate">
+							<Tooltip.Provider>
+								<Tooltip.Root>
+									<Tooltip.Trigger class="block w-full min-w-0 truncate text-left font-medium"
+										>{truncateFileName(file.name)}</Tooltip.Trigger
+									>
+									<Tooltip.Content>
+										<p>{file.name}</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
 							{#if file.size}
 								<span class="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</span
 								>
 							{/if}
 						</div>
 					</div>
-					<div class="flex items-center gap-1">
+					<div class="ml-2 flex shrink-0 items-center gap-1">
 						<Button
 							variant="ghost"
 							size="icon"
@@ -298,13 +328,24 @@
 
 			<!-- Uploading Files -->
 			{#each uploadingFiles as file (file.id)}
-				<div class="flex items-center justify-between rounded-lg border bg-card/50 p-2 text-sm">
-					<div class="flex flex-1 items-center gap-3 overflow-hidden">
+				<div
+					class="grid grid-cols-[minmax(0,1fr)_auto] items-center rounded-lg border bg-card/50 p-2 text-sm"
+				>
+					<div class="flex min-w-0 items-center gap-3 overflow-hidden">
 						<div class="grid h-8 w-8 place-items-center rounded bg-muted">
 							<Loader2 class="h-4 w-4 animate-spin" />
 						</div>
 						<div class="flex flex-1 flex-col truncate pr-4">
-							<span class="truncate font-medium">{file.file.name}</span>
+							<Tooltip.Provider>
+								<Tooltip.Root>
+									<Tooltip.Trigger class="block w-full min-w-0 truncate text-left font-medium"
+										>{truncateFileName(file.file.name)}</Tooltip.Trigger
+									>
+									<Tooltip.Content>
+										<p>{file.file.name}</p>
+									</Tooltip.Content>
+								</Tooltip.Root>
+							</Tooltip.Provider>
 							<!-- Progress Bar -->
 							<div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
 								<div
@@ -315,9 +356,11 @@
 						</div>
 					</div>
 					{#if file.error}
-						<span class="text-xs text-destructive">{file.error}</span>
+						<span class="ml-2 max-w-[120px] shrink-0 truncate text-xs text-destructive"
+							>{file.error}</span
+						>
 					{:else}
-						<span class="text-xs text-muted-foreground">{file.progress}%</span>
+						<span class="ml-2 shrink-0 text-xs text-muted-foreground">{file.progress}%</span>
 					{/if}
 				</div>
 			{/each}

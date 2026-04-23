@@ -5,6 +5,12 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { eq, inArray } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
+import {
+	ensureUploadsDir,
+	getUploadPath,
+	makeTimestampFilename,
+	toUploadsUrl
+} from '$lib/server/upload-storage';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const tabs = await db.query.tab.findMany({
@@ -157,13 +163,12 @@ export const actions: Actions = {
 		let previewUrl: string | null = null;
 
 		if (preview && preview.size > 0) {
-			const uploadDir = 'uploads';
-			await mkdir(uploadDir, { recursive: true });
-			const fileName = `${Date.now()} -${preview.name.replace(/[^a-zA-Z0-9.\-_]/g, '')} `;
-			const filePath = join(uploadDir, fileName);
+			await ensureUploadsDir();
+			const fileName = makeTimestampFilename(preview.name);
+			const filePath = getUploadPath(fileName);
 			const buffer = Buffer.from(await preview.arrayBuffer());
 			await writeFile(filePath, buffer);
-			previewUrl = `/ uploads / ${fileName} `;
+			previewUrl = toUploadsUrl(fileName);
 		}
 
 		if (!title) {
