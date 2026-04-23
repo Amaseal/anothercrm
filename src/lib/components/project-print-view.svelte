@@ -38,6 +38,35 @@
 	function formatPrice(priceInCents: number): string {
 		return (priceInCents / 100).toFixed(2);
 	}
+
+	function normalizePreviewUrl(url: string | null | undefined): string | null {
+		if (!url) return null;
+
+		const trimmed = url.trim();
+		if (!trimmed) return null;
+
+		if (
+			trimmed.startsWith('blob:') ||
+			trimmed.startsWith('data:') ||
+			/^https?:\/\//i.test(trimmed)
+		) {
+			return trimmed;
+		}
+
+		// Accept legacy malformed values like "/ uploads / file.jpg " and normalize to "/uploads/file.jpg".
+		const legacyMatch = trimmed.match(/^\/?\s*uploads\s*\/\s*(.+)$/i);
+		if (legacyMatch) {
+			return `/uploads/${legacyMatch[1].trim()}`;
+		}
+
+		if (trimmed.startsWith('/')) {
+			return trimmed;
+		}
+
+		return `/${trimmed}`;
+	}
+
+	let normalizedPreviewUrl = $derived(normalizePreviewUrl(previewUrl));
 </script>
 
 <div
@@ -76,14 +105,14 @@
 			</div>
 
 			<!-- Preview Image -->
-			{#if previewUrl}
+			{#if normalizedPreviewUrl}
 				<div class="mt-4 break-inside-avoid">
 					<h3 class="mb-2 border-b text-lg font-bold text-gray-700">
 						{m['projects.preview_label']()}
 					</h3>
 					<div class="flex h-[400px] justify-center rounded-md border bg-gray-50 p-2">
 						<!-- Fixed height for print consistency -->
-						<img src={previewUrl} alt="Preview" class="h-full object-contain" />
+						<img src={normalizedPreviewUrl} alt="Preview" class="h-full object-contain" />
 					</div>
 				</div>
 			{/if}
