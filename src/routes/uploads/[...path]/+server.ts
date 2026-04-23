@@ -11,6 +11,13 @@ function safeDecodePathSegment(input: string): string {
 	}
 }
 
+function getLegacyPathCandidates(path: string): string[] {
+	const trimmedEnd = path.trimEnd();
+	const candidates = [path, trimmedEnd, `${trimmedEnd} `];
+
+	return Array.from(new Set(candidates.filter(Boolean)));
+}
+
 // Get the uploads directory path
 function getUploadsDir() {
 	// Always use uploads folder at project root in both dev and production
@@ -28,21 +35,32 @@ export const GET: RequestHandler = async ({ params }) => {
 	const decodedPath = safeDecodePathSegment(path);
 	const sanitizedPath = decodedPath.replace(/\.\./g, '').replace(/^\/+/, '');
 	const uploadsDir = getUploadsDir();
-	const filePath = join(uploadsDir, sanitizedPath);
+
+	let resolvedPath: string | null = null;
+	for (const candidate of getLegacyPathCandidates(sanitizedPath)) {
+		const candidatePath = join(uploadsDir, candidate);
+		try {
+			const candidateStats = await stat(candidatePath);
+			if (candidateStats.isFile()) {
+				resolvedPath = candidatePath;
+				break;
+			}
+		} catch {
+			// Try next candidate path.
+		}
+	}
+
+	if (!resolvedPath) {
+		return new Response('Not found', { status: 404 });
+	}
 
 	try {
-		// Check if file exists and is a file (not directory)
-		const stats = await stat(filePath);
-		if (!stats.isFile()) {
-			return new Response('Not found', { status: 404 });
-		}
-
 		// Read the file
-		const fileBuffer = await readFile(filePath);
+		const fileBuffer = await readFile(resolvedPath);
 		// Convert Buffer to Uint8Array for Response compatibility
 		const uint8Array = new Uint8Array(fileBuffer as unknown as ArrayBuffer);
 		// Determine the MIME type
-		const mimeType = mime.lookup(filePath) || 'application/octet-stream';
+		const mimeType = mime.lookup(resolvedPath) || 'application/octet-stream';
 
 		// Return the file with appropriate headers
 		return new Response(uint8Array, {

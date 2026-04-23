@@ -16,6 +16,10 @@ function safeDecodePathSegment(input: string): string {
     }
 }
 
+function normalizeFileKey(input: string): string {
+    return safeDecodePathSegment(input).trimEnd();
+}
+
 export const load: PageServerLoad = async ({ url, cookies }) => {
     const activeParams = handleListParams(url, cookies, '/faili', 'faili_filters');
 
@@ -67,7 +71,9 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
         const urlPath = `/uploads/${filename}`;
 
-        allFilesMap.set(filename, {
+        const fsKey = normalizeFileKey(filename);
+
+        allFilesMap.set(fsKey, {
             id: `fs-${filename}`,
             filename: filename,
             url: urlPath,
@@ -84,7 +90,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
         // Extract filename from URL if possible, or use filename field
         // dbFile.downloadUrl usually looks like /uploads/filename
         const rawFsName = dbFile.downloadUrl.split('/uploads/')[1] || dbFile.filename;
-        const fsName = safeDecodePathSegment(rawFsName);
+        const fsName = normalizeFileKey(rawFsName);
 
         const existing = allFilesMap.get(fsName);
         if (existing) {
