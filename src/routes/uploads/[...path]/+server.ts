@@ -3,6 +3,14 @@ import { readFile, stat } from 'fs/promises';
 import { join } from 'path';
 import mime from 'mime-types';
 
+function safeDecodePathSegment(input: string): string {
+	try {
+		return decodeURIComponent(input);
+	} catch {
+		return input;
+	}
+}
+
 // Get the uploads directory path
 function getUploadsDir() {
 	// Always use uploads folder at project root in both dev and production
@@ -17,7 +25,8 @@ export const GET: RequestHandler = async ({ params }) => {
 	}
 
 	// Sanitize the path to prevent directory traversal
-	const sanitizedPath = path.replace(/\.\./g, '').replace(/^\/+/, '');
+	const decodedPath = safeDecodePathSegment(path);
+	const sanitizedPath = decodedPath.replace(/\.\./g, '').replace(/^\/+/, '');
 	const uploadsDir = getUploadsDir();
 	const filePath = join(uploadsDir, sanitizedPath);
 

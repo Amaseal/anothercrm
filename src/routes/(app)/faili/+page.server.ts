@@ -8,6 +8,14 @@ import { fail } from '@sveltejs/kit';
 import { handleListParams } from '$lib/server/paramState';
 import { normalizeString } from '$lib/server/dbUtils';
 
+function safeDecodePathSegment(input: string): string {
+    try {
+        return decodeURIComponent(input);
+    } catch {
+        return input;
+    }
+}
+
 export const load: PageServerLoad = async ({ url, cookies }) => {
     const activeParams = handleListParams(url, cookies, '/faili', 'faili_filters');
 
@@ -75,7 +83,8 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
     for (const dbFile of dbFiles) {
         // Extract filename from URL if possible, or use filename field
         // dbFile.downloadUrl usually looks like /uploads/filename
-        const fsName = dbFile.downloadUrl.split('/uploads/')[1] || dbFile.filename;
+        const rawFsName = dbFile.downloadUrl.split('/uploads/')[1] || dbFile.filename;
+        const fsName = safeDecodePathSegment(rawFsName);
 
         const existing = allFilesMap.get(fsName);
         if (existing) {
