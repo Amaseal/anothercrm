@@ -47,6 +47,9 @@
 	let totalPrice = $state(0);
 	let totalCost = $state(0);
 
+	let isSubmitting = $state(false);
+	let isUploading = $state(false);
+
 	// Derived Names
 	let selectedClientName = $derived(
 		data.clients.find((c) => c.id.toString() === selectedClientId)?.name ||
@@ -107,7 +110,18 @@
 	<div
 		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
 	>
-		<form method="POST" use:enhance enctype="multipart/form-data" class="flex h-full flex-col">
+		<form
+			method="POST"
+			use:enhance={() => {
+				isSubmitting = true;
+				return async ({ update }) => {
+					await update();
+					isSubmitting = false;
+				};
+			}}
+			enctype="multipart/form-data"
+			class="flex h-full flex-col"
+		>
 			<!-- Sticky Header inside Modal -->
 			<div class="flex items-center gap-4 border-b bg-background px-6 py-4">
 				<!-- Title -->
@@ -274,7 +288,7 @@
 					<div class="col-span-12 lg:col-span-4">
 						<div class="grid gap-2">
 							<Label for="files">{m['projects.files_label']()}</Label>
-							<FileUpload />
+							<FileUpload bind:uploading={isUploading} />
 						</div>
 					</div>
 					<!-- Left (65%) - Large Visual Reference -->
@@ -328,7 +342,16 @@
 						<span class="sr-only">Print</span>
 					</Button>
 
-					<Button type="submit" size="lg">
+					<Button type="submit" size="lg" disabled={isSubmitting || isUploading}>
+						{#if isSubmitting}
+							<span
+								class="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+							></span>
+						{:else if isUploading}
+							<span
+								class="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+							></span>
+						{/if}
 						{m['projects.create_button']()}
 					</Button>
 				</div>

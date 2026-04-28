@@ -63,6 +63,9 @@
 	let totalPrice = $state(data.item.price || 0);
 	let totalCost = $state(0);
 
+	let isSubmitting = $state(false);
+	let isUploading = $state(false);
+
 	let initialProductTotalCents = data.item.taskProducts.reduce((sum: number, tp: any) => {
 		const prod = data.products.find((p: any) => p.id === tp.productId);
 		if (!prod) return sum;
@@ -159,7 +162,18 @@
 	<div
 		class="relative flex h-[90vh] w-[96vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl md:w-[90vw] 2xl:w-[80vw]"
 	>
-		<form method="POST" use:enhance enctype="multipart/form-data" class="flex h-full flex-col">
+		<form
+			method="POST"
+			use:enhance={() => {
+				isSubmitting = true;
+				return async ({ update }) => {
+					await update();
+					isSubmitting = false;
+				};
+			}}
+			enctype="multipart/form-data"
+			class="flex h-full flex-col"
+		>
 			<!-- Sticky Header inside Modal -->
 			<div class="flex items-center gap-4 border-b bg-background px-6 py-4">
 				<!-- Title -->
@@ -376,7 +390,7 @@
 					<div class="col-span-12 min-w-0 xl:col-span-4">
 						<div class="grid min-w-0 gap-2">
 							<Label for="files">{m['projects.files_label']()}</Label>
-							<FileUpload bind:files zipFilename={data.item.title} />
+							<FileUpload bind:files bind:uploading={isUploading} zipFilename={data.item.title} />
 						</div>
 					</div>
 					<!-- Left (65%) - Large Visual Reference -->
@@ -443,7 +457,12 @@
 							<span class="sr-only">Create Invoice</span>
 						</Button>
 					{/if}
-					<Button type="submit" size="lg">
+					<Button type="submit" size="lg" disabled={isSubmitting || isUploading}>
+						{#if isSubmitting || isUploading}
+							<span
+								class="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
+							></span>
+						{/if}
 						{m['components.save']()}
 						<!-- Change to Save/Update if distinct label exists, or create_button is typically 'Saglabāt' -->
 					</Button>

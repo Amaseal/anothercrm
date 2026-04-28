@@ -20,12 +20,14 @@
 	};
 	let {
 		files = $bindable([]),
+		uploading = $bindable(false),
 		label = '',
 		readonly = false,
 		zipFilename = 'files',
 		...restProps
 	} = $props<{
 		files?: FileData[];
+		uploading?: boolean;
 		label?: string;
 		readonly?: boolean;
 		zipFilename?: string;
@@ -51,6 +53,10 @@
 	};
 
 	let uploadingFiles = $state<UploadingFile[]>([]);
+
+	$effect(() => {
+		uploading = uploadingFiles.length > 0;
+	});
 
 	async function handleInputChange(event: Event) {
 		if (!browser) return;
