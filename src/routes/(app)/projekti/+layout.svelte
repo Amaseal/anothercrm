@@ -2,10 +2,10 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { debounce } from '$lib/utilities';
-	import { goto } from '$app/navigation';
+	import { goto, beforeNavigate, afterNavigate, invalidateAll } from '$app/navigation';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { page, navigating } from '$app/state';
+	import { page } from '$app/state';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Columns3Cog from '@lucide/svelte/icons/columns-3-cog';
 	import * as m from '$lib/paraglide/messages';
@@ -46,8 +46,15 @@
 		goto(url.toString(), { replaceState: true });
 	}
 	import { onMount } from 'svelte';
-	import { invalidateAll } from '$app/navigation';
 	import { browser } from '$app/environment';
+
+	let isLoading = $state(false);
+	beforeNavigate(() => {
+		isLoading = true;
+	});
+	afterNavigate(() => {
+		isLoading = false;
+	});
 
 	// Handle unified data structure (columns)
 	let tabsToRender = $derived(data.columns || []);
@@ -126,7 +133,7 @@
 </header>
 
 <div class="relative">
-	{#if navigating}
+	{#if isLoading}
 		<div
 			class="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-[1px]"
 		>
