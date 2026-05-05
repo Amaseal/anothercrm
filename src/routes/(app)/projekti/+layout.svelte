@@ -23,7 +23,7 @@
 		debouncedSearch(target.value);
 	};
 
-const debouncedSearch = debounce((value: string) => {
+	const debouncedSearch = debounce((value: string) => {
 		updateUrlAndNavigate({ search: value });
 	}, 1200);
 
@@ -90,6 +90,7 @@ const debouncedSearch = debounce((value: string) => {
 			value={searchTerm}
 			oninput={handleSearchInput}
 		/>
+		<!-- task filtering -->
 		{#if data.user?.type === 'admin'}
 			<div class="w-[180px]">
 				<Select.Root
@@ -98,13 +99,18 @@ const debouncedSearch = debounce((value: string) => {
 					onValueChange={(v) => updateUrlAndNavigate({ view: v === 'default' ? null : v })}
 				>
 					<Select.Trigger>
-						{page.url.searchParams.get('view') === 'all'
-							? m['components.filter.show_all']()
-							: m['components.filter.default']()}
+						{#if page.url.searchParams.get('view') === 'all'}
+							{m['components.filter.show_all']()}
+						{:else if page.url.searchParams.get('view') === 'client_only'}
+							{m['components.filter.client_only']()}
+						{:else}
+							{m['components.filter.default']()}
+						{/if}
 					</Select.Trigger>
 					<Select.Content>
 						<Select.Item value="default">{m['components.filter.default']()}</Select.Item>
 						<Select.Item value="all">{m['components.filter.show_all']()}</Select.Item>
+						<Select.Item value="client_only">{m['components.filter.client_only']()}</Select.Item>
 					</Select.Content>
 				</Select.Root>
 			</div>

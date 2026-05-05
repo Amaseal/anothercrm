@@ -16,6 +16,7 @@ export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 	const activeParams = handleListParams(url, cookies, '/projekti', 'projekti_filters', ['group']);
 
 	const showAll = activeParams.get('view') === 'all';
+	const clientOnly = activeParams.get('view') === 'client_only';
 	const search = activeParams.get('search') || undefined;
 
 	const data = await getProjectBoardData(
@@ -23,7 +24,8 @@ export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
 		user as { id: string; type: 'admin' | 'client' },
 		locale,
 		showAll,
-		search
+		search,
+		clientOnly
 	);
 
 	return {

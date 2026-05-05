@@ -48,6 +48,7 @@
 		"filter": {
 			"default": "Default",
 			"show_all": "Show All",
+			"client_only": "Client tasks",
 			"view": "View"
 		}
 	}

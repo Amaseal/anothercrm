@@ -52,6 +52,7 @@
 		"filter": {
 			"default": "Noklusējuma",
 			"show_all": "Rādīt visu",
+			"client_only": "Klientu uzdevumi",
 			"view": "Skatījums"
 		}
 	}

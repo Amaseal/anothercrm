@@ -24,7 +24,8 @@ export async function getProjectBoardData(
     currentUser: { id: string; type: 'admin' | 'client' },
     locale: string,
     showAll: boolean = false,
-    search?: string
+    search?: string,
+    clientOnly: boolean = false
 ) {
     // 1. Fetch Hidden Tabs (Admin uses this to hide columns, Clients logic implies only visible stuff)
     const hiddenTabIds = await getHiddenTabIds(currentUser.id);
@@ -54,7 +55,27 @@ export async function getProjectBoardData(
 
 
     if (currentUser.type === 'admin') {
-        if (showAll) {
+        if (clientOnly) {
+            // Admin "Client Tasks" - Fetch only tasks created by client users
+            const clientUsers = await db.query.user.findMany({
+                where: eq(user.type, 'client'),
+                columns: { id: true }
+            });
+            const clientIds = clientUsers.map(u => u.id);
+            tasks = await db.query.task.findMany({
+                where: (t, { eq, or, isNull, and, inArray }) => {
+                    const conditions = [
+                        or(eq(t.isDone, false), isNull(t.isDone)),
+                        clientIds.length > 0 ? inArray(t.createdById, clientIds) : sql`false`
+                    ];
+                    if (search) conditions.push(ilikeNormalize(t.title, search));
+                    return and(...conditions);
+                },
+                with: taskRelations,
+                columns: taskColumns,
+                orderBy: (t, { asc }) => [asc(t.endDate)]
+            });
+        } else if (showAll) {
             // Admin "Show All" - Fetch all active tasks (not done)
             tasks = await db.query.task.findMany({
                 where: (t, { eq, or, isNull, and, ilike }) => {
@@ -65,7 +86,8 @@ export async function getProjectBoardData(
                 with: taskRelations,
                 columns: taskColumns,
                 orderBy: (t, { asc }) => [asc(t.endDate)]
-            });        } else {
+            });
+        } else {
             // Admin default view:
             // A1. Tasks created by me
             // A2. Tasks assigned to me
