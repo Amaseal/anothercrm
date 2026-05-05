@@ -27,9 +27,6 @@ export async function getProjectBoardData(
     search?: string,
     clientOnly: boolean = false
 ) {
-    // 1. Fetch Hidden Tabs (Admin uses this to hide columns, Clients logic implies only visible stuff)
-    const hiddenTabIds = await getHiddenTabIds(currentUser.id);
-
     // 2. Define Task Columns
     const taskColumns = {
         id: true,
@@ -51,17 +48,35 @@ export async function getProjectBoardData(
         assignees: { columns: { userId: true }, with: { user: { columns: { name: true } } } }
     } as const;
 
-    let tasks;
+    // Shared tabGroups query (always needed, runs in parallel)
+    const tabGroupsQuery = db.query.tabGroup.findMany({
+        with: {
+            translations: true,
+            tabs: {
+                orderBy: (tabs, { asc }) => [asc(tabs.sortOrder)],
+                with: { translations: true }
+            }
+        },
+        orderBy: (groups, { asc }) => [asc(groups.sortOrder)]
+    });
 
+    let tasks;
+    let tabGroupsData: Awaited<typeof tabGroupsQuery>;
+    let hiddenTabIds: Set<number>;
 
     if (currentUser.type === 'admin') {
         if (clientOnly) {
-            // Admin "Client Tasks" - Fetch only tasks created by client users
-            const clientUsers = await db.query.user.findMany({
-                where: eq(user.type, 'client'),
-                columns: { id: true }
-            });
+            // Run all independent queries in parallel
+            const [_hidden, _tabGroups, clientUsers] = await Promise.all([
+                getHiddenTabIds(currentUser.id),
+                tabGroupsQuery,
+                db.query.user.findMany({ where: eq(user.type, 'client'), columns: { id: true } })
+            ]);
+            hiddenTabIds = _hidden;
+            tabGroupsData = _tabGroups;
             const clientIds = clientUsers.map(u => u.id);
+
+            // Admin "Client Tasks" - Fetch only tasks created by client users
             tasks = await db.query.task.findMany({
                 where: (t, { eq, or, isNull, and, inArray }) => {
                     const conditions = [
@@ -76,9 +91,17 @@ export async function getProjectBoardData(
                 orderBy: (t, { asc }) => [asc(t.endDate)]
             });
         } else if (showAll) {
+            // Run hidden tabs and tabGroups in parallel
+            const [_hidden, _tabGroups] = await Promise.all([
+                getHiddenTabIds(currentUser.id),
+                tabGroupsQuery
+            ]);
+            hiddenTabIds = _hidden;
+            tabGroupsData = _tabGroups;
+
             // Admin "Show All" - Fetch all active tasks (not done)
             tasks = await db.query.task.findMany({
-                where: (t, { eq, or, isNull, and, ilike }) => {
+                where: (t, { eq, or, isNull, and }) => {
                     const conditions = [or(eq(t.isDone, false), isNull(t.isDone))];
                     if (search) conditions.push(ilikeNormalize(t.title, search));
                     return and(...conditions);
@@ -88,18 +111,22 @@ export async function getProjectBoardData(
                 orderBy: (t, { asc }) => [asc(t.endDate)]
             });
         } else {
+            // Admin default view — run all independent queries in parallel
+            const [_hidden, _tabGroups, clientUsers] = await Promise.all([
+                getHiddenTabIds(currentUser.id),
+                tabGroupsQuery,
+                db.query.user.findMany({ where: eq(user.type, 'client'), columns: { id: true } })
+            ]);
+            hiddenTabIds = _hidden;
+            tabGroupsData = _tabGroups;
+            const clientIds = clientUsers.map(u => u.id);
+
             // Admin default view:
             // A1. Tasks created by me
             // A2. Tasks assigned to me
             // A3. Tasks created by any client user with NO assignees
             // A4. Client-created tasks WITH assignees → only if I am one of them (covered by A2)
             // A5. Tasks created by other admins → NOT visible unless assigned to me (covered by A2)
-            const clientUsers = await db.query.user.findMany({
-                where: eq(user.type, 'client'),
-                columns: { id: true }
-            });
-            const clientIds = clientUsers.map(u => u.id);
-
             tasks = await db.query.task.findMany({
                 where: (t, { or, eq, inArray, and, isNull }) => {
                     const isAssignedToMe = exists(
@@ -136,17 +163,25 @@ export async function getProjectBoardData(
                 columns: taskColumns,
                 orderBy: (t, { asc }) => [asc(t.endDate)]
             });
-        }    } else {
+        }
+    } else {
         // Client visibility rules:
         // C1. Creator always sees their own task (regardless of assignees)
         // C2. Assignee always sees tasks assigned to them
         // C3. Client user sees all tasks where task.clientId matches their linked client entry (regardless of assignees)
         // C6. Tasks created by other client users are never visible
 
-        const userClientLinks = await db.query.userClient.findMany({
-            where: eq(userClient.userId, currentUser.id),
-            columns: { clientId: true }
-        });
+        // Run hidden tabs, tabGroups, and userClient links in parallel
+        const [_hidden, _tabGroups, userClientLinks] = await Promise.all([
+            getHiddenTabIds(currentUser.id),
+            tabGroupsQuery,
+            db.query.userClient.findMany({
+                where: eq(userClient.userId, currentUser.id),
+                columns: { clientId: true }
+            })
+        ]);
+        hiddenTabIds = _hidden;
+        tabGroupsData = _tabGroups;
         const linkedClientIds = userClientLinks.map((uc) => uc.clientId);
 
         tasks = await db.query.task.findMany({
@@ -182,18 +217,6 @@ export async function getProjectBoardData(
     }
 
     // 3. Structure & Mapping
-
-    // Fetch Tab Groups and Tabs
-    const tabGroupsData = await db.query.tabGroup.findMany({
-        with: {
-            translations: true,
-            tabs: {
-                orderBy: (tabs, { asc }) => [asc(tabs.sortOrder)],
-                with: { translations: true }
-            }
-        },
-        orderBy: (groups, { asc }) => [asc(groups.sortOrder)]
-    });
 
     const columns: ProjectBoardColumn[] = [];
     const tasksMap = new Map<number, any[]>(); // tabId (or groupId for clients) -> tasks

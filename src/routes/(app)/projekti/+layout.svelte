@@ -5,7 +5,7 @@
 	import { goto } from '$app/navigation';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
-	import { page } from '$app/state';
+	import { page, navigating } from '$app/state';
 	import Plus from '@lucide/svelte/icons/plus';
 	import Columns3Cog from '@lucide/svelte/icons/columns-3-cog';
 	import * as m from '$lib/paraglide/messages';
@@ -125,10 +125,21 @@
 	</div>
 </header>
 
-<div class="custom-scroll flex h-[calc(100vh-110px)] gap-4 overflow-x-auto pb-2" use:dragScroll>
-	{#each tabsToRender as item (item.id)}
-		<List tab={item} {data} />
-	{/each}
+<div class="relative">
+	{#if navigating}
+		<div
+			class="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-[1px]"
+		>
+			<div
+				class="h-6 w-6 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground"
+			></div>
+		</div>
+	{/if}
+	<div class="custom-scroll flex h-[calc(100vh-110px)] gap-4 overflow-x-auto pb-2" use:dragScroll>
+		{#each tabsToRender as item (item.id)}
+			<List tab={item} {data} />
+		{/each}
+	</div>
 </div>
 
 {@render children?.()}
