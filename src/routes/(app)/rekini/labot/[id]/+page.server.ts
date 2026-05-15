@@ -88,14 +88,25 @@ export const actions: Actions = {
         const processedItems = items.map((item: any) => {
             const qty = Number(item.quantity) || 1;
             const price = Number(item.price) || 0; // In cents
-            const total = qty * price;
+            const discountType = item.discountType === 'fixed' ? 'fixed' : 'percent';
+            const discountValue = Number(item.discountValue) || 0;
+            let total: number;
+            if (!discountValue) {
+                total = qty * price;
+            } else if (discountType === 'fixed') {
+                total = Math.max(0, qty * price - discountValue);
+            } else {
+                total = Math.round(qty * price * (1 - discountValue / 100));
+            }
             subtotal += total;
             return {
                 description: item.description,
                 unit: item.unit,
                 quantity: qty,
-                price: price,
-                total: total
+                price,
+                discountType,
+                discountValue,
+                total
             };
         });
 

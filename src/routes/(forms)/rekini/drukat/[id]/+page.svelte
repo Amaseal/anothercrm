@@ -25,6 +25,7 @@
 			unit: 'Mērv.',
 			quantity: 'Daudzums',
 			price: 'Cena',
+			discount: 'Atlaide',
 			amount: 'Summa',
 			subtotal: 'Summa bez PVN',
 			vat: 'PVN',
@@ -50,6 +51,7 @@
 			unit: 'Unit',
 			quantity: 'Qty',
 			price: 'Price',
+			discount: 'Discount',
 			amount: 'Amount',
 			subtotal: 'Subtotal',
 			vat: 'VAT',
@@ -69,10 +71,15 @@
 
 	const formatMoney = (cents: number) => (cents / 100).toFixed(2);
 
-	const subtotal = invoice.items.reduce(
-		(acc: number, item: any) => acc + item.quantity * item.price,
-		0
-	);
+	function itemLineTotal(item: any): number {
+		const raw = item.quantity * item.price;
+		if (!item.discountValue) return raw;
+		if (item.discountType === 'fixed') return Math.max(0, raw - item.discountValue);
+		return Math.round(raw * (1 - item.discountValue / 100));
+	}
+
+	const hasDiscount = invoice.items.some((item: any) => (item.discountValue ?? 0) > 0);
+	const subtotal = invoice.items.reduce((acc: number, item: any) => acc + itemLineTotal(item), 0);
 	const taxAmount = Math.round(subtotal * ((invoice.taxRate ?? 21) / 100));
 	const total = subtotal + taxAmount;
 
@@ -135,28 +142,49 @@
 </div>
 
 <!-- Invoice Paper -->
-<div style="max-width: 180mm; margin: 0 auto; background: white; font-family: Arial, sans-serif; font-size: 11px; color: #000;">
-
+<div
+	style="max-width: 180mm; margin: 0 auto; background: white; font-family: Arial, sans-serif; font-size: 11px; color: #000;"
+>
 	<!-- 1. Header: Logo + Invoice meta -->
-	<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;">
+	<div
+		style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px;"
+	>
 		<div style="width: 50%;">
 			<FastBreakLogo />
 		</div>
 		<div style="text-align: right;">
 			<div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">{l.invoice}</div>
-			<table style="border-collapse: collapse; font-size: 11px; min-width: 200px; margin-left: auto;">
+			<table
+				style="border-collapse: collapse; font-size: 11px; min-width: 200px; margin-left: auto;"
+			>
 				<tbody>
 					<tr>
-						<td style="padding: 2px 8px; font-weight: bold; background: #f9fafb; border: 1px solid #000;">{l.date}:</td>
-						<td style="padding: 2px 8px; text-align: right; border: 1px solid #000;">{formatDate(invoice.issueDate)}</td>
+						<td
+							style="padding: 2px 8px; font-weight: bold; background: #f9fafb; border: 1px solid #000;"
+							>{l.date}:</td
+						>
+						<td style="padding: 2px 8px; text-align: right; border: 1px solid #000;"
+							>{formatDate(invoice.issueDate)}</td
+						>
 					</tr>
 					<tr>
-						<td style="padding: 2px 8px; font-weight: bold; background: #f9fafb; border: 1px solid #000;">{l.invoiceNr}:</td>
-						<td style="padding: 2px 8px; text-align: right; font-weight: bold; border: 1px solid #000;">{invoice.invoiceNumber}</td>
+						<td
+							style="padding: 2px 8px; font-weight: bold; background: #f9fafb; border: 1px solid #000;"
+							>{l.invoiceNr}:</td
+						>
+						<td
+							style="padding: 2px 8px; text-align: right; font-weight: bold; border: 1px solid #000;"
+							>{invoice.invoiceNumber}</td
+						>
 					</tr>
 					<tr>
-						<td style="padding: 2px 8px; font-weight: bold; background: #f9fafb; border: 1px solid #000;">{l.dueDate}:</td>
-						<td style="padding: 2px 8px; text-align: right; border: 1px solid #000;">{formatDate(invoice.dueDate)}</td>
+						<td
+							style="padding: 2px 8px; font-weight: bold; background: #f9fafb; border: 1px solid #000;"
+							>{l.dueDate}:</td
+						>
+						<td style="padding: 2px 8px; text-align: right; border: 1px solid #000;"
+							>{formatDate(invoice.dueDate)}</td
+						>
 					</tr>
 				</tbody>
 			</table>
@@ -233,17 +261,30 @@
 		{/if}
 	</div>
 
-
 	<!-- 5. Items Table -->
 	<table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 10px;">
 		<thead>
 			<tr style="background: #f3f4f6;">
-				<th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 28px;">{l.itemNr}</th>
+				<th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 28px;"
+					>{l.itemNr}</th
+				>
 				<th style="border: 1px solid #000; padding: 4px 6px; text-align: left;">{l.description}</th>
-				<th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 50px;">{l.unit}</th>
-				<th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 55px;">{l.quantity}</th>
-				<th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px;">{l.price} €</th>
-				<th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px;">{l.amount} €</th>
+				<th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 50px;"
+					>{l.unit}</th
+				>
+				<th style="border: 1px solid #000; padding: 4px 6px; text-align: center; width: 55px;"
+					>{l.quantity}</th
+				>
+				<th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px;"
+					>{l.price} €</th
+				>
+				{#if hasDiscount}<th
+						style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 60px;"
+						>{l.discount}</th
+					>{/if}
+				<th style="border: 1px solid #000; padding: 4px 6px; text-align: right; width: 65px;"
+					>{l.amount} €</th
+				>
 			</tr>
 		</thead>
 		<tbody>
@@ -251,19 +292,36 @@
 				<tr>
 					<td style="border: 1px solid #000; padding: 3px 6px; text-align: center;">{i + 1}</td>
 					<td style="border: 1px solid #000; padding: 3px 6px;">{item.description}</td>
-					<td style="border: 1px solid #000; padding: 3px 6px; text-align: center;">{item.unit || '-'}</td>
-					<td style="border: 1px solid #000; padding: 3px 6px; text-align: center;">{item.quantity}</td>
-					<td style="border: 1px solid #000; padding: 3px 6px; text-align: right;">{formatMoney(item.price)}</td>
-					<td style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: bold;">{formatMoney(item.quantity * item.price)}</td>
+					<td style="border: 1px solid #000; padding: 3px 6px; text-align: center;"
+						>{item.unit || '-'}</td
+					>
+					<td style="border: 1px solid #000; padding: 3px 6px; text-align: center;"
+						>{item.quantity}</td
+					>
+					<td style="border: 1px solid #000; padding: 3px 6px; text-align: right;"
+						>{formatMoney(item.price)}</td
+					>
+					{#if hasDiscount}<td style="border: 1px solid #000; padding: 3px 6px; text-align: right;"
+							>{(item.discountValue ?? 0) > 0
+								? item.discountType === 'fixed'
+									? `-€${formatMoney(item.discountValue)}`
+									: `-${item.discountValue}%`
+								: '-'}</td
+						>{/if}
+					<td
+						style="border: 1px solid #000; padding: 3px 6px; text-align: right; font-weight: bold;"
+						>{formatMoney(itemLineTotal(item))}</td
+					>
 				</tr>
 			{/each}
 		</tbody>
 	</table>
 	<!-- 4. Notes -->
 	{#if invoice.notes}
-		<div style="margin-bottom: 12px; font-size: 10px; font-style: italic; color: #555;">{invoice.notes}</div>
+		<div style="margin-bottom: 12px; font-size: 10px; font-style: italic; color: #555;">
+			{invoice.notes}
+		</div>
 	{/if}
-
 
 	<!-- 6. Totals -->
 	<div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
@@ -279,7 +337,9 @@
 				</tr>
 				<tr style="border-top: 2px solid #000;">
 					<td style="padding: 4px 10px; font-weight: bold; font-size: 12px;">{l.total}</td>
-					<td style="padding: 4px 10px; text-align: right; font-weight: bold; font-size: 12px;">{formatMoney(total)} €</td>
+					<td style="padding: 4px 10px; text-align: right; font-weight: bold; font-size: 12px;"
+						>{formatMoney(total)} €</td
+					>
 				</tr>
 			</tbody>
 		</table>
@@ -287,7 +347,8 @@
 
 	<!-- 7. Total in words -->
 	<div style="margin-bottom: 16px; font-size: 10px; font-style: italic;">
-		<span style="font-weight: bold;">{l.totalInWords}:</span> {totalInWords}
+		<span style="font-weight: bold;">{l.totalInWords}:</span>
+		{totalInWords}
 	</div>
 
 	<!-- 8. Footer -->

@@ -36,13 +36,36 @@
 					description: i.description,
 					unit: i.unit,
 					quantity: i.quantity,
-					price: i.price // Already in cents? Yes, schema says integer.
+					price: i.price, // Already in cents? Yes, schema says integer.
+					discountType: i.discountType ?? 'percent',
+					discountValue: i.discountValue ?? 0
 				}))
-			: [{ description: '', unit: 'gab.', quantity: 1, price: 0 }]
+			: [
+					{
+						description: '',
+						unit: 'gab.',
+						quantity: 1,
+						price: 0,
+						discountType: 'percent',
+						discountValue: 0
+					}
+				]
 	);
 
+	function itemLineTotal(item: {
+		quantity: number;
+		price: number;
+		discountType: string;
+		discountValue: number;
+	}): number {
+		const raw = item.quantity * item.price;
+		if (!item.discountValue) return raw;
+		if (item.discountType === 'fixed') return Math.max(0, raw - item.discountValue);
+		return Math.round(raw * (1 - item.discountValue / 100));
+	}
+
 	// Derived Calculations
-	let subtotal = $derived(items.reduce((acc, item) => acc + item.quantity * item.price, 0));
+	let subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
 	let vatRate = $state(invoice.taxRate ?? 21);
 	let language = $state(invoice.language ?? 'lv');
 
@@ -50,7 +73,17 @@
 	let total = $derived(subtotal + taxAmount);
 
 	function addItem() {
-		items = [...items, { description: '', unit: 'gab.', quantity: 1, price: 0 }];
+		items = [
+			...items,
+			{
+				description: '',
+				unit: 'gab.',
+				quantity: 1,
+				price: 0,
+				discountType: 'percent',
+				discountValue: 0
+			}
+		];
 	}
 
 	function removeItem(index: number) {
@@ -66,6 +99,18 @@
 	function handleQtyInput(e: Event, index: number) {
 		const input = e.target as HTMLInputElement;
 		items[index].quantity = parseFloat(input.value);
+	}
+
+	function handleDiscountInput(e: Event, index: number) {
+		const input = e.target as HTMLInputElement;
+		const val = parseFloat(input.value) || 0;
+		items[index].discountValue =
+			items[index].discountType === 'fixed' ? Math.round(val * 100) : val;
+	}
+
+	function toggleDiscountType(index: number) {
+		items[index].discountType = items[index].discountType === 'percent' ? 'fixed' : 'percent';
+		items[index].discountValue = 0;
 	}
 
 	// Auto-fill logic for products
@@ -470,6 +515,7 @@
 							<th class="w-24 border border-black px-2 py-1 text-center italic"
 								>{m['invoices.items.price']()} €</th
 							>
+							<th class="w-32 border border-black px-2 py-1 text-center italic">Atlaide</th>
 							<th class="w-24 border border-black px-2 py-1 text-center italic"
 								>{m['invoices.items.amount']()} €</th
 							>
@@ -516,8 +562,29 @@
 										class="h-full w-full border-none bg-transparent px-2 py-1 text-right text-sm focus:bg-white focus:ring-0"
 									/>
 								</td>
+								<td class="border border-black px-0 py-0">
+									<div class="flex h-full items-stretch">
+										<button
+											type="button"
+											onclick={() => toggleDiscountType(i)}
+											class="border-r border-black px-1.5 py-1 text-xs font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+										>
+											{item.discountType === 'percent' ? '%' : '€'}
+										</button>
+										<input
+											type="number"
+											step="0.01"
+											min="0"
+											value={item.discountType === 'percent'
+												? item.discountValue
+												: item.discountValue / 100}
+											oninput={(e) => handleDiscountInput(e, i)}
+											class="h-full w-full border-none bg-transparent px-2 py-1 text-right text-sm focus:bg-white focus:ring-0"
+										/>
+									</div>
+								</td>
 								<td class="border border-black px-2 py-1 text-right font-bold">
-									{formatMoney(item.quantity * item.price)}
+									{formatMoney(itemLineTotal(item))}
 								</td>
 								<td class="border-none pl-2">
 									<button

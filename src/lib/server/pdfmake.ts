@@ -40,6 +40,7 @@ const labels = {
         unit: 'Mērv.',
         quantity: 'Daudzums',
         price: 'Cena',
+        discount: 'Atlaide',
         amount: 'Summa',
         subtotal: 'Summa bez PVN',
         vat: 'PVN',
@@ -65,6 +66,7 @@ const labels = {
         unit: 'Unit',
         quantity: 'Qty',
         price: 'Price',
+        discount: 'Discount',
         amount: 'Amount',
         subtotal: 'Subtotal',
         vat: 'VAT',
@@ -82,12 +84,20 @@ const formatDate = (d: string | Date | null): string => {
 
 const formatMoney = (cents: number): string => (cents / 100).toFixed(2);
 
+function itemLineTotal(item: any): number {
+    const raw = item.quantity * item.price;
+    if (!item.discountValue) return raw;
+    if (item.discountType === 'fixed') return Math.max(0, raw - item.discountValue);
+    return Math.round(raw * (1 - item.discountValue / 100));
+}
+
 // Build a pdfmake document definition that matches the layout
 export function buildInvoiceDocDefinition(inv: any, items: any[], company: any): any {
     const lang = (inv.language as 'lv' | 'en') || 'lv';
     const l = labels[lang];
 
-    const subtotal = items.reduce((acc: number, item: any) => acc + item.quantity * item.price, 0);
+    const hasDiscount = items.some((item: any) => (item.discountValue ?? 0) > 0);
+    const subtotal = items.reduce((acc: number, item: any) => acc + itemLineTotal(item), 0);
     const taxAmount = Math.round(subtotal * ((inv.taxRate ?? 21) / 100));
     const total = subtotal + taxAmount;
     const totalInWords = lang === 'en' ? numberToWordsEN(total) : numberToWordsLV(total);
@@ -129,14 +139,21 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
     if (inv.client?.address) payerRows.push([{ text: l.address, color: '#555555', fontSize: 9, border: [false, false, false, false] }, { text: inv.client.address, fontSize: 9, border: [false, false, false, false] }]);
 
     // Items table rows
-    const itemRows = items.map((item: any, i: number) => [
-        bodyCell(String(i + 1), 'center'),
-        bodyCell(item.description || ''),
-        bodyCell(item.unit || '-', 'center'),
-        bodyCell(String(item.quantity), 'center'),
-        bodyCell(formatMoney(item.price), 'right'),
-        bodyCell(formatMoney(item.quantity * item.price), 'right', true)
-    ]);
+    const itemRows = items.map((item: any, i: number) => {
+        const discountDisplay = (item.discountValue ?? 0) > 0
+            ? (item.discountType === 'fixed' ? `-€${formatMoney(item.discountValue)}` : `-${item.discountValue}%`)
+            : '-';
+        const row: any[] = [
+            bodyCell(String(i + 1), 'center'),
+            bodyCell(item.description || ''),
+            bodyCell(item.unit || '-', 'center'),
+            bodyCell(String(item.quantity), 'center'),
+            bodyCell(formatMoney(item.price), 'right'),
+            ...(hasDiscount ? [bodyCell(discountDisplay, 'right')] : []),
+            bodyCell(formatMoney(itemLineTotal(item)), 'right', true)
+        ];
+        return row;
+    });
 
     return {
         pageSize: 'A4',
@@ -214,7 +231,7 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
             // Items table
             {
                 table: {
-                    widths: [20, '*', 35, 45, 50, 50],
+                    widths: hasDiscount ? [20, '*', 35, 45, 50, 45, 50] : [20, '*', 35, 45, 50, 50],
                     headerRows: 1,
                     body: [
                         [
@@ -223,6 +240,7 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
                             { ...headerCell(l.unit), alignment: 'center' },
                             { ...headerCell(l.quantity), alignment: 'center' },
                             { ...headerCell(`${l.price} €`), alignment: 'right' },
+                            ...(hasDiscount ? [{ ...headerCell(l.discount), alignment: 'right' }] : []),
                             { ...headerCell(`${l.amount} €`), alignment: 'right' }
                         ],
                         ...itemRows

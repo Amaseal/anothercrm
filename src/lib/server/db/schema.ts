@@ -855,6 +855,8 @@ export const invoiceItems = pgTable('invoice_items', {
 	quantity: integer('quantity').notNull().default(1),
 	price: integer('price').notNull(), // in cents
 	total: integer('total').notNull(), // in cents
+	discountType: text('discount_type').notNull().default('percent'),
+	discountValue: real('discount_value').notNull().default(0),
 	section: text('section'), // Optional grouping/section name
 	...timestamps
 });
