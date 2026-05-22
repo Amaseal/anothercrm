@@ -234,7 +234,7 @@
 		>
 			<form method="POST" use:enhance>
 				{#if form?.message}
-					<div class="absolute top-0 right-0 left-0 -mt-12">
+					<div class="mb-4">
 						<FormError error={form.message} />
 					</div>
 				{/if}
@@ -446,7 +446,9 @@
 								/>
 							</div>
 							<div class="flex items-center text-sm">
-								<Label class="w-32 text-gray-500">{m['invoices.email']()}</Label>
+								<Label class="w-32 text-gray-500">
+									{m['invoices.email']()}<span class="ml-0.5 text-red-500">*</span>
+								</Label>
 								<Input
 									name="newClientEmail"
 									type="email"
@@ -454,6 +456,18 @@
 									placeholder="Email (for sending)"
 								/>
 							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">
+									Phone<span class="ml-0.5 text-red-500">*</span>
+								</Label>
+								<Input
+									name="newClientPhone"
+									type="tel"
+									class="h-6 w-64 text-sm"
+									placeholder="+371 23456789"
+								/>
+							</div>
+							<p class="ml-32 text-xs text-gray-400">* Email or phone is required</p>
 						</div>
 					{:else if selectedClientDetails}
 						<!-- Editable View for Selected Client -->

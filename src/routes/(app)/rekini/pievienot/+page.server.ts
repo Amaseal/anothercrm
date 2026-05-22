@@ -60,17 +60,19 @@ export const actions: Actions = {
 
         if (isNewClient) {
             const newClientName = formData.get('newClientName') as string;
-            const newClientEmail = formData.get('newClientEmail') as string;
+            const newClientEmail = (formData.get('newClientEmail') as string) || null;
+            const newClientPhone = (formData.get('newClientPhone') as string) || null;
             // Basic validation for new client
             if (!newClientName) return fail(400, { message: 'Client Name is required' });
-            if (!newClientEmail) return fail(400, { message: 'Email is required for new clients' });
+            if (!newClientEmail && !newClientPhone) return fail(400, { message: 'Email or phone is required for new clients' });
 
             const [createdClient] = await db.insert(client).values({
                 name: newClientName,
                 address: formData.get('newClientAddress') as string,
                 registrationNumber: formData.get('newClientRegNo') as string,
                 vatNumber: formData.get('newClientVatNo') as string,
-                email: formData.get('newClientEmail') as string,
+                email: newClientEmail,
+                phone: newClientPhone,
                 // Add defaults for required fields if needed
             }).returning({ id: client.id });
 
