@@ -22,7 +22,7 @@ export const load: PageServerLoad = async ({ params }) => {
     // Run all remaining independent queries in parallel
     const [clients, products, company] = await Promise.all([
         db.query.client.findMany({ orderBy: desc(client.id) }),
-        db.query.product.findMany(),
+        db.query.product.findMany({ with: { clientPrices: true, translations: true } }),
         db.query.companySettings.findFirst()
     ]);
 

@@ -45,7 +45,8 @@ export async function getProjectBoardData(
     const taskRelations = {
         client: { columns: { name: true } },
         creator: { columns: { name: true, type: true } }, // Include TYPE
-        assignees: { columns: { userId: true }, with: { user: { columns: { name: true } } } }
+        assignees: { columns: { userId: true }, with: { user: { columns: { name: true } } } },
+        taskProducts: { columns: { count: true } }
     } as const;
 
     // Shared tabGroups query (always needed, runs in parallel)

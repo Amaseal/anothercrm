@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ url }) => {
     const [clients, company, products, prefillTaskRaw, prefillInvoiceRaw] = await Promise.all([
         db.query.client.findMany({ orderBy: [desc(client.created_at)] }),
         db.query.companySettings.findFirst(),
-        db.query.product.findMany({ with: { clientPrices: true } }),
+        db.query.product.findMany({ with: { clientPrices: true, translations: true } }),
         taskId
             ? db.query.task.findFirst({
                   where: eq(task.id, parseInt(taskId)),
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ url }) => {
                       taskProducts: {
                           with: {
                               product: {
-                                  with: { clientPrices: true }
+                                  with: { clientPrices: true, translations: true }
                               }
                           }
                       }

@@ -11,7 +11,8 @@
 		Pencil,
 		GripVertical,
 		Link,
-		Eye
+		Eye,
+		Package
 	} from '@lucide/svelte';
 	import * as m from '$lib/paraglide/messages.js';
 
@@ -41,6 +42,7 @@
 			createdById?: string | null;
 			creator?: { name: string; type?: string } | null;
 			isMoved?: boolean;
+			taskProducts?: { count: number | null }[] | null;
 		};
 		class?: string;
 		dragHandleAction?: any;
@@ -117,7 +119,8 @@
 <Card
 	class={cn(
 		'flex w-full max-w-sm flex-col gap-3 rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md',
-		task.creator?.type === 'client' && 'border-2 border-blue-400 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30',
+		task.creator?.type === 'client' &&
+			'border-2 border-blue-400 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/30',
 		deadlineStatus === 'overdue' && 'border-l-4 border-red-500', // Example styling for overdue
 		deadlineStatus === 'near' && 'border-l-4 border-orange-400', // Example styling for near
 		className
@@ -135,15 +138,15 @@
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger class="text-left">
-						{#if $isClient}
-							<a href={`/projekti/skatit/${task.id}`}>
-								<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
-							</a>
-						{:else}
-							<a href={`/projekti/labot/${task.id}`}>
-								<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
-							</a>
-						{/if}
+							{#if $isClient}
+								<a href={`/projekti/skatit/${task.id}`}>
+									<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
+								</a>
+							{:else}
+								<a href={`/projekti/labot/${task.id}`}>
+									<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
+								</a>
+							{/if}
 						</Tooltip.Trigger>
 						<Tooltip.Content>
 							<p>{task.title}</p>
@@ -183,6 +186,18 @@
 			>
 				<Clock class="h-4 w-4 shrink-0 " />
 				<span>{m['product_card.deadline']()}: {formatDate(task.endDate)}</span>
+			</div>
+		{/if}
+
+		<!-- Product Items Count -->
+		{#if task.taskProducts && task.taskProducts.length > 0}
+			{@const totalItems = task.taskProducts.reduce(
+				(sum: number, tp: { count: number | null }) => sum + (tp.count ?? 1),
+				0
+			)}
+			<div class="flex items-center gap-2 text-sm">
+				<Package class="h-4 w-4 shrink-0" />
+				<span>{m['product_card.items']()}: {totalItems}</span>
 			</div>
 		{/if}
 
@@ -235,10 +250,14 @@
 				<Tooltip.Provider>
 					<Tooltip.Root>
 						<Tooltip.Trigger class="truncate text-left">
-							<span>{m['product_card.assignee']()}: {task.assignees.map((a: { user: { name: any; }; }) => a.user.name).join(', ')}</span>
+							<span
+								>{m['product_card.assignee']()}: {task.assignees
+									.map((a: { user: { name: any } }) => a.user.name)
+									.join(', ')}</span
+							>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>{task.assignees.map((a: { user: { name: any; }; }) => a.user.name).join(', ')}</p>
+							<p>{task.assignees.map((a: { user: { name: any } }) => a.user.name).join(', ')}</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>
@@ -272,11 +291,7 @@
 			</Button>
 			<!-- Edit Button (Explicitly requested) -->
 			{#if task.isMoved && $isClient}
-				<Button
-					variant="ghost"
-					class="dark:hover:text-white"
-					href={`/projekti/skatit/${task.id}`}
-				>
+				<Button variant="ghost" class="dark:hover:text-white" href={`/projekti/skatit/${task.id}`}>
 					<Eye class="h-4 w-4" />
 				</Button>
 			{:else}
@@ -295,18 +310,18 @@
 					title={m['components.complete']()}
 					variant="ghost"
 					class="hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900 dark:hover:text-green-400"
-				href={`/projekti/pabeigt/${task.id}`}
-			>
-				<Check class="h-4 w-4" />
-			</Button>
-			<Button
-				title={m['components.delete']()}
-				variant="ghost"
-				class="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-400"
-				href={`/projekti/izdzest/${task.id}`}
-			>
-				<Trash class="h-4 w-4" />
-			</Button>
+					href={`/projekti/pabeigt/${task.id}`}
+				>
+					<Check class="h-4 w-4" />
+				</Button>
+				<Button
+					title={m['components.delete']()}
+					variant="ghost"
+					class="hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-400"
+					href={`/projekti/izdzest/${task.id}`}
+				>
+					<Trash class="h-4 w-4" />
+				</Button>
 			{/if}
 		</div>
 	</div>

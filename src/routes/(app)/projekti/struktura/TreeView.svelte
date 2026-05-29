@@ -210,7 +210,9 @@
 			{#if initialized && data.personalTab}
 				<div class="mb-2 rounded-md border bg-background p-2">
 					<div class="flex items-center gap-2">
-						<div class="flex h-8 w-8 items-center justify-center rounded bg-muted/50 text-muted-foreground opacity-50">
+						<div
+							class="flex h-8 w-8 items-center justify-center rounded bg-muted/50 text-muted-foreground opacity-50"
+						>
 							<!-- Fixed icon placeholder -->
 							<div class="h-1 w-1 rounded-full bg-current"></div>
 						</div>
@@ -226,12 +228,10 @@
 						</span>
 
 						<!-- Personal Badge -->
-						<span
-							class="rounded bg-primary/10 px-2 py-1 text-xs font-semibold text-primary"
-						>
+						<span class="rounded bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
 							{m['structure.personal']()}
 						</span>
-						
+
 						{#if data.personalTab.sortOrder !== undefined}
 							<span class="text-xs text-muted-foreground" title="Sort Order">
 								#{data.personalTab.sortOrder}
@@ -240,8 +240,8 @@
 
 						<div class="flex gap-2">
 							<Button
-							variant="ghost"
-							size="icon"
+								variant="ghost"
+								size="icon"
 								onclick={() => toggleVisibility(data.personalTab.id, !data.personalTab.isVisible)}
 								title={data.personalTab.isVisible ? 'Hide tab' : 'Show tab'}
 							>
@@ -350,7 +350,11 @@
 													title="Tab color: {tab.color}"
 												></div>
 
-												<span class="flex-1 text-sm {tab.isVisible ? '' : 'text-muted-foreground italic'}">
+												<span
+													class="flex-1 text-sm {tab.isVisible
+														? ''
+														: 'text-muted-foreground italic'}"
+												>
 													{getTranslation(tab.translations)?.name || 'Untitled Tab'}
 												</span>
 
@@ -359,7 +363,7 @@
 														Personal
 													</span>
 												{/if}
-												
+
 												<span class="mr-2 text-xs text-muted-foreground" title="Sort Order">
 													#{tab.sortOrder}
 												</span>
@@ -367,7 +371,7 @@
 												<div class="flex gap-1">
 													<Button
 														size="icon"
-														variant="ghost"	
+														variant="ghost"
 														class="h-8 w-8"
 														onclick={() => toggleVisibility(tab.id, !tab.isVisible)}
 														title={tab.isVisible ? 'Hide tab' : 'Show tab'}
@@ -378,7 +382,7 @@
 															<EyeOff class="h-3 w-3" />
 														{/if}
 													</Button>
-													
+
 													<Button
 														href="/projekti/struktura/saraksti/{tab.id}"
 														variant="ghost"

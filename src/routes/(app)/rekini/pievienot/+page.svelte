@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
 	import { enhance } from '$app/forms';
 	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
@@ -110,8 +110,12 @@
 		const val = input.value;
 		items[index].description = val;
 
-		// Check for exact match in products
-		const match = products.find((p: any) => p.title === val);
+		// Check for exact match in products (by default title or translated title)
+		const match = products.find(
+			(p: any) =>
+				p.title === val ||
+				p.translations?.find((t: any) => t.language === language && t.title === val)
+		);
 		if (match) {
 			const clientPriceEntry = selectedClientId
 				? match.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)
@@ -219,6 +223,62 @@
 	});
 
 	const formatMoney = (cents: number) => (cents / 100).toFixed(2);
+
+	let pickerOpen = $state<Record<number, boolean>>({});
+
+	function normalizeText(text: string): string {
+		return text
+			.toLowerCase()
+			.normalize('NFD')
+			.replace(/[\u0300-\u036f]/g, '')
+			.replace(/[^a-z0-9\s]/g, '')
+			.trim();
+	}
+
+	function getFilteredProducts(search: string) {
+		if (!search) return products;
+		const norm = normalizeText(search);
+		return products.filter((p: any) => normalizeText(getProductTitle(p, language)).includes(norm));
+	}
+
+	function selectProduct(index: number, product: any) {
+		items[index].description = getProductTitle(product, language);
+		const clientPriceEntry = selectedClientId
+			? product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)
+			: null;
+		items[index].price = clientPriceEntry ? clientPriceEntry.price : product.price;
+		items[index].isAutoFilled = true;
+		pickerOpen[index] = false;
+	}
+
+	function getProductTitle(product: any, lang: string): string {
+		const translation = product.translations?.find((t: any) => t.language === lang);
+		return translation?.title || product.title;
+	}
+
+	function findProductByAnyTitle(title: string): any {
+		return products.find(
+			(p: any) => p.title === title || p.translations?.some((t: any) => t.title === title)
+		);
+	}
+
+	// When language changes, re-translate descriptions of auto-filled items
+	$effect(() => {
+		const lang = language;
+		const snapshot = untrack(() => items);
+		const updated = snapshot.map((item) => {
+			if (!item.isAutoFilled) return item;
+			const match = findProductByAnyTitle(item.description);
+			if (match) {
+				return { ...item, description: getProductTitle(match, lang) };
+			}
+			return item;
+		});
+		// Only write back if something actually changed
+		if (updated.some((item, i) => item.description !== snapshot[i].description)) {
+			items = updated;
+		}
+	});
 </script>
 
 <svelte:head>
@@ -534,23 +594,6 @@
 					{/if}
 				</div>
 
-				<!-- Datalist for Items -->
-				<datalist id="products-list">
-					{#each products as product}
-						{#if selectedClientId && product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)}
-							<option value={product.title}
-								>{product.title} - {toCurrency(
-									product.clientPrices?.find(
-										(cp: any) => cp.clientId.toString() === selectedClientId
-									)?.price || 0
-								)} €</option
-							>
-						{:else}
-							<option value={product.title}>{product.title} - {toCurrency(product.price)} €</option>
-						{/if}
-					{/each}
-				</datalist>
-
 				<!-- 4. Items Table (Interactive) -->
 				<table class="mb-4 w-full border-collapse border border-black bg-white">
 					<thead>
@@ -583,14 +626,47 @@
 						{#each items as item, i}
 							<tr class="group hover:bg-slate-50">
 								<td class="border border-black px-2 py-1 text-center">{i + 1}</td>
-								<td class="border border-black px-0 py-0">
+								<td class="relative border border-black px-0 py-0">
 									<input
 										value={item.description}
-										oninput={(e) => handleDescriptionInput(e, i)}
+										onfocus={() => (pickerOpen[i] = true)}
+										onblur={() => setTimeout(() => (pickerOpen[i] = false), 150)}
+										oninput={(e) => {
+											handleDescriptionInput(e, i);
+											pickerOpen[i] = true;
+										}}
 										placeholder={m['invoices.items.description']()}
-										list="products-list"
 										class="h-full w-full border-none bg-transparent px-2 py-1 text-sm focus:bg-white focus:ring-0"
 									/>
+									{#if pickerOpen[i]}
+										{@const filtered = getFilteredProducts(item.description)}
+										{#if filtered.length > 0}
+											<ul
+												class="custom-scroll absolute top-full left-0 z-50 max-h-60 w-72 overflow-y-auto rounded border border-gray-200 bg-white py-1 text-sm shadow-lg"
+											>
+												{#each filtered as product (product.id)}
+													{@const title = getProductTitle(product, language)}
+													{@const clientPrice = selectedClientId
+														? product.clientPrices?.find(
+																(cp: any) => cp.clientId.toString() === selectedClientId
+															)?.price
+														: null}
+													<li>
+														<button
+															type="button"
+															onmousedown={() => selectProduct(i, product)}
+															class="flex w-full items-center justify-between px-3 py-1.5 hover:bg-gray-100"
+														>
+															<span class="truncate">{title}</span>
+															<span class="ml-2 shrink-0 text-xs text-gray-400"
+																>{toCurrency(clientPrice ?? product.price)} â‚¬</span
+															>
+														</button>
+													</li>
+												{/each}
+											</ul>
+										{/if}
+									{/if}
 								</td>
 								<td class="border border-black px-0 py-0">
 									<input
@@ -701,6 +777,25 @@
 				<!-- Footnote -->
 				<div class="mt-8 text-sm italic">
 					Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta
+				</div>
+
+				<!-- Payment & Delivery Terms -->
+				<div class="mt-4 text-xs text-gray-600">
+					{#if language === 'en'}
+						Payment and Delivery Terms: By paying this invoice, the client confirms the accuracy of
+						the invoice details and agrees to the SIA "FAST BREAK" terms and conditions
+						(fastbreak.lv/noteikumi). The client assumes full responsibility for any customs duties,
+						taxes, or additional charges that may arise when shipping goods internationally. SIA
+						"FAST BREAK" is not liable for any delivery delays caused by delivery operators (courier
+						services).
+					{:else}
+						Apmaksas un piegādes noteikumi: Veicot šī rēķina apmaksu, klients apstiprina rēķina datu
+						pareizību un piekrīt SIA "FAST BREAK" noteikumiem (fastbreak.lv/noteikumi). Klients
+						uzņemas pilnu atbildību par jebkādiem muitas nodokļiem, nodevām vai papildu izmaksām,
+						kas var rasties, piegādājot preces ārvalstīs. SIA "FAST BREAK" neuzņemas atbildību par
+						piegādes termiņu kavēšanos, ja tā radusies piegādes operatoru (kurjeru dienestu)
+						darbības rezultātā.
+					{/if}
 				</div>
 
 				<!-- Footer / Submit Area -->

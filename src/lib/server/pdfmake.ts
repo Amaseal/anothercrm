@@ -46,7 +46,8 @@ const labels = {
         vat: 'PVN',
         total: 'Summa apmaksai',
         totalInWords: 'Summa vārdiem',
-        footer: 'Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta'
+        footer: 'Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta',
+        terms: 'Apmaksas un piegādes noteikumi: Veicot šī rēķina apmaksu, klients apstiprina rēķina datu pareizību un piekrīt SIA "FAST BREAK" noteikumiem (fastbreak.lv/noteikumi). Klients uzņemas pilnu atbildību par jebkādiem muitas nodokļiem, nodevām vai papildu izmaksām, kas var rasties, piegādājot preces ārvalstīs. SIA "FAST BREAK" neuzņemas atbildību par piegādes termiņu kavēšanos, ja tā radusies piegādes operatoru (kurjeru dienestu) darbības rezultātā.'
     },
     en: {
         invoice: 'Commercial Invoice',
@@ -72,7 +73,8 @@ const labels = {
         vat: 'VAT',
         total: 'Total Due',
         totalInWords: 'Amount in words',
-        footer: 'This invoice is generated electronically and is valid without signature.'
+        footer: 'This invoice is generated electronically and is valid without signature.',
+        terms: 'Payment and Delivery Terms: By paying this invoice, the client confirms the accuracy of the invoice details and agrees to the SIA "FAST BREAK" terms and conditions (fastbreak.lv/noteikumi). The client assumes full responsibility for any customs duties, taxes, or additional charges that may arise when shipping goods internationally. SIA "FAST BREAK" is not liable for any delivery delays caused by delivery operators (courier services).'
     }
 };
 
@@ -289,7 +291,10 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
             },
 
             // Footer
-            { text: l.footer, fontSize: 8, italics: true, color: '#555555', margin: [0, 12, 0, 0] }
+            { text: l.footer, fontSize: 8, italics: true, color: '#555555', margin: [0, 12, 0, 4] },
+
+            // Payment & Delivery Terms
+            { text: l.terms, fontSize: 7, color: '#666666', margin: [0, 0, 0, 0] }
         ]
     };
 }
