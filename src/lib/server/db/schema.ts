@@ -5,10 +5,12 @@ import {
 	integer, // Integer column type
 	text, // Text/string column type
 	timestamp, // Timestamp with timezone support
+	date, // Date column type (YYYY-MM-DD)
 	pgEnum, // PostgreSQL enum type
 	boolean, // Boolean column type
 	unique, // Unique constraint
-	real
+	real,
+	index // Index for performance
 } from 'drizzle-orm/pg-core';
 import { check } from 'drizzle-orm/pg-core'; // Check constraint for custom validation rules
 import { sql } from 'drizzle-orm/sql/sql'; // Raw SQL template for complex constraints
@@ -114,7 +116,11 @@ export const invoice = pgTable('invoices', {
 	language: text('language').default('lv').notNull(), // Language for the invoice PDF (lv/en)
 	isElectronic: boolean('is_electronic').default(true).notNull(), // Electronic document flag
 	...timestamps
-});
+}, (table) => [
+	index('invoices_client_id_idx').on(table.clientId),
+	index('invoices_task_id_idx').on(table.taskId),
+	index('invoices_status_idx').on(table.status)
+]);
 
 /**
  * INVITE CODES TABLE
@@ -124,7 +130,7 @@ export const invoice = pgTable('invoices', {
 export const inviteCodes = pgTable('invite_codes', {
 	id: text('id').primaryKey(), // Unique identifier for the invite
 	code: text('code').notNull().unique(), // The actual invite code (must be unique)
-	expiresAt: text('expires_at').notNull(), // When this code expires (stored as text)
+	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(), // When this code expires
 	used: boolean('used').notNull().default(false), // Whether the code has been redeemed
 	codeFor: userRoleEnum('type').notNull().default('client'), // What type of user this code creates
 	clientId: integer('client_id').references(() => client.id, { onDelete: 'cascade' }) // Optional: Link to specific client (if role is client)
@@ -499,13 +505,19 @@ export const task = pgTable('tasks', {
 	createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
 	seamstress: text('seamstress'), // Name of seamstress (stored as text, not FK)
 	count: integer('count'), // Quantity/count for this task (optional)
-	endDate: text('end_date'), // Due date (stored as text) (optional)
+	endDate: date('end_date', { mode: 'string' }), // Due date (optional)
 	isDone: boolean('is_done').notNull().default(false), // Completion status
 	isPrinted: boolean('is_printed'), // Whether task has been printed (optional)
 	price: integer('price'), // Task price (likely in cents) (optional)
 	preview: text('preview'), // Preview image URL/path (optional)
 	...timestamps // Includes created_at and updated_at
-});
+}, (table) => [
+	index('tasks_client_id_idx').on(table.clientId),
+	index('tasks_is_done_idx').on(table.isDone),
+	index('tasks_tab_id_idx').on(table.tabId),
+	index('tasks_end_date_idx').on(table.endDate),
+	index('tasks_created_at_idx').on(table.created_at)
+]);
 
 /**
  * TASK ASSIGNEE TABLE
@@ -522,7 +534,9 @@ export const taskAssignee = pgTable(
 			.references(() => user.id, { onDelete: 'cascade' })
 	},
 	(table) => [
-		unique().on(table.taskId, table.userId)
+		unique().on(table.taskId, table.userId),
+		index('task_assignees_user_id_idx').on(table.userId),
+		index('task_assignees_task_id_idx').on(table.taskId)
 	]
 );
 

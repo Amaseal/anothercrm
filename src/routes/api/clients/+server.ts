@@ -3,7 +3,8 @@ import { db } from '$lib/server/db';
 import { client } from '$lib/server/db/schema';
 import type { RequestHandler } from './$types';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+    if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
     try {
         const data = await request.json();
         const {

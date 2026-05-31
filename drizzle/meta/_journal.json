@@ -211,6 +211,27 @@
       "when": 1778839474035,
       "tag": "0029_smart_toxin",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1780230888620,
+      "tag": "0030_add_performance_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1780231812095,
+      "tag": "0031_invite_codes_expires_at_timestamp",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1780231941561,
+      "tag": "0032_task_end_date_type",
+      "breakpoints": true
     }
   ]
 }

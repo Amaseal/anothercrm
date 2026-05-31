@@ -4,6 +4,16 @@ import { db } from '$lib/server/db';
 import { client, invoice, task, invoiceItems } from '$lib/server/db/schema';
 import { desc, eq, sql } from 'drizzle-orm';
 
+interface InvoiceItemInput {
+    description: string;
+    unit: string;
+    quantity: number;
+    price: number;
+    discountType: 'fixed' | 'percent';
+    discountValue: number;
+    section?: string;
+}
+
 export const load: PageServerLoad = async ({ params }) => {
     // Fetch the invoice first (needed to redirect early if not found)
     const item = await db.query.invoice.findFirst({
@@ -55,7 +65,7 @@ export const actions: Actions = {
         const language = (formData.get('language') as string) || 'lv';
 
         const itemsRaw = formData.get('items');
-        let items: any[] = [];
+        let items: InvoiceItemInput[] = [];
         try {
             items = itemsRaw ? JSON.parse(itemsRaw as string) : [];
         } catch (e) {
@@ -85,7 +95,7 @@ export const actions: Actions = {
 
         // Recalculate totals
         let subtotal = 0;
-        const processedItems = items.map((item: any) => {
+        const processedItems = items.map((item: InvoiceItemInput) => {
             const qty = Number(item.quantity) || 1;
             const price = Number(item.price) || 0; // In cents
             const discountType = item.discountType === 'fixed' ? 'fixed' : 'percent';
@@ -116,71 +126,62 @@ export const actions: Actions = {
         const total = subtotal + taxAmount;
 
         try {
-            // Get existing invoice to handle totalOrdered changes
-            const existingInvoice = await db.query.invoice.findFirst({
-                where: eq(invoice.id, invoiceId)
-            });
+            await db.transaction(async (tx) => {
+                // Fetch only what we need to detect a client change
+                const [existingInvoice] = await tx
+                    .select({ clientId: invoice.clientId })
+                    .from(invoice)
+                    .where(eq(invoice.id, invoiceId))
+                    .limit(1);
 
-            if (existingInvoice) {
-                // If client changed
-                if (existingInvoice.clientId !== clientId) {
-                    // Subtract from old client
-                    await db.update(client)
-                        .set({ totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) - ${existingInvoice.total}` })
-                        .where(eq(client.id, existingInvoice.clientId));
+                // Update Invoice first so the recalculation below sees the new total
+                await tx.update(invoice)
+                    .set({
+                        taskId,
+                        clientId,
+                        status,
+                        issueDate,
+                        dueDate,
+                        subtotal,
+                        taxRate,
+                        taxAmount,
+                        total,
+                        notes,
+                        language
+                    })
+                    .where(eq(invoice.id, invoiceId));
 
-                    // Add to new client
-                    await db.update(client)
-                        .set({ totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) + ${total}` })
-                        .where(eq(client.id, clientId));
-                } else {
-                    // Update same client with difference
-                    const diff = total - existingInvoice.total;
-                    if (diff !== 0) {
-                        await db.update(client)
-                            .set({ totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) + ${diff}` })
-                            .where(eq(client.id, clientId));
-                    }
+                // Recalculate totalOrdered from live data — avoids error-prone manual math
+                const clientsToRecalculate = new Set<number>([clientId!]);
+                if (existingInvoice && existingInvoice.clientId !== clientId) {
+                    clientsToRecalculate.add(existingInvoice.clientId);
                 }
-            }
+                for (const cid of clientsToRecalculate) {
+                    await tx.update(client)
+                        .set({ totalOrdered: sql`(SELECT COALESCE(SUM(total), 0) FROM invoices WHERE client_id = ${cid})` })
+                        .where(eq(client.id, cid));
+                }
 
-            // Update Invoice
-            await db.update(invoice)
-                .set({
-                    taskId,
-                    clientId,
-                    status,
-                    issueDate,
-                    dueDate,
-                    subtotal,
-                    taxRate,
-                    taxAmount,
-                    total,
-                    notes,
-                    language
-                })
-                .where(eq(invoice.id, invoiceId));
+                // Handle Items: Delete all and re-insert
+                await tx.delete(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
 
-            // Handle Items: Delete all and re-insert
-            await db.delete(invoiceItems).where(eq(invoiceItems.invoiceId, invoiceId));
+                if (processedItems.length > 0) {
+                    await tx.insert(invoiceItems).values(
+                        processedItems.map((item) => ({
+                            invoiceId: invoiceId,
+                            ...item
+                        }))
+                    );
+                }
 
-            if (processedItems.length > 0) {
-                await db.insert(invoiceItems).values(
-                    processedItems.map((item: any) => ({
-                        invoiceId: invoiceId,
-                        ...item
-                    }))
-                );
-            }
-
-            // Sync with Task if taskId exists
-            if (taskId) {
-                await db.update(task).set({
-                    clientId: clientId,
-                    price: subtotal
-                }).where(eq(task.id, taskId));
-            }
-
+                // Sync with Task if taskId exists
+                if (taskId) {
+                    await tx.update(task).set({
+                        clientId: clientId,
+                        price: subtotal
+                    }).where(eq(task.id, taskId));
+                }
+            });
         } catch (e) {
             console.error(e);
             return fail(500, { message: 'Failed to update invoice' });

@@ -1,4 +1,4 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, error } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { eq } from 'drizzle-orm/sql/expressions/conditions';
@@ -15,11 +15,11 @@ export const load: PageServerLoad = async ({ url }) => {
 	}
 
 	const dbToken = await db.query.passwordResetToken.findFirst({
-		where: eq(passwordResetToken.token, token as string)
+		where: eq(passwordResetToken.token, token)
 	});
 
 	if (!dbToken || dbToken.used || dbToken.expiresAt < new Date()) {
-		return fail(400, { message: m['reset.errors.invalid_or_expired_token']() });
+		error(400, m['reset.errors.invalid_or_expired_token']());
 	}
 
 	const existingUser = await db.query.user.findFirst({
@@ -27,10 +27,11 @@ export const load: PageServerLoad = async ({ url }) => {
 	});
 
 	if (!existingUser) {
-		return fail(404, { message: m['reset.errors.user_not_found']() });
+		error(404, m['reset.errors.user_not_found']());
 	}
 
-	return { user: existingUser };
+	// Pass the token (not the user id) to the form so the action can re-validate it
+	return { token };
 };
 
 export const actions: Actions = {
@@ -38,13 +39,23 @@ export const actions: Actions = {
 		const formData = await event.request.formData();
 		const password = formData.get('password') as string;
 		const confirmPassword = formData.get('confirm_password');
-		const userId = formData.get('user_id');
+		const token = formData.get('token') as string;
 
 		if (password !== confirmPassword) {
 			return fail(400, { message: m['reset.errors.passwords_must_match']() });
 		}
+
+		// Re-validate the token server-side — never trust a client-supplied user_id
+		const dbToken = await db.query.passwordResetToken.findFirst({
+			where: eq(passwordResetToken.token, token)
+		});
+
+		if (!dbToken || dbToken.used || dbToken.expiresAt < new Date()) {
+			return fail(400, { message: m['reset.errors.invalid_or_expired_token']() });
+		}
+
 		const dbUser = await db.query.user.findFirst({
-			where: eq(user.id, userId as string)
+			where: eq(user.id, dbToken.userId)
 		});
 		if (!dbUser) {
 			return fail(404, { message: m['reset.errors.user_not_found']() });
@@ -61,8 +72,13 @@ export const actions: Actions = {
 			await db
 				.update(user)
 				.set({ password: passwordHash })
-				.where(eq(user.id, userId as string));
-		} catch (error) {
+				.where(eq(user.id, dbToken.userId));
+			// Mark the token as used so the reset link cannot be reused
+			await db
+				.update(passwordResetToken)
+				.set({ used: true })
+				.where(eq(passwordResetToken.token, token));
+		} catch (err) {
 			return fail(500, { message: 'Error updating password' });
 		}
 

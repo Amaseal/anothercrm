@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { task } from '$lib/server/db/schema';
+import { task, taskAssignee } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import type { Actions } from './$types';
 import { taskEvents } from '$lib/server/events';
@@ -24,7 +24,11 @@ export const actions: Actions = {
                 .returning();
 
             if (result.length > 0) {
-                taskEvents.emitTaskUpdate(result[0], 'update');
+                const assignees = await db.query.taskAssignee.findMany({
+                    where: eq(taskAssignee.taskId, taskId),
+                    columns: { userId: true }
+                });
+                taskEvents.emitTaskUpdate(result[0], 'update', assignees.map(a => a.userId));
             }
 
             return { success: true };

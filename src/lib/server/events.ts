@@ -7,8 +7,8 @@ class TaskEmitter extends EventEmitter {
         this.setMaxListeners(100); // Allow many connections
     }
 
-    emitTaskUpdate(task: any, type: 'create' | 'update' | 'delete') {
-        this.emit('task', { type, task });
+    emitTaskUpdate(task: any, type: 'create' | 'update' | 'delete', assigneeUserIds: string[] = []) {
+        this.emit('task', { type, task, assigneeUserIds });
     }
 }
 

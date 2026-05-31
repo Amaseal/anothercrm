@@ -45,7 +45,7 @@
 					id="confirm_password"
 					type="password"
 				/>
-				<Input type="hidden" name="user_id" value={data.user?.id} />
+				<Input type="hidden" name="token" value={data.token} />
 
 				{#if form?.message}
 					<p class="text-red-500">{form.message}</p>

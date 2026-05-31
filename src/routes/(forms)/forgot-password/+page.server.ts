@@ -55,6 +55,6 @@ export const actions = {
 			return fail(500, { message: m['reset.errors.something_went_wrong']() });
 		}
 
-		return redirect(302, '/login?restet=sent');
+		return redirect(302, '/login?reset=sent');
 	}
 } satisfies Actions;

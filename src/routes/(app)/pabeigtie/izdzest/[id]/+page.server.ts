@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { task } from '$lib/server/db/schema';
+import { task, taskAssignee } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -36,10 +36,15 @@ export const actions: Actions = {
                 where: eq(task.id, id)
             });
 
+            const assignees = await db.query.taskAssignee.findMany({
+                where: eq(taskAssignee.taskId, id),
+                columns: { userId: true }
+            });
+
             await db.delete(task).where(eq(task.id, id));
 
             if (item) {
-                taskEvents.emitTaskUpdate(item, 'delete');
+                taskEvents.emitTaskUpdate(item, 'delete', assignees.map(a => a.userId));
             }
         } catch (error) {
             return fail(400, { message: m['components.delete_modal.error']({ item: id.toString() }) });

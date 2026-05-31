@@ -2,7 +2,10 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { unlink } from 'fs/promises';
 import path from 'path';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+	}
 	// Always use uploads folder at project root in both dev and production
 	const uploadDir = 'uploads';
 	const uploadsUrl = '/uploads';
@@ -16,7 +19,13 @@ export const POST: RequestHandler = async ({ request }) => {
 	const sanitizedFileName = fileName
 		.replace(new RegExp(`^${uploadsUrl}/?`), '')
 		.replace(/^\/+/, '');
-	const filePath = path.join(uploadDir, sanitizedFileName);
+	const resolvedUploadDir = path.resolve(uploadDir);
+	const filePath = path.resolve(resolvedUploadDir, sanitizedFileName);
+	if (!filePath.startsWith(resolvedUploadDir + path.sep) && filePath !== resolvedUploadDir) {
+		return new Response(JSON.stringify({ success: false, error: 'Invalid path' }), {
+			status: 400
+		});
+	}
 
 	try {
 		await unlink(filePath);

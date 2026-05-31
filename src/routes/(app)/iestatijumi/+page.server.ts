@@ -121,7 +121,7 @@ export const actions: Actions = {
 		await db.insert(table.inviteCodes).values({
 			id: crypto.randomUUID(),
 			code,
-			expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString(), // 7 days
+			expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7), // 7 days
 			codeFor: role,
 			clientId: role === 'client' ? clientId : null
 		});

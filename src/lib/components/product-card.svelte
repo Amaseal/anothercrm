@@ -25,6 +25,7 @@
 	import { isAdmin } from '$lib/stores/user';
 
 	const currencyFormatter = new Intl.NumberFormat('lv-LV', { style: 'currency', currency: 'EUR' });
+	const dateFormatter = new Intl.DateTimeFormat('lv-LV');
 
 	let {
 		task,
@@ -55,11 +56,7 @@
 
 	const formatDate = (date: Date | string | null) => {
 		if (!date) return '';
-		// Optimization: minimal date formatting without creating new Intl instances if possible,
-		// but toLocaleDateString is decent if we don't do it too often.
-		// For lists, it might be better to cache or use a shared formatter if toLocaleDateString is heavy.
-		// sticking to native for now but reusing the date object logic might be better if we parsed it once.
-		return new Date(date).toLocaleDateString('lv-LV');
+		return dateFormatter.format(new Date(date));
 	};
 
 	const getActiveDuration = (createdAt: Date | string) => {

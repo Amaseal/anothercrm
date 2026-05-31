@@ -36,11 +36,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 			userClientId = result[0].clientId;
 		}
 	}
-	const clients = await db.query.client.findMany();
+	const clients = await db.query.client.findMany({ columns: { id: true, name: true } });
 	const users = await db.query.user.findMany({
 		columns: { id: true, name: true, type: true }
 	});
-	const materials = await db.query.material.findMany();
+	const materials = await db.query.material.findMany({ columns: { id: true, title: true, article: true, unit: true, price: true, image: true } });
 	const rawProducts = await db.query.product.findMany({
 		with: {
 			translations: true,
@@ -238,7 +238,7 @@ export const actions: Actions = {
 			});
 			// Dynamic import to avoid circular dep issues during init if any, though here it's fine.
 			const { taskEvents } = await import('$lib/server/events');
-			taskEvents.emitTaskUpdate(fullTask, 'create');
+			taskEvents.emitTaskUpdate(fullTask, 'create', fullTask?.assignees?.map((a: { userId: string }) => a.userId) ?? []);
 
 			// Handle File Uploads
 			const filesJson = formData.get('files');

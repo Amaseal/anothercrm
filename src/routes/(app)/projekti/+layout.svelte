@@ -2,7 +2,7 @@
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { debounce } from '$lib/utilities';
-	import { goto, beforeNavigate, afterNavigate, invalidateAll } from '$app/navigation';
+	import { goto, beforeNavigate, afterNavigate, invalidateAll, invalidate } from '$app/navigation';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { page } from '$app/state';
@@ -66,10 +66,8 @@
 			eventSource.onmessage = (event) => {
 				const data = JSON.parse(event.data);
 				if (data.type === 'create' || data.type === 'update' || data.type === 'delete') {
-					// Invalidate all to reload data from server (simplest "performant enough" approach for now)
-					// Optimally we'd update the store directly, but with complex mapping logic in load(),
-					// reloading is safer to ensure consistency.
-					invalidateAll();
+					// Only re-run loaders that declared depends('app:tasks'), not the entire page
+					invalidate('app:tasks');
 				}
 			};
 

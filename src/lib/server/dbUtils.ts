@@ -1,13 +1,9 @@
 import { sql } from 'drizzle-orm';
 import type { AnyColumn } from 'drizzle-orm';
+import { normalizeLatvianText } from '$lib/utilities';
 
-export const normalizeString = (term: string) => {
-    if (!term) return term;
-    return term
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '');
-};
+// Single canonical normalizer — delegates to the shared utility so both code paths stay in sync
+export const normalizeString = normalizeLatvianText;
 
 export const ilikeNormalize = (column: AnyColumn, searchTerm: string) => {
     const normalizedSearch = `%${normalizeString(searchTerm)}%`;

@@ -4,6 +4,16 @@ import { eq, desc } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 
+interface InvoiceItemInput {
+    description: string;
+    unit: string;
+    quantity: number;
+    price: number;
+    discountType: 'fixed' | 'percent';
+    discountValue: number;
+    section?: string;
+}
+
 export const load: PageServerLoad = async ({ url }) => {
     const taskId = url.searchParams.get('taskId');
     const duplicateId = url.searchParams.get('duplicateId');
@@ -36,11 +46,11 @@ export const load: PageServerLoad = async ({ url }) => {
             : Promise.resolve(null)
     ]);
 
-    let prefillTask: any = prefillTaskRaw ?? null;
+    const prefillTask = prefillTaskRaw ?? null;
     if (prefillTask?.taskProducts) {
-        prefillTask.taskProducts = prefillTask.taskProducts.map((tp: any) => {
+        prefillTask.taskProducts = prefillTask.taskProducts.map((tp) => {
             const clientPriceEntry = tp.product.clientPrices?.find(
-                (cp: any) => cp.clientId === prefillTask!.clientId
+                (cp) => cp.clientId === prefillTask!.clientId
             );
             tp.product.effectivePrice = clientPriceEntry ? clientPriceEntry.price : tp.product.price;
             return tp;
@@ -111,7 +121,7 @@ export const actions: Actions = {
         // --- 3. Items Handling ---
         // Expecting items to be passed as a JSON string 'items'
         const itemsRaw = formData.get('items');
-        let items: any[] = [];
+        let items: InvoiceItemInput[] = [];
         try {
             items = itemsRaw ? JSON.parse(itemsRaw as string) : [];
         } catch (e) {
@@ -125,7 +135,7 @@ export const actions: Actions = {
         // --- 4. Calculations ---
         // Recalculate server-side to be safe
         let subtotal = 0;
-        const processedItems = items.map((item: any) => {
+        const processedItems = items.map((item: InvoiceItemInput) => {
             const qty = Number(item.quantity) || 1;
             const price = Number(item.price) || 0; // In cents
             const discountType = item.discountType === 'fixed' ? 'fixed' : 'percent';
@@ -171,29 +181,49 @@ export const actions: Actions = {
         let attempts = 0;
         const maxAttempts = 3;
 
+        // Each attempt is wrapped in a transaction so a failed items insert
+        // or task sync rolls back the invoice insert automatically.
         while (attempts < maxAttempts) {
             try {
-                const count = await db.$count(invoice);
-                const invoiceNumber = `${dateStr}-${count + 1 + attempts}${userInitial}`;
+                await db.transaction(async (tx) => {
+                    const count = await tx.$count(invoice);
+                    const invoiceNumber = `${dateStr}-${count + 1 + attempts}${userInitial}`;
 
-                const [newInvoice] = await db.insert(invoice).values({
-                    invoiceNumber,
-                    taskId,
-                    clientId,
-                    issueDate,
-                    dueDate,
-                    subtotal, // Now derived from items
-                    taxRate,
-                    taxAmount,
-                    total,
-                    notes,
-                    language,
-                    status: 'draft'
-                }).returning({ id: invoice.id });
-                newInvoiceId = newInvoice.id;
+                    const [newInvoice] = await tx.insert(invoice).values({
+                        invoiceNumber,
+                        taskId,
+                        clientId,
+                        issueDate,
+                        dueDate,
+                        subtotal,
+                        taxRate,
+                        taxAmount,
+                        total,
+                        notes,
+                        language,
+                        status: 'draft'
+                    }).returning({ id: invoice.id });
+                    newInvoiceId = newInvoice.id;
+
+                    if (processedItems.length > 0) {
+                        await tx.insert(invoiceItems).values(
+                            processedItems.map((item) => ({
+                                invoiceId: newInvoice.id,
+                                ...item
+                            }))
+                        );
+                    }
+
+                    if (taskId) {
+                        await tx.update(task).set({
+                            clientId: clientId,
+                            price: subtotal
+                        }).where(eq(task.id, taskId));
+                    }
+                });
                 break;
-            } catch (error: any) {
-                if (error.code === '23505') { // unique constraint violation
+            } catch (error: unknown) {
+                if ((error as { code?: string }).code === '23505') { // unique constraint violation
                     attempts++;
                     continue;
                 }
@@ -204,30 +234,6 @@ export const actions: Actions = {
 
         if (!newInvoiceId) {
             return fail(500, { message: 'Failed to create invoice after multiple attempts' });
-        }
-
-        try {
-            // Insert Items
-            if (processedItems.length > 0) {
-                await db.insert(invoiceItems).values(
-                    processedItems.map((item: any) => ({
-                        invoiceId: newInvoiceId!,
-                        ...item
-                    }))
-                );
-            }
-
-            // Sync with Task if taskId exists
-            if (taskId) {
-                await db.update(task).set({
-                    clientId: clientId,
-                    price: subtotal
-                }).where(eq(task.id, taskId));
-            }
-
-        } catch (error) {
-            console.error(error);
-            return fail(500, { message: 'Failed to save invoice details' });
         }
 
         throw redirect(303, '/rekini');

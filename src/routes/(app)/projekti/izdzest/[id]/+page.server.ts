@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { task, taskMaterial, taskProduct, file, invoice } from '$lib/server/db/schema';
+import { task, taskMaterial, taskProduct, file, invoice, taskAssignee } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -67,6 +67,12 @@ export const actions: Actions = {
 
             await Promise.all(deletionPromises);
 
+            // Fetch assignees before deletion so the SSE event can filter correctly
+            const assignees = await db.query.taskAssignee.findMany({
+                where: eq(taskAssignee.taskId, taskId),
+                columns: { userId: true }
+            });
+
             // 3. Delete DB relations that don't cascade automatically
             // Unlink invoices
             await db.update(invoice).set({ taskId: null }).where(eq(invoice.taskId, taskId));
@@ -83,7 +89,7 @@ export const actions: Actions = {
             await db.delete(task).where(eq(task.id, taskId));
 
             // Emit delete event
-            taskEvents.emitTaskUpdate({ id: taskId, tabId: item.tabId } as any, 'delete');
+            taskEvents.emitTaskUpdate({ id: taskId, tabId: item.tabId } as any, 'delete', assignees.map(a => a.userId));
 
         } catch (error) {
             console.error(error);

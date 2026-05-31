@@ -35,7 +35,8 @@ async function ensureUploadDir() {
  * Handle POST requests to upload task files
  * This will save the file to disk AND create a database entry
  */
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	try {
 		const formData = await request.formData();
 		const uploadedFile = formData.get('file') as File;

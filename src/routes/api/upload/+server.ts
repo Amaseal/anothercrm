@@ -7,7 +7,10 @@ import {
 	toUploadsUrl
 } from '$lib/server/upload-storage';
 
-export const POST: RequestHandler = async ({ request }) => {
+export const POST: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) {
+		return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+	}
 	const formData = await request.formData();
 	const file = formData.get('file') as File | null;
 	if (!file) {

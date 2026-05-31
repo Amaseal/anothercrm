@@ -1,0 +1,1 @@
+ALTER TABLE "invite_codes" ALTER COLUMN "expires_at" SET DATA TYPE timestamp with time zone USING "expires_at"::timestamp with time zone;

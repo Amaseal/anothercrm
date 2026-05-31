@@ -1,7 +1,7 @@
 import { taskEvents } from '$lib/server/events';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { userClient, taskAssignee } from '$lib/server/db/schema';
+import { userClient } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const GET: RequestHandler = async ({ locals }) => {
@@ -20,16 +20,16 @@ export const GET: RequestHandler = async ({ locals }) => {
         linkedClientIds = userClients.map((uc) => uc.clientId);
     }
 
-    let onTaskEvent: ((data: { type: string; task: any }) => void) | undefined;
+    let onTaskEvent: ((data: { type: string; task: any; assigneeUserIds: string[] }) => void) | undefined;
 
     const readable = new ReadableStream({
         start(controller) {
             // Send initial connection message
             controller.enqueue(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
 
-            onTaskEvent = async (data: { type: string; task: any }) => {
+            onTaskEvent = (data: { type: string; task: any; assigneeUserIds: string[] }) => {
 
-                const { task } = data;                // Filtering Logic
+                const { task, assigneeUserIds } = data;                // Filtering Logic
                 // Admin: Sees everything
                 // Client visibility rules (mirrors getProjectBoardData):
                 //   C1. Creator always sees their own task
@@ -38,14 +38,7 @@ export const GET: RequestHandler = async ({ locals }) => {
                 let shouldSend = false;                if (user.type === 'admin') {
                     shouldSend = true;
                 } else {
-                    // Fetch current assignees for this task to apply rules correctly
-                    const assignees = await db.query.taskAssignee.findMany({
-                        where: eq(taskAssignee.taskId, task?.id),
-                        columns: { userId: true }
-                    });
-                    const assigneeIds = assignees.map((a: { userId: string }) => a.userId);
-                    const isAssignedToMe = assigneeIds.includes(user.id);
-
+                    const isAssignedToMe = assigneeUserIds.includes(user.id);
                     const createdByMe = task?.createdById === user.id;
                     const isMyClientTask = linkedClientIds.length > 0 && linkedClientIds.includes(task?.clientId);
 

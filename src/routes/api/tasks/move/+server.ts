@@ -101,11 +101,12 @@ export const POST = async ({ request, locals }) => {
 
         // Fetch updated task for SSE and emission
         const updatedTask = await db.query.task.findFirst({
-            where: eq(task.id, taskId)
+            where: eq(task.id, taskId),
+            with: { assignees: { columns: { userId: true } } }
         });
 
         if (updatedTask) {
-            taskEvents.emitTaskUpdate(updatedTask, 'update');
+            taskEvents.emitTaskUpdate(updatedTask, 'update', updatedTask.assignees.map(a => a.userId));
         }
 
         return json({ success: true });

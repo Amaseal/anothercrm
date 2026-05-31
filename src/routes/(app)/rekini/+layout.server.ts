@@ -2,16 +2,11 @@
 import { db } from '$lib/server/db';
 import { invoice, client, task, userClient } from '$lib/server/db/schema';
 import type { LayoutServerLoad } from './$types';
-import { and, desc, asc, sql, count, like, or, eq, inArray } from 'drizzle-orm';
-import { redirect } from '@sveltejs/kit';
+import { and, desc, asc, sql, count, or, eq, inArray } from 'drizzle-orm';
 import { handleListParams } from '$lib/server/paramState';
 import { ilikeNormalize } from '$lib/server/dbUtils';
 
 export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
-	if (!locals.user) {
-		throw redirect(302, '/login');
-	}
-
 	const activeParams = handleListParams(url, cookies, '/rekini', 'rekini_filters');
 
 	const page = parseInt(activeParams.get('page') || '0');
@@ -44,27 +39,23 @@ export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
 		}
 	}
 
-	// Search implementation (find matching IDs first to handle joins properly)
+	// Search: single query with an inline subquery — avoids a separate round-trip
 	if (search) {
-		const searchTerm = `%${search}%`;
-		// Find IDs that match the search term (invoice number or client name)
-		const searchMatches = await db
-			.select({ id: invoice.id })
-			.from(invoice)
-			.leftJoin(client, eq(invoice.clientId, client.id))
-			.where(
-				or(
-					ilikeNormalize(invoice.invoiceNumber, search),
-					ilikeNormalize(client.name, search)
-				)
-			);
-
-		if (searchMatches.length > 0) {
-			const matchedIds = searchMatches.map((m) => m.id);
-			baseConditions.push(inArray(invoice.id, matchedIds));
-		} else {
-			baseConditions.push(sql`1 = 0`); // No search results
-		}
+		baseConditions.push(
+			inArray(
+				invoice.id,
+				db
+					.select({ id: invoice.id })
+					.from(invoice)
+					.leftJoin(client, eq(invoice.clientId, client.id))
+					.where(
+						or(
+							ilikeNormalize(invoice.invoiceNumber, search),
+							ilikeNormalize(client.name, search)
+						)
+					)
+			)
+		);
 	}
 
 	const whereCondition = baseConditions.length > 0 ? and(...baseConditions) : undefined;

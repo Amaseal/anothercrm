@@ -14,18 +14,15 @@ import {
 } from '$lib/server/upload-storage';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-    const taskId = Number(params.id);    // Fetch required data for dropdowns
-    const clients = await db.query.client.findMany();
-    const users = await db.query.user.findMany({
-        columns: { id: true, name: true, type: true }
-    });
-    const materials = await db.query.material.findMany();
-    const products = await db.query.product.findMany({
-        with: {
-            translations: true,
-            clientPrices: true
-        }
-    });
+    const taskId = Number(params.id);
+
+    // Fetch dropdown data in parallel with restricted columns
+    const [clients, users, materials, products] = await Promise.all([
+        db.query.client.findMany({ columns: { id: true, name: true } }),
+        db.query.user.findMany({ columns: { id: true, name: true, type: true } }),
+        db.query.material.findMany({ columns: { id: true, title: true, article: true, unit: true, price: true, image: true } }),
+        db.query.product.findMany({ with: { translations: true, clientPrices: true } })
+    ]);
 
     // Fetch the task to edit
     const item = await db.query.task.findFirst({
@@ -47,7 +44,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
             },
             history: {
                 with: {
-                    user: true
+                    user: { columns: { name: true } }
                 },
                 orderBy: (history, { desc }) => [desc(history.createdAt)]
             }

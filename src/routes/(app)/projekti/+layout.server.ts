@@ -3,7 +3,9 @@ import { getProjectBoardData } from '$lib/server/queries/projekti';
 import { getLocale } from '$lib/paraglide/runtime';
 import { handleListParams } from '$lib/server/paramState';
 
-export const load: LayoutServerLoad = async ({ locals, url, cookies }) => {
+export const load: LayoutServerLoad = async ({ locals, url, cookies, depends }) => {
+
+	depends('app:tasks');
 
 	const user = locals.user;
 
