@@ -44,6 +44,9 @@
 	let clientVatNo = $state('');
 	let clientAddress = $state('');
 	let clientEmail = $state('');
+	let clientBankName = $state('');
+	let clientBankCode = $state('');
+	let clientBankAccount = $state('');
 
 	function itemLineTotal(item: {
 		quantity: number;
@@ -137,10 +140,13 @@
 			clientVatNo = selectedClientDetails.vatNumber || '';
 			clientAddress = selectedClientDetails.address || '';
 			clientEmail = selectedClientDetails.email || '';
+			clientBankName = selectedClientDetails.bankName || '';
+			clientBankCode = selectedClientDetails.bankCode || '';
+			clientBankAccount = selectedClientDetails.bankAccount || '';
 
 			// Recalculate auto-filled item prices for the new client.
 			// Read items via untrack so this effect doesn't subscribe to `items` as a
-			// dependency — otherwise writing items would immediately re-trigger the effect.
+			// dependency � otherwise writing items would immediately re-trigger the effect.
 			const snapshot = untrack(() => items);
 			items = snapshot.map((item) => {
 				if (item.isAutoFilled) {
@@ -160,11 +166,14 @@
 			clientVatNo = '';
 			clientAddress = '';
 			clientEmail = '';
+			clientBankName = '';
+			clientBankCode = '';
+			clientBankAccount = '';
 		}
 	});
 
 	$effect(() => {
-		// Auto-fill from task if provided — run once on mount using untrack for all state assignments
+		// Auto-fill from task if provided � run once on mount using untrack for all state assignments
 		// to prevent reactive writes from re-triggering this effect (avoids effect_update_depth_exceeded).
 		if (data.prefillTask) {
 			untrack(() => {
@@ -177,7 +186,8 @@
 						description: tp.product.title,
 						unit: 'gab.',
 						quantity: tp.count || 1,
-						price: tp.product.effectivePrice ?? tp.product.price, // price in cents					discountType: 'percent',
+						price: tp.product.effectivePrice ?? tp.product.price, // price in cents
+						discountType: 'percent',
 						discountValue: 0,
 						isAutoFilled: true
 					}));
@@ -200,7 +210,7 @@
 	});
 
 	$effect(() => {
-		// Auto-fill from a duplicated invoice — run once on mount.
+		// Auto-fill from a duplicated invoice � run once on mount.
 		if (data.prefillInvoice) {
 			untrack(() => {
 				const src = data.prefillInvoice!;
@@ -312,7 +322,7 @@
 
 					<!-- Invoice Meta Table -->
 					<div class="flex w-1/2 flex-col items-end">
-						<h1 class="mb-2 text-xl font-bold">Rēķins/Pavadzīme</h1>
+						<h1 class="mb-2 text-xl font-bold">Rekins/Pavadzime</h1>
 						<table class="w-full max-w-[300px] border-collapse border border-black text-sm">
 							<tbody>
 								<tr>
@@ -356,7 +366,9 @@
 									</td>
 								</tr>
 								<tr>
-									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">Language:</td>
+									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
+										>{m['invoices.language']()}:</td
+									>
 									<td class="border border-black px-0 py-0">
 										<select
 											name="language"
@@ -386,7 +398,7 @@
 					</div>
 				</div>
 
-				<!-- 2. Supplier (Piegādātājs) -->
+				<!-- 2. Supplier (Piegadatajs) -->
 				<div class="mb-2">
 					<div class="flex">
 						<div class="w-32 font-bold">{m['invoices.supplier']()}</div>
@@ -406,7 +418,7 @@
 					</div>
 				</div>
 
-				<!-- 3. Client (Maksātājs) - EDITABLE -->
+				<!-- 3. Client (Maksatajs) - EDITABLE -->
 				<div class="mb-2">
 					<div class="mb-2 flex items-center justify-between">
 						<div class="flex items-center">
@@ -464,7 +476,7 @@
 							{:else}
 								<Input
 									name="newClientName"
-									placeholder="Enter Client Name"
+									placeholder={m['clients.name_placeholder']()}
 									class="h-8 w-[300px] border-gray-400 bg-white font-bold"
 									required
 								/>
@@ -491,18 +503,26 @@
 						<div class="space-y-1">
 							<div class="flex items-center text-sm">
 								<Label class="w-32 text-gray-500">{m['invoices.registration_number']()}</Label>
-								<Input name="newClientRegNo" class="h-6 w-48 text-sm" placeholder="Reg. Number" />
+								<Input
+									name="newClientRegNo"
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.registration_number_placeholder']()}
+								/>
 							</div>
 							<div class="flex items-center text-sm">
 								<Label class="w-32 text-gray-500">{m['invoices.vat_number']()}</Label>
-								<Input name="newClientVatNo" class="h-6 w-48 text-sm" placeholder="VAT Number" />
+								<Input
+									name="newClientVatNo"
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.vat_number_placeholder']()}
+								/>
 							</div>
 							<div class="flex items-center text-sm">
 								<Label class="w-32 text-gray-500">{m['invoices.address']()}</Label>
 								<Input
 									name="newClientAddress"
 									class="h-6 w-full max-w-md text-sm"
-									placeholder="Full Address"
+									placeholder={m['clients.address_placeholder']()}
 								/>
 							</div>
 							<div class="flex items-center text-sm">
@@ -513,12 +533,12 @@
 									name="newClientEmail"
 									type="email"
 									class="h-6 w-64 text-sm"
-									placeholder="Email (for sending)"
+									placeholder={m['clients.email_placeholder']()}
 								/>
 							</div>
 							<div class="flex items-center text-sm">
 								<Label class="w-32 text-gray-500">
-									Phone<span class="ml-0.5 text-red-500">*</span>
+									{m['invoices.phone']()}<span class="ml-0.5 text-red-500">*</span>
 								</Label>
 								<Input
 									name="newClientPhone"
@@ -527,7 +547,31 @@
 									placeholder="+371 23456789"
 								/>
 							</div>
-							<p class="ml-32 text-xs text-gray-400">* Email or phone is required</p>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.bank']()}</Label>
+								<Input
+									name="newClientBankName"
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.bank_placeholder']()}
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.swift']()}</Label>
+								<Input
+									name="newClientBankCode"
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.swift_placeholder']()}
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.bank_account']()}</Label>
+								<Input
+									name="newClientBankAccount"
+									class="h-6 w-64 text-sm"
+									placeholder={m['clients.bank_account_placeholder']()}
+								/>
+							</div>
+							<p class="ml-32 text-xs text-gray-400">{m['invoices.phone_or_email_required']()}</p>
 						</div>
 					{:else if selectedClientDetails}
 						<!-- Editable View for Selected Client -->
@@ -556,7 +600,7 @@
 									name="clientAddress"
 									bind:value={clientAddress}
 									class="h-6 w-full max-w-md text-sm"
-									placeholder="Full Address"
+									placeholder={m['clients.address_placeholder']()}
 								/>
 							</div>
 							<div class="flex items-center text-sm">
@@ -567,6 +611,33 @@
 									bind:value={clientEmail}
 									class="h-6 w-64 text-sm"
 									placeholder="Email"
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.bank']()}</Label>
+								<Input
+									name="clientBankName"
+									bind:value={clientBankName}
+									class="h-6 w-48 text-sm"
+									placeholder="Bank name"
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.swift']()}</Label>
+								<Input
+									name="clientBankCode"
+									bind:value={clientBankCode}
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.swift_placeholder']()}
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.bank_account']()}</Label>
+								<Input
+									name="clientBankAccount"
+									bind:value={clientBankAccount}
+									class="h-6 w-64 text-sm"
+									placeholder={m['clients.bank_account_placeholder']()}
 								/>
 							</div>
 							<div class="flex items-center pt-2">
@@ -611,11 +682,11 @@
 								>{m['invoices.items.quantity']()}</th
 							>
 							<th class="w-24 border border-black px-2 py-1 text-center italic"
-								>{m['invoices.items.price']()} €</th
+								>{m['invoices.items.price']()} �</th
 							>
 							<th class="w-32 border border-black px-2 py-1 text-center italic">Atlaide</th>
 							<th class="w-24 border border-black px-2 py-1 text-center italic"
-								>{m['invoices.items.amount']()} €</th
+								>{m['invoices.items.amount']()} �</th
 							>
 							<th
 								class="w-8 border border-t-0 border-r-0 border-b-0 border-l-0 border-black bg-transparent"
@@ -659,7 +730,7 @@
 														>
 															<span class="truncate">{title}</span>
 															<span class="ml-2 shrink-0 text-xs text-gray-400"
-																>{toCurrency(clientPrice ?? product.price)} â‚¬</span
+																>{toCurrency(clientPrice ?? product.price)} €</span
 															>
 														</button>
 													</li>
@@ -700,7 +771,7 @@
 											onclick={() => toggleDiscountType(i)}
 											class="border-r border-black px-1.5 py-1 text-xs font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-800"
 										>
-											{item.discountType === 'percent' ? '%' : '€'}
+											{item.discountType === 'percent' ? '%' : '�'}
 										</button>
 										<input
 											type="number"
@@ -776,7 +847,7 @@
 
 				<!-- Footnote -->
 				<div class="mt-8 text-sm italic">
-					Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta
+					Rekins/pavadzime ir izrakstits elektroniski un ir derigs bez paraksta
 				</div>
 
 				<!-- Payment & Delivery Terms -->
@@ -789,7 +860,7 @@
 						"FAST BREAK" is not liable for any delivery delays caused by delivery operators (courier
 						services).
 					{:else}
-						Apmaksas un piegādes noteikumi: Veicot šī rēķina apmaksu, klients apstiprina rēķina datu
+						Apmaksas un piegades noteikumi: Veicot šo rēķina apmaksu, klients apstiprina rēķina datu
 						pareizību un piekrīt SIA "FAST BREAK" noteikumiem (fastbreak.lv/noteikumi). Klients
 						uzņemas pilnu atbildību par jebkādiem muitas nodokļiem, nodevām vai papildu izmaksām,
 						kas var rasties, piegādājot preces ārvalstīs. SIA "FAST BREAK" neuzņemas atbildību par

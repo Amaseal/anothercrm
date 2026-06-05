@@ -139,6 +139,9 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
     if (inv.client?.registrationNumber) payerRows.push([{ text: l.regNo, color: '#555555', fontSize: 9, border: [false, false, false, false] }, { text: inv.client.registrationNumber, fontSize: 9, border: [false, false, false, false] }]);
     if (inv.client?.vatNumber) payerRows.push([{ text: l.vatNo, color: '#555555', fontSize: 9, border: [false, false, false, false] }, { text: inv.client.vatNumber, fontSize: 9, border: [false, false, false, false] }]);
     if (inv.client?.address) payerRows.push([{ text: l.address, color: '#555555', fontSize: 9, border: [false, false, false, false] }, { text: inv.client.address, fontSize: 9, border: [false, false, false, false] }]);
+    if (inv.client?.bankName) payerRows.push([{ text: l.bank, color: '#555555', fontSize: 9, border: [false, false, false, false] }, { text: inv.client.bankName, fontSize: 9, border: [false, false, false, false] }]);
+    if (inv.client?.bankCode) payerRows.push([{ text: l.code, color: '#555555', fontSize: 9, border: [false, false, false, false] }, { text: inv.client.bankCode, fontSize: 9, border: [false, false, false, false] }]);
+    if (inv.client?.bankAccount) payerRows.push([{ text: l.account, color: '#555555', fontSize: 9, border: [false, false, false, false] }, { text: inv.client.bankAccount, fontSize: 9, border: [false, false, false, false] }]);
 
     // Items table rows
     const itemRows = items.map((item: any, i: number) => {

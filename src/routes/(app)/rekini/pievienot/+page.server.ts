@@ -83,6 +83,9 @@ export const actions: Actions = {
                 vatNumber: formData.get('newClientVatNo') as string,
                 email: newClientEmail,
                 phone: newClientPhone,
+                bankName: (formData.get('newClientBankName') as string) || null,
+                bankCode: (formData.get('newClientBankCode') as string) || null,
+                bankAccount: (formData.get('newClientBankAccount') as string) || null,
                 // Add defaults for required fields if needed
             }).returning({ id: client.id });
 
@@ -101,7 +104,10 @@ export const actions: Actions = {
                     registrationNumber: clientRegNo,
                     vatNumber: clientVatNo,
                     address: clientAddress,
-                    email: clientEmail
+                    email: clientEmail,
+                    bankName: (formData.get('clientBankName') as string) || null,
+                    bankCode: (formData.get('clientBankCode') as string) || null,
+                    bankAccount: (formData.get('clientBankAccount') as string) || null,
                 }).where(eq(client.id, clientId));
             }
         }

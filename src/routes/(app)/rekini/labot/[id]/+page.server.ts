@@ -87,7 +87,10 @@ export const actions: Actions = {
                 registrationNumber: clientRegNo,
                 vatNumber: clientVatNo,
                 address: clientAddress,
-                email: clientEmail
+                email: clientEmail,
+                bankName: (formData.get('clientBankName') as string) || null,
+                bankCode: (formData.get('clientBankCode') as string) || null,
+                bankAccount: (formData.get('clientBankAccount') as string) || null,
             }).where(eq(client.id, clientId));
         }
 

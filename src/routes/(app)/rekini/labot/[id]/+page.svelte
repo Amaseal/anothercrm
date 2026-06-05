@@ -146,6 +146,9 @@
 	let clientVatNo = $state(invoice.client?.vatNumber || '');
 	let clientAddress = $state(invoice.client?.address || '');
 	let clientEmail = $state(invoice.client?.email || '');
+	let clientBankName = $state(invoice.client?.bankName || '');
+	let clientBankCode = $state(invoice.client?.bankCode || '');
+	let clientBankAccount = $state(invoice.client?.bankAccount || '');
 	$effect(() => {
 		// Only update fields when the client selection actually changes from the initial one.
 		// This prevents overwriting the invoice's saved vatRate on first load.
@@ -155,6 +158,9 @@
 			clientVatNo = selectedClientDetails.vatNumber || '';
 			clientAddress = selectedClientDetails.address || '';
 			clientEmail = selectedClientDetails.email || '';
+			clientBankName = selectedClientDetails.bankName || '';
+			clientBankCode = selectedClientDetails.bankCode || '';
+			clientBankAccount = selectedClientDetails.bankAccount || '';
 		}
 	});
 
@@ -326,7 +332,9 @@
 									</td>
 								</tr>
 								<tr>
-									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold">Language:</td>
+									<td class="border border-black bg-gray-50 px-2 py-0.5 font-bold"
+										>{m['invoices.language']()}:</td
+									>
 									<td class="border border-black px-0 py-0">
 										<select
 											name="language"
@@ -434,7 +442,7 @@
 							{:else}
 								<Input
 									name="newClientName"
-									placeholder="Enter Client Name"
+									placeholder={m['clients.name_placeholder']()}
 									class="h-8 w-[300px] border-gray-400 bg-white font-bold"
 									required
 								/>
@@ -463,18 +471,26 @@
 						<div class="space-y-1">
 							<div class="flex items-center text-sm">
 								<Label class="w-32 text-gray-500">{m['invoices.registration_number']()}</Label>
-								<Input name="newClientRegNo" class="h-6 w-48 text-sm" placeholder="Reg. Number" />
+								<Input
+									name="newClientRegNo"
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.registration_number_placeholder']()}
+								/>
 							</div>
 							<div class="flex items-center text-sm">
 								<Label class="w-32 text-gray-500">{m['invoices.vat_number']()}</Label>
-								<Input name="newClientVatNo" class="h-6 w-48 text-sm" placeholder="VAT Number" />
+								<Input
+									name="newClientVatNo"
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.vat_number_placeholder']()}
+								/>
 							</div>
 							<div class="flex items-center text-sm">
 								<Label class="w-32 text-gray-500">{m['invoices.address']()}</Label>
 								<Input
 									name="newClientAddress"
 									class="h-6 w-full max-w-md text-sm"
-									placeholder="Full Address"
+									placeholder={m['clients.address_placeholder']()}
 								/>
 							</div>
 							<div class="flex items-center text-sm">
@@ -483,7 +499,31 @@
 									name="newClientEmail"
 									type="email"
 									class="h-6 w-64 text-sm"
-									placeholder="Email (for sending)"
+									placeholder={m['clients.email_placeholder']()}
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.bank']()}</Label>
+								<Input
+									name="newClientBankName"
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.bank_placeholder']()}
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.swift']()}</Label>
+								<Input
+									name="newClientBankCode"
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.swift_placeholder']()}
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.bank_account']()}</Label>
+								<Input
+									name="newClientBankAccount"
+									class="h-6 w-64 text-sm"
+									placeholder={m['clients.bank_account_placeholder']()}
 								/>
 							</div>
 						</div>
@@ -514,7 +554,7 @@
 									name="clientAddress"
 									bind:value={clientAddress}
 									class="h-6 w-full max-w-md text-sm"
-									placeholder="Full Address"
+									placeholder={m['clients.address_placeholder']()}
 								/>
 							</div>
 							<div class="flex items-center text-sm">
@@ -525,6 +565,33 @@
 									bind:value={clientEmail}
 									class="h-6 w-64 text-sm"
 									placeholder="Email"
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.bank']()}</Label>
+								<Input
+									name="clientBankName"
+									bind:value={clientBankName}
+									class="h-6 w-48 text-sm"
+									placeholder="Bank name"
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.swift']()}</Label>
+								<Input
+									name="clientBankCode"
+									bind:value={clientBankCode}
+									class="h-6 w-48 text-sm"
+									placeholder={m['clients.swift_placeholder']()}
+								/>
+							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.bank_account']()}</Label>
+								<Input
+									name="clientBankAccount"
+									bind:value={clientBankAccount}
+									class="h-6 w-64 text-sm"
+									placeholder={m['clients.bank_account_placeholder']()}
 								/>
 							</div>
 							<div class="flex items-center pt-2">

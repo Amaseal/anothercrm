@@ -259,6 +259,24 @@
 				<div>{invoice.client.address}</div>
 			</div>
 		{/if}
+		{#if invoice.client?.bankName}
+			<div style="display: flex;">
+				<div style="width: 120px; color: #555;">{l.bank}</div>
+				<div>{invoice.client.bankName}</div>
+			</div>
+		{/if}
+		{#if invoice.client?.bankCode}
+			<div style="display: flex;">
+				<div style="width: 120px; color: #555;">{l.code}</div>
+				<div>{invoice.client.bankCode}</div>
+			</div>
+		{/if}
+		{#if invoice.client?.bankAccount}
+			<div style="display: flex;">
+				<div style="width: 120px; color: #555;">{l.account}</div>
+				<div>{invoice.client.bankAccount}</div>
+			</div>
+		{/if}
 	</div>
 
 	<!-- 5. Items Table -->
