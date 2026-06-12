@@ -1,7 +1,7 @@
 import { eq, sql } from 'drizzle-orm';
 import { invoice, client } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages';
 
@@ -14,26 +14,26 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ params }) => {
+	default: async ({ params, locals }) => {
+		if (!locals.user || locals.user.type !== 'admin') error(403);
 		try {
             const invoiceId = Number(params.id);
-            // Fetch invoice first to get total and clientId
             const existingInvoice = await db.query.invoice.findFirst({
                 where: eq(invoice.id, invoiceId)
             });
 
-            if (existingInvoice && existingInvoice.clientId) {
-                // Subtract total from client
-                 await db.update(client)
-                    .set({ 
-                        totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) - ${existingInvoice.total}` 
-                    })
-                    .where(eq(client.id, existingInvoice.clientId));
-            }
-
-			await db.delete(invoice).where(eq(invoice.id, invoiceId));
-		} catch (error) {
-			console.error(error);
+            await db.transaction(async (tx) => {
+                if (existingInvoice?.clientId) {
+                    await tx.update(client)
+                        .set({
+                            totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) - ${existingInvoice.total}`
+                        })
+                        .where(eq(client.id, existingInvoice.clientId));
+                }
+                await tx.delete(invoice).where(eq(invoice.id, invoiceId));
+            });
+		} catch (e) {
+			console.error(e);
 			return fail(400, { message: 'Failed to delete invoice' });
 		}
 		throw redirect(303, '/rekini');

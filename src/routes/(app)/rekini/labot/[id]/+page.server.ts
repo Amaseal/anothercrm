@@ -83,15 +83,20 @@ export const actions: Actions = {
             const clientAddress = formData.get('clientAddress') as string;
             const clientEmail = formData.get('clientEmail') as string;
 
-            await db.update(client).set({
-                registrationNumber: clientRegNo,
-                vatNumber: clientVatNo,
-                address: clientAddress,
-                email: clientEmail,
-                bankName: (formData.get('clientBankName') as string) || null,
-                bankCode: (formData.get('clientBankCode') as string) || null,
-                bankAccount: (formData.get('clientBankAccount') as string) || null,
-            }).where(eq(client.id, clientId));
+            try {
+                await db.update(client).set({
+                    registrationNumber: clientRegNo,
+                    vatNumber: clientVatNo,
+                    address: clientAddress,
+                    email: clientEmail,
+                    bankName: (formData.get('clientBankName') as string) || null,
+                    bankCode: (formData.get('clientBankCode') as string) || null,
+                    bankAccount: (formData.get('clientBankAccount') as string) || null,
+                }).where(eq(client.id, clientId));
+            } catch (e) {
+                console.error(e);
+                return fail(500, { message: 'Failed to update client details' });
+            }
         }
 
         if (items.length === 0) return fail(400, { message: 'At least one item is required' });

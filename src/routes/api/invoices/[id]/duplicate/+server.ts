@@ -38,25 +38,43 @@ export const POST: RequestHandler = async ({ params, locals }) => {
             const count = await db.$count(invoice);
             const invoiceNumber = `${dateStr}-${count + 1 + attempts}${userInitial}`;
 
-            const [newInvoice] = await db
-                .insert(invoice)
-                .values({
-                    invoiceNumber,
-                    clientId: original.clientId,
-                    taskId: original.taskId,
-                    issueDate: new Date().toISOString().split('T')[0],
-                    dueDate: original.dueDate,
-                    subtotal: original.subtotal,
-                    taxRate: original.taxRate,
-                    taxAmount: original.taxAmount,
-                    total: original.total,
-                    notes: original.notes,
-                    language: original.language,
-                    status: 'draft'
-                })
-                .returning({ id: invoice.id });
+            await db.transaction(async (tx) => {
+                const [newInvoice] = await tx
+                    .insert(invoice)
+                    .values({
+                        invoiceNumber,
+                        clientId: original.clientId,
+                        taskId: original.taskId,
+                        issueDate: new Date().toISOString().split('T')[0],
+                        dueDate: original.dueDate,
+                        subtotal: original.subtotal,
+                        taxRate: original.taxRate,
+                        taxAmount: original.taxAmount,
+                        total: original.total,
+                        notes: original.notes,
+                        language: original.language,
+                        status: 'draft'
+                    })
+                    .returning({ id: invoice.id });
 
-            newInvoiceId = newInvoice.id;
+                newInvoiceId = newInvoice.id;
+
+                if (original.items && original.items.length > 0) {
+                    await tx.insert(invoiceItems).values(
+                        original.items.map((item: any) => ({
+                            invoiceId: newInvoiceId!,
+                            description: item.description,
+                            unit: item.unit,
+                            quantity: item.quantity,
+                            price: item.price,
+                            total: item.total,
+                            discountType: item.discountType,
+                            discountValue: item.discountValue
+                        }))
+                    );
+                }
+            });
+
             break;
         } catch (error: any) {
             if (error.code === '23505') {
@@ -70,20 +88,6 @@ export const POST: RequestHandler = async ({ params, locals }) => {
 
     if (!newInvoiceId) {
         return json({ error: 'Failed to generate a unique invoice number' }, { status: 500 });
-    }
-
-    // Duplicate items
-    if (original.items && original.items.length > 0) {
-        await db.insert(invoiceItems).values(
-            original.items.map((item: any) => ({
-                invoiceId: newInvoiceId!,
-                description: item.description,
-                unit: item.unit,
-                quantity: item.quantity,
-                price: item.price,
-                total: item.total
-            }))
-        );
     }
 
     return json({ id: newInvoiceId });

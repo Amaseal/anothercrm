@@ -1,12 +1,13 @@
 import { db } from '$lib/server/db';
 import { material } from '$lib/server/db/schema';
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages';
 
 import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	if (!locals.user || locals.user.type !== 'admin') error(403);
 	const item = await db.query.material.findFirst({
 		where: eq(material.id, Number(params.id))
 	});
@@ -14,7 +15,8 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, params, cookies }) => {
+	default: async ({ request, params, cookies, locals }) => {
+		if (!locals.user || locals.user.type !== 'admin') error(403);
 		let form = await request.formData();
 		const title = form.get('title') as string;
 		const article = form.get('article') as string;

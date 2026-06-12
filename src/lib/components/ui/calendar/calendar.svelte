@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Calendar as CalendarPrimitive } from "bits-ui";
+	// fallow-ignore-next-line circular-dependency
 	import * as Calendar from "./index.js";
 	import { cn, type WithoutChildrenOrChild } from "$lib/utils.js";
 	import type { ButtonVariant } from "../button/button.svelte";

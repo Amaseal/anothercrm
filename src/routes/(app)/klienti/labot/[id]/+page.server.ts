@@ -1,12 +1,13 @@
 import { db } from '$lib/server/db';
 import { client } from '$lib/server/db/schema';
 import * as m from '$lib/paraglide/messages';
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 
 import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	if (!locals.user || locals.user.type !== 'admin') error(403);
 	const item = await db.query.client.findFirst({
 		where: eq(client.id, Number(params.id))
 	});
@@ -19,7 +20,8 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, params }) => {
+	default: async ({ request, params, locals }) => {
+		if (!locals.user || locals.user.type !== 'admin') error(403);
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
 		const type = formData.get('type') as string;

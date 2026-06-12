@@ -262,12 +262,7 @@
 			style="font-family: Arial, sans-serif;"
 		>
 			<form method="POST" use:enhance>
-				{#if form?.message}
-					<div class="absolute top-0 right-0 left-0 -mt-12">
-						<FormError error={form.message} />
-					</div>
-				{/if}
-
+	
 				<!-- 1. Header Row -->
 				<div class="mb-2 flex items-start justify-between">
 					<!-- Logo -->
@@ -774,7 +769,7 @@
 							name="notes"
 							placeholder="Optional notes..."
 							class="h-16 resize-none text-sm"
-							value={m['invoices.notes']()}
+							value={invoice.notes ?? ''}
 						/>
 					</div>
 					<!-- 5. Totals -->
@@ -826,14 +821,21 @@
 				</div>
 
 				<!-- Footer / Submit Area -->
-				<div class="mt-12 flex justify-end gap-4 border-t pt-6 print:hidden">
-					<!-- Hidden Task Linker -->
-					<input type="hidden" name="items" value={JSON.stringify(items)} />
+				<div class="mt-12 border-t pt-6 print:hidden">
+					{#if form?.message}
+						<div class="mb-4">
+							<FormError error={form.message} />
+						</div>
+					{/if}
+					<div class="flex justify-end gap-4">
+						<!-- Hidden Task Linker -->
+						<input type="hidden" name="items" value={JSON.stringify(items)} />
 
-					<Button href="/rekini" variant="outline">{m['components.delete_modal.cancel']()}</Button>
-					<Button type="submit" size="lg" class="px-8"
-						>{invoice.status === 'draft' ? 'Update Draft' : 'Update Invoice'}</Button
-					>
+						<Button href="/rekini" variant="outline">{m['components.delete_modal.cancel']()}</Button>
+						<Button type="submit" size="lg" class="px-8"
+							>{invoice.status === 'draft' ? 'Update Draft' : 'Update Invoice'}</Button
+						>
+					</div>
 				</div>
 			</form>
 		</div>

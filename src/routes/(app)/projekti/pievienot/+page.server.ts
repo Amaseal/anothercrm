@@ -36,7 +36,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			userClientId = result[0].clientId;
 		}
 	}
-	const clients = await db.query.client.findMany({ columns: { id: true, name: true } });
+	const clients = await db.query.client.findMany({ columns: { id: true, name: true, email: true, phone: true } });
 	const users = await db.query.user.findMany({
 		columns: { id: true, name: true, type: true }
 	});

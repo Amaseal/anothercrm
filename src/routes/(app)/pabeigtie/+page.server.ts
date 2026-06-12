@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { task, taskAssignee } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
@@ -6,7 +6,8 @@ import type { Actions } from './$types';
 import { taskEvents } from '$lib/server/events';
 
 export const actions: Actions = {
-    restore: async ({ request }) => {
+    restore: async ({ request, locals }) => {
+        if (!locals.user) error(401);
         const formData = await request.formData();
         const taskIdStr = formData.get('taskId');
 

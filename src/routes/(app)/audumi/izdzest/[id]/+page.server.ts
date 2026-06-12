@@ -1,11 +1,12 @@
 import { eq } from 'drizzle-orm';
 import { material } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	if (!locals.user || locals.user.type !== 'admin') error(403);
 	const item = await db.query.material.findFirst({
 		where: eq(material.id, Number(params.id))
 	});
@@ -14,7 +15,8 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ params, fetch, cookies }) => {
+	default: async ({ params, fetch, cookies, locals }) => {
+		if (!locals.user || locals.user.type !== 'admin') error(403);
 		try {
 			// Get the material to find the image path
 			const item = await db.query.material.findFirst({

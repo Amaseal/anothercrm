@@ -109,7 +109,8 @@ export const POST: RequestHandler = async ({ request, locals }) => {
  * Handle DELETE requests to remove task files
  * This will remove both the file from disk AND the database entry
  */
-export const DELETE: RequestHandler = async ({ request }) => {
+export const DELETE: RequestHandler = async ({ request, locals }) => {
+	if (!locals.user) return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	try {
 		const { filePath, fileId } = await request.json();
 
@@ -172,7 +173,8 @@ export const DELETE: RequestHandler = async ({ request }) => {
 /**
  * Handle GET requests to retrieve file information
  */
-export const GET: RequestHandler = async ({ url }) => {
+export const GET: RequestHandler = async ({ url, locals }) => {
+	if (!locals.user) return json({ success: false, error: 'Unauthorized' }, { status: 401 });
 	try {
 		const fileId = url.searchParams.get('id');
 		const filePath = url.searchParams.get('path');
