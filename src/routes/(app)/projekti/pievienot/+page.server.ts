@@ -40,7 +40,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const users = await db.query.user.findMany({
 		columns: { id: true, name: true, type: true }
 	});
-	const materials = await db.query.material.findMany({ columns: { id: true, title: true, article: true, unit: true, price: true, image: true } });
+	const materials = await db.query.material.findMany({ columns: { id: true, title: true, article: true, unit: true, price: true, image: true, remaining: true } });
 	const rawProducts = await db.query.product.findMany({
 		with: {
 			translations: true,

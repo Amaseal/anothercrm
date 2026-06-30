@@ -14,6 +14,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Separator } from '$lib/components/ui/separator';
 	import Pagination from '@/components/pagination.svelte';
+	import SearchInput from '$lib/components/search-input.svelte';
 	import Merge from '@lucide/svelte/icons/git-merge';
 	import X from '@lucide/svelte/icons/x';
 
@@ -93,6 +94,12 @@
 		updateUrlAndNavigate({ sortColumn: column, sortDirection: newDirection });
 	}
 
+	function clearSearch() {
+		debouncedSearch.cancel();
+		searchTerm = '';
+		updateUrlAndNavigate({ search: '', page: 0 });
+	}
+
 	// Merge mode
 	let mergeMode = $state(false);
 	let selectedIds = $state<Set<number>>(new Set());
@@ -127,12 +134,12 @@
 		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 		<h1 class="text-base font-medium">{m['clients.value']()}</h1>
 		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
-		<Input
-			type="text"
-			class="mb-0 w-full max-w-sm"
+		<SearchInput
+			class="w-full max-w-sm"
 			placeholder={m['components.search']()}
 			value={searchTerm}
 			oninput={handleSearchInput}
+			onclear={clearSearch}
 		/>
 		{#if mergeMode}
 			<span class="text-sm whitespace-nowrap text-muted-foreground"

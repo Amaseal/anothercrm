@@ -10,6 +10,7 @@
 	import Columns3Cog from '@lucide/svelte/icons/columns-3-cog';
 	import * as m from '$lib/paraglide/messages';
 	import List from '$lib/components/list.svelte';
+	import SearchInput from '$lib/components/search-input.svelte';
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { dragScroll } from '$lib/actions/drag-scroll';
 
@@ -26,6 +27,12 @@
 	const debouncedSearch = debounce((value: string) => {
 		updateUrlAndNavigate({ search: value });
 	}, 1200);
+
+	function clearSearch() {
+		debouncedSearch.cancel();
+		searchTerm = '';
+		updateUrlAndNavigate({ search: '' });
+	}
 
 	function updateUrlAndNavigate(params: Record<string, any>) {
 		const url = new URL(page.url);
@@ -88,12 +95,12 @@
 		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 		<h1 class="text-base font-medium">{m['projects.value']()}</h1>
 		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
-		<Input
-			type="text"
-			class="mb-0 w-full max-w-sm"
+		<SearchInput
+			class="w-full max-w-sm"
 			placeholder={m['components.search']()}
 			value={searchTerm}
 			oninput={handleSearchInput}
+			onclear={clearSearch}
 		/>
 		<!-- task filtering -->
 		{#if data.user?.type === 'admin'}

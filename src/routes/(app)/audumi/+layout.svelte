@@ -17,6 +17,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as m from '$lib/paraglide/messages';
 	import Pagination from '$lib/components/pagination.svelte';
+	import SearchInput from '$lib/components/search-input.svelte';
 
 	let {
 		data,
@@ -166,6 +167,12 @@ const debouncedSearch = debounce((value: string) => {
 			sortDirection: newDirection
 		});
 	}
+	function clearSearch() {
+		debouncedSearch.cancel();
+		searchTerm = '';
+		updateUrlAndNavigate({ search: '', page: 0 });
+	}
+
 	// Edit functions
 	function openEditModal(item: Material) {
 		currentItem = item;
@@ -189,12 +196,12 @@ const debouncedSearch = debounce((value: string) => {
 		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 		<h1 class="text-base font-medium">{m['materials.value']()}</h1>
 		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
-		<Input
-			type="text"
-			class="mb-0 w-full max-w-sm"
+		<SearchInput
+			class="w-full max-w-sm"
 			placeholder={m['components.search']()}
 			value={searchTerm}
 			oninput={handleSearchInput}
+			onclear={clearSearch}
 		/>
 		<Button href="/audumi/pievienot" variant="outline" class="ml-auto flex items-center gap-2"
 			><Plus />{m['components.add']()}</Button

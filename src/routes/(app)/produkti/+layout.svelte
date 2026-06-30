@@ -18,6 +18,7 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import * as m from '$lib/paraglide/messages';
 	import Pagination from '$lib/components/pagination.svelte';
+	import SearchInput from '$lib/components/search-input.svelte';
 	import { getLocale } from '@/paraglide/runtime.js';
 	import { isClient, isAdmin } from '$lib/stores/user';
 	import ImageIcon from '@lucide/svelte/icons/image';
@@ -86,6 +87,12 @@
 		goto(url.toString(), { replaceState: true });
 	}
 
+	function clearSearch() {
+		debouncedSearch.cancel();
+		searchTerm = '';
+		updateUrlAndNavigate({ search: '', page: 0 });
+	}
+
 	function handleSort(column: keyof Product) {
 		// Check if the column is sortable
 		const sortableColumns: (keyof Product)[] = ['title', 'cost', 'price'];
@@ -132,12 +139,12 @@
 		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
 		<h1 class="text-base font-medium">{m['products.value']()}</h1>
 		<Separator orientation="vertical" class="mx-2 data-[orientation=vertical]:h-4" />
-		<Input
-			type="text"
-			class="mb-0 w-full max-w-sm"
+		<SearchInput
+			class="w-full max-w-sm"
 			placeholder={m['components.search']()}
 			value={searchTerm}
 			oninput={handleSearchInput}
+			onclear={clearSearch}
 		/>
 		{#if !$isClient}
 			<Button href="/produkti/pievienot" variant="outline" class="ml-auto flex items-center gap-2"

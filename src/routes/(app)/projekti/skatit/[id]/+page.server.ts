@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
     const [clients, users, materials, products] = await Promise.all([
         db.query.client.findMany({ columns: { id: true, name: true, email: true, phone: true } }),
         db.query.user.findMany({ where: (u, { eq }) => eq(u.type, 'admin'), columns: { id: true, name: true, type: true } }),
-        db.query.material.findMany({ columns: { id: true, title: true, article: true, unit: true, price: true, image: true } }),
+        db.query.material.findMany({ columns: { id: true, title: true, article: true, unit: true, price: true, image: true, remaining: true } }),
         db.query.product.findMany({ with: { translations: true, clientPrices: true } })
     ]);
 

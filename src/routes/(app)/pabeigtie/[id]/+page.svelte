@@ -3,27 +3,135 @@
 	import { Label } from '$lib/components/ui/label';
 	import { Input } from '$lib/components/ui/input';
 	import { Button } from '$lib/components/ui/button';
-	import { X, Download, File as FileIcon } from '@lucide/svelte';
-	import { formatDate, toCurrency } from '$lib/utilities';
-	import { Badge } from '$lib/components/ui/badge';
-	import * as Table from '$lib/components/ui/table/index.js';
+	import * as Select from '$lib/components/ui/select';
+	import * as Popover from '$lib/components/ui/popover';
+	import { Calendar } from '$lib/components/ui/calendar';
+	import { CalendarIcon, X, Printer, FileText, Clock } from '@lucide/svelte';
+	import * as Sheet from '$lib/components/ui/sheet';
+	import {
+		DateFormatter,
+		type DateValue,
+		getLocalTimeZone,
+		today,
+		parseDate
+	} from '@internationalized/date';
+	import Tiptap from '$lib/components/tiptap.svelte';
+	import { cn } from '$lib/utils';
+	import { buttonVariants } from '$lib/components/ui/button';
+	import MultiSelect from '$lib/components/multi-select.svelte';
+	import ProductList from '$lib/components/product-list.svelte';
+	import FileUpload from '$lib/components/file-upload.svelte';
+	import ClientSelect from '$lib/components/client-select.svelte';
+	import ImagePreviewInput from '$lib/components/image-preview-input.svelte';
 	import type { PageData } from './$types';
+
+	import { isClient, isAdmin } from '$lib/stores/user';
 
 	let { data } = $props<{ data: PageData }>();
 
-	const item = data.item;
+	let selectedClientId = $state(data.item.clientId?.toString() || '');
 
-	function downloadFile(file: { downloadUrl: string; filename: string }) {
-		const a = document.createElement('a');
-		a.href = file.downloadUrl;
-		a.download = file.filename;
-		a.target = '_blank';
-		a.click();
+	$effect(() => {
+		if (data.userClientId) {
+			selectedClientId = data.userClientId.toString();
+		}
+	});
+
+	let selectedAssigneeIds = $state<string[]>(
+		data.item.assignees ? data.item.assignees.map((a: any) => a.userId) : []
+	);
+	let selectedManagerId = $state(data.item.createdById || '');
+	let selectedSeamstress = $state(data.item.seamstress || '');
+	let selectedMaterialIds = $state<number[]>(
+		data.item.taskMaterials.map((m: { materialId: any }) => m.materialId)
+	);
+
+	let dateValue = $state<DateValue | undefined>(
+		data.item.endDate ? parseDate(data.item.endDate) : undefined
+	);
+	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
+	let datePlaceholder = $state<DateValue>(dateValue || today(getLocalTimeZone()));
+
+	let descriptionContent = $state(data.item.description || '');
+
+	let totalPrice = $state(data.item.price || 0);
+	let totalCost = $state(0);
+
+	let selectedClientName = $derived(
+		data.clients.find((c: { id: { toString: () => any } }) => c.id.toString() === selectedClientId)
+			?.name || m['projects.client_label']()
+	);
+	let selectedAssigneeName = $derived(
+		selectedAssigneeIds.length > 0
+			? data.users
+					.filter((u: { id: any }) => selectedAssigneeIds.includes(u.id))
+					.map((u: any) => u.name)
+					.join(', ')
+			: undefined
+	);
+
+	let selectedManagerName = $derived(
+		data.users.find((u: { id: any }) => u.id === selectedManagerId)?.name
+	);
+
+	const seamstresses = [
+		{ value: 'Ikšķile', label: 'Ikšķile' },
+		{ value: 'Pie mums', label: 'Pie mums' },
+		{ value: 'Vladislavs', label: 'Vladislavs' },
+		{ value: 'Lielvārde', label: 'Lielvārde' },
+		{ value: 'Pagrabs', label: 'Pagrabs' }
+	];
+
+	function formatPrice(priceInCents: number): string {
+		return (priceInCents / 100).toFixed(2);
 	}
+
+	let initialProductEntries = $state(
+		data.item.taskProducts.length > 0
+			? data.item.taskProducts.map((tp: { productId: any; count: any }) => ({
+					productId: tp.productId,
+					count: tp.count || 1,
+					isOpen: false
+				}))
+			: undefined
+	);
+
+	let files = $state(
+		data.item.files.map((f: { filename: any; downloadUrl: any; size: any }) => ({
+			name: f.filename,
+			path: f.downloadUrl,
+			size: f.size
+		}))
+	);
+
+	import ProjectPrintView from '$lib/components/project-print-view.svelte';
+	import HistoryList from '$lib/components/history-list.svelte';
 </script>
 
+<ProjectPrintView
+	title={data.item.title}
+	clientName={selectedClientName}
+	{dateValue}
+	managerName={selectedManagerName}
+	assigneeName={selectedAssigneeName}
+	seamstress={selectedSeamstress}
+	materials={data.item.taskMaterials.map(
+		(tm: any) => `${tm.material.title} (${tm.material.remaining})`
+	)}
+	products={data.item.taskProducts.map((tp: any) => ({
+		name: tp.product.title,
+		count: tp.count,
+		price: tp.product.cost
+	}))}
+	description={descriptionContent}
+	previewUrl={data.item.preview || undefined}
+	{totalPrice}
+/>
+
 <!-- Modal Overlay -->
-<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+<div
+	class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:hidden"
+>
 	<!-- Inner Modal Container -->
 	<div
 		class="relative flex h-[90vh] w-[80vw] flex-col overflow-hidden rounded-xl bg-background shadow-2xl"
@@ -33,8 +141,63 @@
 			<div class="flex items-center gap-4 border-b bg-background px-6 py-4">
 				<!-- Title -->
 				<div class="flex-1">
-					<h2 class="text-xl font-semibold">{item.title}</h2>
+					<Input
+						id="title"
+						name="title"
+						value={data.item.title}
+						placeholder={m['projects.title_label']()}
+						class="text-lg font-semibold"
+						disabled
+					/>
 				</div>
+
+				<!-- Client -->
+				<div class="w-64">
+					<ClientSelect bind:value={selectedClientId} clients={data.clients} disabled={true} />
+				</div>
+
+				<!-- Due Date -->
+				<div class="w-auto">
+					<Button
+						variant="outline"
+						class={cn(
+							'w-[240px] cursor-not-allowed justify-start pl-4 text-left font-normal opacity-50',
+							!dateValue && 'text-muted-foreground'
+						)}
+						disabled
+					>
+						{dateValue
+							? df.format(dateValue.toDate(getLocalTimeZone()))
+							: m['projects.choose_date']()}
+						<CalendarIcon class="ml-auto size-4 opacity-50" />
+					</Button>
+				</div>
+
+				<!-- History Toggle -->
+				<Sheet.Root>
+					<Sheet.Trigger>
+						{#snippet child({ props })}
+							<Button
+								{...props}
+								variant="ghost"
+								size="icon"
+								class="text-muted-foreground hover:text-foreground"
+								title={m['history.title']()}
+							>
+								<Clock class="size-5" />
+								<span class="sr-only">History</span>
+							</Button>
+						{/snippet}
+					</Sheet.Trigger>
+					<Sheet.Content side="right" class="z-[100] w-[400px] overflow-y-auto sm:w-[540px]">
+						<Sheet.Header>
+							<Sheet.Title>{m['history.title']()}</Sheet.Title>
+						</Sheet.Header>
+						<div class="mt-6 p-4">
+							<HistoryList history={data.item.history} />
+						</div>
+					</Sheet.Content>
+				</Sheet.Root>
 
 				<!-- Close Button -->
 				<Button
@@ -50,91 +213,80 @@
 
 			<!-- Scrollable Content -->
 			<div class="custom-scroll flex-1 overflow-y-auto p-6">
-				<!-- SECTION 1: Description & Details -->
+				<!-- SECTION 1: Description & Products -->
 				<div class="grid grid-cols-12 items-stretch gap-6">
-					<!-- Left (65%) - Description -->
-					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
-						<Label>{m['projects.description_label']()}</Label>
-						<div
-							class="prose min-h-[400px] max-w-none flex-1 rounded-md border p-4 dark:prose-invert"
-						>
-							{@html item.description || ''}
+					<!-- Right (35%) - Assignment & Products -->
+
+					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
+						{#if $isAdmin}
+							<!-- Assignment Controls -->
+							<div class="space-y-4">
+								<!-- Assignee -->
+								<div class="grid gap-2">
+									<Label>{m['projects.assign_user_label']()}</Label>
+									<MultiSelect
+										options={data.users.map((u: any) => ({
+											value: u.id,
+											label: u.name
+										}))}
+										bind:value={selectedAssigneeIds}
+										placeholder={m['projects.assign_user_label']()}
+										disabled={true}
+									/>
+								</div>
+
+								{#if !$isClient}
+									<!-- Seamstress -->
+									<div class="grid gap-2">
+										<Label>{m['projects.seamstress_label']()}</Label>
+										<Select.Root type="single" bind:value={selectedSeamstress} disabled>
+											<Select.Trigger class="w-full">
+												{selectedSeamstress || m['projects.seamstress_placeholder']()}
+											</Select.Trigger>
+											<Select.Content>
+												{#each seamstresses as s}
+													<Select.Item value={s.value} label={s.label}>
+														{s.label}
+													</Select.Item>
+												{/each}
+											</Select.Content>
+										</Select.Root>
+									</div>
+								{/if}
+
+								<!-- Materials -->
+								<div class="grid gap-2">
+									<Label>{m['projects.materials_label']()}</Label>
+									<MultiSelect
+										options={data.materials.map((i: { id: any; title: any; remaining: any }) => ({
+											value: i.id,
+											label: `${i.title} (${i.remaining})`
+										}))}
+										bind:value={selectedMaterialIds}
+										placeholder={m['projects.materials_placeholder']()}
+										disabled={true}
+									/>
+								</div>
+							</div>
+						{/if}
+						<!-- Products List -->
+						<div class="flex-1">
+							<ProductList
+								products={data.products}
+								bind:totalPrice
+								bind:totalCost
+								initialEntries={initialProductEntries}
+								readonly={true}
+								isAdmin={$isAdmin}
+							/>
 						</div>
 					</div>
 
-					<!-- Right (35%) - Assignment & Meta -->
-					<div class="col-span-12 flex flex-col gap-6 lg:col-span-4">
-						<!-- Client -->
-						<div class="grid gap-2">
-							<Label>{m['projects.client_label']()}</Label>
-							<Input value={item.client?.name || '-'} readonly />
-						</div>
-
-						<!-- Manager -->
-						<div class="grid gap-2">
-							<Label>{m['projects.assign_manager_label']()}</Label>
-							<Input value={item.creator?.name || '-'} readonly />
-						</div>
-
-						<!-- Assignee -->
-						<div class="grid gap-2">
-							<Label>{m['projects.assign_user_label']()}</Label>
-							<Input value={item.assignedToUser?.name || '-'} readonly />
-						</div>
-
-						<!-- Seamstress -->
-						<div class="grid gap-2">
-							<Label>{m['projects.seamstress_label']()}</Label>
-							<Input value={item.seamstress || '-'} readonly />
-						</div>
-
-						<!-- Dates -->
-						<div class="grid gap-2">
-							<Label>{m['projects.choose_date']()}</Label>
-							<Input value={formatDate(item.endDate) || '-'} readonly />
-						</div>
-
-						<!-- Materials -->
-						<div class="grid gap-2">
-							<Label>{m['projects.materials_label']()}</Label>
-							<div class="flex flex-wrap gap-2">
-								{#each item.taskMaterials as tm}
-									<Badge variant="secondary">{tm.material.title}</Badge>
-								{/each}
-								{#if item.taskMaterials.length === 0}
-									<span class="text-sm text-muted-foreground">-</span>
-								{/if}
-							</div>
-						</div>
-
-						<!-- Products List -->
-						<div class="grid gap-2">
-							<Label>{m['projects.products_label']()}</Label>
-							<div class="rounded-md border">
-								<Table.Root>
-									<Table.Header>
-										<Table.Row>
-											<Table.Head>{m['projects.products_placeholder']()}</Table.Head>
-											<Table.Head class="text-right">{m['projects.count_label']()}</Table.Head>
-										</Table.Row>
-									</Table.Header>
-									<Table.Body>
-										{#each item.taskProducts as tp}
-											<Table.Row>
-												<Table.Cell>{tp.product.title}</Table.Cell>
-												<Table.Cell class="text-right">{tp.count}</Table.Cell>
-											</Table.Row>
-										{/each}
-										{#if item.taskProducts.length === 0}
-											<Table.Row>
-												<Table.Cell colspan={2} class="text-center text-muted-foreground"
-													>-</Table.Cell
-												>
-											</Table.Row>
-										{/if}
-									</Table.Body>
-								</Table.Root>
-							</div>
+					<!-- Left (65%) - Description -->
+					<div class="col-span-12 flex flex-col gap-2 lg:col-span-8">
+						<Label>{m['projects.description_label']()}</Label>
+						<div class="min-h-[400px] flex-1 rounded-md border p-2">
+							<Tiptap bind:value={descriptionContent} class="h-full min-h-full" editable={false} />
 						</div>
 					</div>
 				</div>
@@ -142,63 +294,51 @@
 				<!-- Separator/Heading for Execution -->
 				<div class="my-6 border-t"></div>
 
-				<!-- SECTION 2: Execution (Preview & Files) -->
-				<div class="grid grid-cols-12 items-stretch gap-6">
-					<!-- Left (65%) - Large Visual Reference -->
-					<div class="col-span-12 lg:col-span-8">
-						<div class="h-full min-h-[400px]">
-							<Label>{m['projects.preview_label']()}</Label>
-							{#if item.preview}
-								<img
-									src={item.preview}
-									alt="Preview"
-									class="mt-2 h-full w-full rounded-md border object-contain"
-								/>
-							{:else}
-								<div
-									class="mt-2 flex h-full min-h-[200px] w-full items-center justify-center rounded-md border bg-muted/30"
+				<!-- SECTION 3: Invoices -->
+				{#if data.taskInvoices && data.taskInvoices.length > 0}
+					<div class="mb-6 space-y-4">
+						<Label class="text-lg">Rēķini</Label>
+						<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+							{#each data.taskInvoices as inv}
+								<a
+									href={`/rekini/labot/${inv.id}`}
+									class="block rounded-lg border bg-gray-50/50 p-4 transition-colors hover:bg-gray-50"
 								>
-									<span class="text-muted-foreground">No preview image</span>
-								</div>
-							{/if}
+									<div class="mb-2 flex items-center justify-between">
+										<span class="font-bold">{inv.invoiceNumber}</span>
+										<span class="rounded bg-gray-200 px-2 py-1 text-xs">{inv.status}</span>
+									</div>
+									<div class="text-sm">
+										<div>Summa: {formatPrice(inv.total)} €</div>
+										<div class="text-muted-foreground">{inv.issueDate} - {inv.dueDate}</div>
+									</div>
+								</a>
+							{/each}
 						</div>
 					</div>
+					<div class="my-6 border-t"></div>
+				{/if}
 
+				<!-- SECTION 2: Execution (Preview & Files) -->
+				<div class="grid grid-cols-12 items-stretch gap-6">
 					<!-- Right (35%) - Files -->
 					<div class="col-span-12 lg:col-span-4">
 						<div class="grid gap-2">
-							<Label>{m['projects.files_label']()}</Label>
-							<div class="grid gap-2">
-								{#each item.files as file}
-									<div
-										class="flex items-center justify-between rounded-lg border bg-card p-2 text-sm"
-									>
-										<div class="flex items-center gap-3 overflow-hidden">
-											<div class="grid h-8 w-8 place-items-center rounded bg-muted">
-												<FileIcon class="h-4 w-4" />
-											</div>
-											<div class="flex flex-col truncate">
-												<span class="truncate font-medium">{file.filename}</span>
-												<span class="text-xs text-muted-foreground"
-													>{(file.size / 1024).toFixed(1)} KB</span
-												>
-											</div>
-										</div>
-										<Button
-											variant="ghost"
-											size="icon"
-											class="h-8 w-8 text-muted-foreground"
-											onclick={() => downloadFile(file)}
-										>
-											<Download class="h-4 w-4" />
-											<span class="sr-only">Download</span>
-										</Button>
-									</div>
-								{/each}
-								{#if item.files.length === 0}
-									<span class="text-sm text-muted-foreground">No files attached</span>
-								{/if}
-							</div>
+							<Label for="files">{m['projects.files_label']()}</Label>
+							<FileUpload bind:files readonly={true} zipFilename={data.item.title} />
+						</div>
+					</div>
+					<!-- Left (65%) - Large Visual Reference -->
+					<div class="col-span-12 lg:col-span-8">
+						<div class="h-full min-h-[400px]">
+							<ImagePreviewInput
+								id="preview"
+								name="preview"
+								preview={data.item.preview || undefined}
+								label={m['projects.preview_label']()}
+								class="h-full w-full object-contain"
+								readonly={true}
+							/>
 						</div>
 					</div>
 				</div>
@@ -208,8 +348,27 @@
 			<div
 				class="flex items-center justify-between border-t bg-background p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]"
 			>
-				<div class="text-xl font-bold">
-					{m['projects.total_price']()}: €{toCurrency(item.price || 0)}
+				<div class="flex items-center gap-4">
+					<div class="text-xl font-bold">
+						{m['projects.total_price']()}: €{formatPrice(totalPrice)}
+					</div>
+					{#if $isAdmin}
+						<div class="text-sm text-muted-foreground">
+							Izmaksas: €{formatPrice(totalCost)}
+						</div>
+					{/if}
+				</div>
+				<div class="flex items-center gap-2 print:hidden">
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						onclick={() => window.print()}
+						title="Printēt"
+					>
+						<Printer class="size-4" />
+						<span class="sr-only">Print</span>
+					</Button>
 				</div>
 			</div>
 		</div>
