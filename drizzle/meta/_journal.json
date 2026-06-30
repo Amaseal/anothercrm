@@ -239,6 +239,13 @@
       "when": 1782812776954,
       "tag": "0033_small_venus",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1782815220513,
+      "tag": "0034_curvy_pandemic",
+      "breakpoints": true
     }
   ]
 }

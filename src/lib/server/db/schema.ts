@@ -171,7 +171,9 @@ export const settings = pgTable('settings', {
 	nextcloud_username: text('nextcloud_username'), // Nextcloud username for integration (optional)
 	nextcloud_password: text('nextcloud_password'), // Nextcloud password (should be encrypted!) (optional)
 	lastSeenChangelogVersion: text('last_seen_changelog_version') // null = never shown a changelog
-});
+}, (table) => [
+	unique().on(table.userId) // one settings row per user
+]);
 
 // ==================== MATERIALS & PRODUCTS TABLES ====================
 
