@@ -169,7 +169,8 @@ export const settings = pgTable('settings', {
 	language: text('language').notNull(), // User's preferred language code
 	nextcloud: text('nextcloud'), // Nextcloud server URL (optional)
 	nextcloud_username: text('nextcloud_username'), // Nextcloud username for integration (optional)
-	nextcloud_password: text('nextcloud_password') // Nextcloud password (should be encrypted!) (optional)
+	nextcloud_password: text('nextcloud_password'), // Nextcloud password (should be encrypted!) (optional)
+	lastSeenChangelogVersion: text('last_seen_changelog_version') // null = never shown a changelog
 });
 
 // ==================== MATERIALS & PRODUCTS TABLES ====================

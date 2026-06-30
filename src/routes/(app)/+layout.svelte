@@ -5,13 +5,17 @@
 	import background from '$lib/assets/background.svg';
 
 	import { Toaster } from 'svelte-sonner';
-
 	import { ModeWatcher } from 'mode-watcher';
+	import ChangelogModal from '$lib/components/changelog-modal.svelte';
+
 	let { children, data } = $props();
 </script>
 
 <Toaster />
 <ModeWatcher track={false} defaultMode="light" lightClassNames={['light']} />
+{#if data.changelog}
+	<ChangelogModal changelog={data.changelog} />
+{/if}
 <Sidebar.Provider
 	style="--sidebar-width: calc(var(--spacing) * 54); --header-height: calc(var(--spacing) * 12); "
 >
