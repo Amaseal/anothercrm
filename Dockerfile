@@ -31,7 +31,7 @@ COPY package.json ./
 
 EXPOSE 3000
 
-HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
-    CMD wget -qO- http://localhost:3000/ > /dev/null || exit 1
+HEALTHCHECK --interval=10s --timeout=5s --start-period=50s --retries=5 \
+    CMD wget -q --spider http://localhost:3000/ || exit 1
 
 CMD ["node", "build"]
