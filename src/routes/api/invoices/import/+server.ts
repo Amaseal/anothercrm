@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { read, utils } from 'xlsx';
+import { read } from 'xlsx';
 import { db } from '$lib/server/db';
 import { client, invoice, invoiceItems } from '$lib/server/db/schema';
 import { eq, ilike, or, sql } from 'drizzle-orm';

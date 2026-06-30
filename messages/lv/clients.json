@@ -42,7 +42,8 @@
 		"merge_primary_badge": "Galvenais",
 		"merge_linked_user": "Saistīts ar lietotāju",
 		"merge_select_min": "Lūdzu izvēlieties vismaz 2 klientus sapludināšanai.",
-		"merge_success": "Klienti veiksmīgi sapludināti.",		"merge_mode": "Atlases režīms",
+		"merge_success": "Klienti veiksmīgi sapludināti.",		"details": "Klienta informācija",
+		"merge_mode": "Atlases režīms",
 		"breakdown": {
 			"title": "Peļņas pārskats",
 			"revenue": "Ieņēmumi",

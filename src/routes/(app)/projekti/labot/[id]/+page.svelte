@@ -54,7 +54,8 @@
 		data.item.endDate ? parseDate(data.item.endDate) : undefined
 	);
 	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
-	let datePlaceholder = $state<DateValue>(dateValue || today(getLocalTimeZone()));
+	let datePlaceholder = $state<DateValue>(today(getLocalTimeZone()));
+	$effect(() => { datePlaceholder = dateValue ?? today(getLocalTimeZone()); });
 
 	// Tiptap Content
 	let descriptionContent = $state(data.item.description || '');

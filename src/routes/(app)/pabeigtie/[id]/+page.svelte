@@ -50,7 +50,6 @@
 		data.item.endDate ? parseDate(data.item.endDate) : undefined
 	);
 	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
-	let datePlaceholder = $state<DateValue>(dateValue || today(getLocalTimeZone()));
 
 	let descriptionContent = $state(data.item.description || '');
 

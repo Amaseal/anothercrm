@@ -14,6 +14,9 @@ RUN pnpm install --frozen-lockfile
 # Copy source
 COPY . .
 
+# Generate .svelte-kit/ (needed so tsconfig.json can resolve its extends)
+RUN pnpm exec svelte-kit sync
+
 # Build the application
 RUN pnpm run build
 
@@ -30,8 +33,5 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY package.json ./
 
 EXPOSE 3000
-
-HEALTHCHECK --interval=10s --timeout=5s --start-period=50s --retries=5 \
-    CMD wget -q --spider http://localhost:3000/ || exit 1
 
 CMD ["node", "build"]

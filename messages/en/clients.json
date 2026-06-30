@@ -43,7 +43,9 @@
 		"merge_primary_badge": "Primary",
 		"merge_linked_user": "Linked to user",
 		"merge_select_min": "Please select at least 2 clients to merge.",
-		"merge_success": "Clients merged successfully.",		"merge_mode": "Selection mode",
+		"merge_success": "Clients merged successfully.",
+		"details": "Client details",
+		"merge_mode": "Selection mode",
 		"breakdown": {
 			"title": "Profit breakdown",
 			"revenue": "Revenue",
