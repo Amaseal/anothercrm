@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { task, userTabPreference, tabGroup, tab, user, client, userClient, taskAssignee } from '$lib/server/db/schema';
-import { eq, or, and, isNull, inArray, desc, asc, count, sql, ilike, exists } from 'drizzle-orm';
+import { eq, or, and, inArray, desc, asc, count, sql, exists } from 'drizzle-orm';
 import { ilikeNormalize } from '$lib/server/dbUtils';
 export interface ProjectBoardColumn {
     id: number;
@@ -66,23 +66,23 @@ export async function getProjectBoardData(
     let tabGroupsData: Awaited<typeof tabGroupsQuery>;
     let hiddenTabIds: Set<number>;
 
+    // Subquery: is the task creator a client user? Used in place of a separate user IDs fetch.
+    const creatorIsClient = (t: typeof task) => exists(
+        db.select({ one: sql`1` }).from(user)
+            .where(and(eq(user.id, t.createdById), eq(user.type, 'client')))
+    );
+
     if (currentUser.type === 'admin') {
         if (clientOnly) {
-            // Run all independent queries in parallel — hidden tabs now come from tabGroups
-            const [_tabGroups, clientUsers] = await Promise.all([
-                tabGroupsQuery,
-                db.query.user.findMany({ where: eq(user.type, 'client'), columns: { id: true } })
-            ]);
-            tabGroupsData = _tabGroups;
+            tabGroupsData = await tabGroupsQuery;
             hiddenTabIds = new Set(tabGroupsData.flatMap(g => g.tabs.flatMap(t => t.userPreferences.map(p => p.tabId))));
-            const clientIds = clientUsers.map(u => u.id);
 
-            // Admin "Client Tasks" - Fetch only tasks created by client users
+            // Admin "Client Tasks" - tasks created by client users
             tasks = await db.query.task.findMany({
-                where: (t, { eq, or, isNull, and, inArray }) => {
+                where: (t, { eq, and }) => {
                     const conditions = [
-                        or(eq(t.isDone, false), isNull(t.isDone)),
-                        clientIds.length > 0 ? inArray(t.createdById, clientIds) : sql`false`
+                        eq(t.isDone, false),
+                        creatorIsClient(t)
                     ];
                     if (search) conditions.push(ilikeNormalize(t.title, search));
                     return and(...conditions);
@@ -97,8 +97,8 @@ export async function getProjectBoardData(
 
             // Admin "Show All" - Fetch all active tasks (not done)
             tasks = await db.query.task.findMany({
-                where: (t, { eq, or, isNull, and }) => {
-                    const conditions = [or(eq(t.isDone, false), isNull(t.isDone))];
+                where: (t, { eq, and }) => {
+                    const conditions = [eq(t.isDone, false)];
                     if (search) conditions.push(ilikeNormalize(t.title, search));
                     return and(...conditions);
                 },
@@ -107,14 +107,9 @@ export async function getProjectBoardData(
                 orderBy: (t, { asc }) => [asc(t.endDate)]
             });
         } else {
-            // Admin default view — run tabGroups and client user IDs in parallel
-            const [_tabGroups, clientUsers] = await Promise.all([
-                tabGroupsQuery,
-                db.query.user.findMany({ where: eq(user.type, 'client'), columns: { id: true } })
-            ]);
-            tabGroupsData = _tabGroups;
+            // Admin default view — tabGroups only (client IDs replaced by correlated subquery)
+            tabGroupsData = await tabGroupsQuery;
             hiddenTabIds = new Set(tabGroupsData.flatMap(g => g.tabs.flatMap(t => t.userPreferences.map(p => p.tabId))));
-            const clientIds = clientUsers.map(u => u.id);
 
             // Admin default view:
             // A1. Tasks created by me
@@ -123,22 +118,20 @@ export async function getProjectBoardData(
             // A4. Client-created tasks WITH assignees → only if I am one of them (covered by A2)
             // A5. Tasks created by other admins → NOT visible unless assigned to me (covered by A2)
             tasks = await db.query.task.findMany({
-                where: (t, { or, eq, inArray, and, isNull }) => {
+                where: (t, { or, eq, and }) => {
                     const isAssignedToMe = exists(
-                        db.select({ id: taskAssignee.taskId })
+                        db.select({ one: sql`1` })
                             .from(taskAssignee)
                             .where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id)))
                     );
                     const hasAnyAssignee = exists(
-                        db.select({ id: taskAssignee.taskId })
+                        db.select({ one: sql`1` })
                             .from(taskAssignee)
                             .where(eq(taskAssignee.taskId, t.id))
                     );
 
                     // Client-created tasks that have no assignees yet (any admin can see these)
-                    const clientCreatedUnassigned = clientIds.length > 0
-                        ? and(inArray(t.createdById, clientIds), sql`NOT ${hasAnyAssignee}`)
-                        : sql`false`;
+                    const clientCreatedUnassigned = and(creatorIsClient(t), sql`NOT ${hasAnyAssignee}`);
 
                     const baseConditions = [
                         eq(t.createdById, currentUser.id), // A1: created by me
@@ -147,8 +140,8 @@ export async function getProjectBoardData(
                     ];
 
                     const conditions = [
-                        or(...baseConditions),
-                        or(eq(t.isDone, false), isNull(t.isDone))
+                        or(eq(t.createdById, currentUser.id), isAssignedToMe, clientCreatedUnassigned),
+                        eq(t.isDone, false)
                     ];
                     if (search) conditions.push(ilikeNormalize(t.title, search));
 
@@ -179,27 +172,20 @@ export async function getProjectBoardData(
         const linkedClientIds = userClientLinks.map((uc) => uc.clientId);
 
         tasks = await db.query.task.findMany({
-            where: (t, { or, eq, and, isNull }) => {
+            where: (t, { or, eq, and }) => {
                 const isAssignedToMe = exists(
-                    db.select({ id: taskAssignee.taskId })
+                    db.select({ one: sql`1` })
                         .from(taskAssignee)
                         .where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id)))
                 );
 
-                // C1: I created this task
-                const createdByMe = eq(t.createdById, currentUser.id);
-                // C2: I am assigned to this task
-                const assignedToMe = isAssignedToMe;
-                // C3: Task client matches my linked client entry
                 const myClientTask = linkedClientIds.length > 0
                     ? inArray(t.clientId, linkedClientIds)
                     : sql`false`;
 
-                const baseConditions = [createdByMe, assignedToMe, myClientTask];
-
                 const conditions = [
-                    or(...baseConditions),
-                    or(eq(t.isDone, false), isNull(t.isDone))
+                    or(eq(t.createdById, currentUser.id), isAssignedToMe, myClientTask),
+                    eq(t.isDone, false)
                 ];
                 if (search) conditions.push(ilikeNormalize(t.title, search));
                 return and(...conditions);

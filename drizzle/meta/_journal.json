@@ -246,6 +246,20 @@
       "when": 1782815220513,
       "tag": "0034_curvy_pandemic",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1782900000000,
+      "tag": "0035_normalized_search_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1786517420732,
+      "tag": "0036_clumsy_moon_knight",
+      "breakpoints": true
     }
   ]
 }

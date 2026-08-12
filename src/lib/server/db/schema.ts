@@ -869,7 +869,7 @@ export const invoiceItems = pgTable('invoice_items', {
 		.references(() => invoice.id, { onDelete: 'cascade' }),
 	description: text('description').notNull(),
 	unit: text('unit'), // e.g., 'gab.', 'st.', 'm'
-	quantity: integer('quantity').notNull().default(1),
+	quantity: real('quantity').notNull().default(1),
 	price: integer('price').notNull(), // in cents
 	total: integer('total').notNull(), // in cents
 	discountType: text('discount_type').notNull().default('percent'),
