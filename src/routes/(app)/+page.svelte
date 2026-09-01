@@ -35,6 +35,8 @@
 	// Toggle between showing profit (revenue - costs) or raw revenue
 	// Driven by URL param + cookie on the server, reflected here as derived state
 	const profitMode = $derived(data.profitMode);
+	// Toggle between task prices only, invoice data only, or both merged (server-driven, cookie-persisted)
+	const revenueSource = $derived(data.revenueSource);
 
 	// Prepare chart data using $derived
 	const chartData = $derived(
@@ -179,6 +181,16 @@
 		goto(u.toString(), { keepFocus: true, noScroll: true });
 	}
 
+	function setRevenueSource(source: 'tasks' | 'invoices' | 'both') {
+		const u = new URL(page.url);
+		u.searchParams.set('revenueSource', source);
+		goto(u.toString(), { keepFocus: true, noScroll: true });
+	}
+
+	const revenueSourceLabel = $derived(
+		revenueSource === 'tasks' ? 'uzdevumi' : revenueSource === 'invoices' ? 'rēķini' : 'abi'
+	);
+
 	function toggleGroupVisibility(groupId: number) {
 		let newHiddenGroups = [...data.hiddenTabGroups];
 		if (newHiddenGroups.includes(groupId)) {
@@ -211,6 +223,7 @@
 			<Card.Header class="flex flex-row items-center justify-between space-y-0 pb-2">
 				<Card.Title class="text-sm font-medium">
 					{profitMode === 'profit' ? 'Šī mēneša peļņa' : 'Šī mēneša apgrozījums'}
+					<span class="font-normal text-muted-foreground">({revenueSourceLabel})</span>
 				</Card.Title>
 				<DollarSign class="h-4 w-4 text-muted-foreground" />
 			</Card.Header>
@@ -240,6 +253,32 @@
 								? 'bg-primary text-primary-foreground'
 								: 'text-muted-foreground hover:text-foreground'}"
 							onclick={() => setProfitMode('revenue')}>Apgrozījums</button
+						>
+					</div>
+				</div>
+				<div class="mt-2 flex items-center justify-between">
+					<span class="text-xs text-muted-foreground">Datu avots:</span>
+					<div class="flex gap-0.5 rounded-md border p-0.5">
+						<button
+							class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors {revenueSource ===
+							'tasks'
+								? 'bg-primary text-primary-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => setRevenueSource('tasks')}>Uzdevumi</button
+						>
+						<button
+							class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors {revenueSource ===
+							'invoices'
+								? 'bg-primary text-primary-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => setRevenueSource('invoices')}>Rēķini</button
+						>
+						<button
+							class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors {revenueSource ===
+							'both'
+								? 'bg-primary text-primary-foreground'
+								: 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => setRevenueSource('both')}>Abi</button
 						>
 					</div>
 				</div>
@@ -380,6 +419,7 @@
 					<div>
 						<Card.Title>
 							{profitMode === 'profit' ? 'Mēneša peļņa' : 'Mēneša apgrozījums'}
+							<span class="font-normal text-muted-foreground">({revenueSourceLabel})</span>
 						</Card.Title>
 						<Card.Description>Attīstība pēdējos 12 mēnešos</Card.Description>
 					</div>

@@ -63,7 +63,27 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
                 : 'profit';
     if (profitModeParam === 'profit' || profitModeParam === 'revenue') {
         cookies.set('profitMode', profitModeParam, { path: '/', maxAge: 31536000, sameSite: 'lax' });
-    }    // Get top managers (users with highest total revenue/profit, invoice-aware)
+    }
+
+    // revenueSource: 'tasks' = task prices only (ignore invoices), 'invoices' = invoice data only
+    // (ignore task prices), 'both' = current merged behavior (invoice.subtotal when a task is
+    // invoiced, otherwise task.price, plus standalone invoices). Drives the main profit/revenue
+    // card and the 12-month chart only.
+    const validRevenueSources = ['tasks', 'invoices', 'both'] as const;
+    type RevenueSource = typeof validRevenueSources[number];
+    const revenueSourceParam = url.searchParams.get('revenueSource');
+    const revenueSourceCookie = cookies.get('revenueSource');
+    const revenueSource: RevenueSource =
+        validRevenueSources.includes(revenueSourceParam as RevenueSource)
+            ? (revenueSourceParam as RevenueSource)
+            : validRevenueSources.includes(revenueSourceCookie as RevenueSource)
+                ? (revenueSourceCookie as RevenueSource)
+                : 'both';
+    if (validRevenueSources.includes(revenueSourceParam as RevenueSource)) {
+        cookies.set('revenueSource', revenueSourceParam!, { path: '/', maxAge: 31536000, sameSite: 'lax' });
+    }
+
+    // Get top managers (users with highest total revenue/profit, invoice-aware)
     // Revenue per task = invoice.subtotal if invoice exists, otherwise task.price
     // Profit = revenue - product costs (when profitMode === 'profit')
     const revenueExpr = sql`COALESCE(${invoice.subtotal}, ${task.price}, 0)`;
@@ -210,11 +230,12 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
             .orderBy(desc(sql`COALESCE(SUM(DISTINCT CASE WHEN ${invoice.id} IS NOT NULL THEN ${invoice.subtotal} ELSE ${task.price} END), 0)`))
             .limit(clientsLimit),
 
-        // monthlyProfitsFromTasks
+        // monthlyProfitsFromTasks — per task, task price and any linked invoice's subtotal kept separate
         db.select({
                 month: sql<string>`TO_CHAR(${task.created_at}, 'YYYY-MM')`,
                 taskId: task.id,
-                revenue: sql<number>`COALESCE(${invoice.subtotal}, ${task.price}, 0)`,
+                taskPrice: sql<number>`COALESCE(${task.price}, 0)`,
+                invoiceRevenue: invoice.subtotal,
                 productCost: sql<number>`COALESCE(SUM(${taskProduct.count} * ${product.cost}), 0)`
             })
             .from(task)
@@ -225,10 +246,17 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
             .groupBy(task.id, task.created_at, invoice.subtotal, task.price, sql`TO_CHAR(${task.created_at}, 'YYYY-MM')`)
             .orderBy(sql`TO_CHAR(${task.created_at}, 'YYYY-MM')`),
 
-        // monthlyProfitsFromStandaloneInvoices
-        db.select({ month: sql<string>`TO_CHAR(${invoice.created_at}, 'YYYY-MM')`, revenue: invoice.subtotal })
+        // monthlyProfitsFromStandaloneInvoices — ALL invoices (task-linked or not), for the pure "invoices" view
+        db.select({
+                month: sql<string>`TO_CHAR(${invoice.created_at}, 'YYYY-MM')`,
+                taskId: invoice.taskId,
+                revenue: invoice.subtotal,
+                productCost: sql<number>`COALESCE(SUM(${taskProduct.count} * ${product.cost}), 0)`
+            })
             .from(invoice)
-            .where(isNull(invoice.taskId))
+            .leftJoin(taskProduct, eq(taskProduct.taskId, invoice.taskId))
+            .leftJoin(product, eq(taskProduct.productId, product.id))
+            .groupBy(invoice.id, invoice.created_at, invoice.taskId, invoice.subtotal)
             .orderBy(sql`TO_CHAR(${invoice.created_at}, 'YYYY-MM')`),
 
         // monthlyTaskCounts
@@ -239,7 +267,8 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         // currentMonthTasksProfit
         db.select({
                 taskId: task.id,
-                revenue: sql<number>`COALESCE(${invoice.subtotal}, ${task.price}, 0)`,
+                taskPrice: sql<number>`COALESCE(${task.price}, 0)`,
+                invoiceRevenue: invoice.subtotal,
                 productCost: sql<number>`COALESCE(SUM(${taskProduct.count} * ${product.cost}), 0)`
             })
             .from(task)
@@ -249,15 +278,23 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
             .where(and(gte(task.created_at, currentMonthStart), lte(task.created_at, currentMonthEnd), or(sql`${task.price} IS NOT NULL`, sql`${invoice.id} IS NOT NULL`)))
             .groupBy(task.id, task.price, invoice.subtotal),
 
-        // currentMonthStandaloneInvoices
-        db.select({ revenue: invoice.subtotal })
+        // currentMonthStandaloneInvoices — ALL invoices in range, for the pure "invoices" view
+        db.select({
+                taskId: invoice.taskId,
+                revenue: invoice.subtotal,
+                productCost: sql<number>`COALESCE(SUM(${taskProduct.count} * ${product.cost}), 0)`
+            })
             .from(invoice)
-            .where(and(isNull(invoice.taskId), gte(invoice.created_at, currentMonthStart), lte(invoice.created_at, currentMonthEnd))),
+            .leftJoin(taskProduct, eq(taskProduct.taskId, invoice.taskId))
+            .leftJoin(product, eq(taskProduct.productId, product.id))
+            .where(and(gte(invoice.created_at, currentMonthStart), lte(invoice.created_at, currentMonthEnd)))
+            .groupBy(invoice.id, invoice.taskId, invoice.subtotal),
 
         // previousMonthTasksProfit
         db.select({
                 taskId: task.id,
-                revenue: sql<number>`COALESCE(${invoice.subtotal}, ${task.price}, 0)`,
+                taskPrice: sql<number>`COALESCE(${task.price}, 0)`,
+                invoiceRevenue: invoice.subtotal,
                 productCost: sql<number>`COALESCE(SUM(${taskProduct.count} * ${product.cost}), 0)`
             })
             .from(task)
@@ -267,10 +304,17 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
             .where(and(gte(task.created_at, previousMonthStart), lte(task.created_at, previousMonthEnd), or(sql`${task.price} IS NOT NULL`, sql`${invoice.id} IS NOT NULL`)))
             .groupBy(task.id, task.price, invoice.subtotal),
 
-        // previousMonthStandaloneInvoices
-        db.select({ revenue: invoice.subtotal })
+        // previousMonthStandaloneInvoices — ALL invoices in range, for the pure "invoices" view
+        db.select({
+                taskId: invoice.taskId,
+                revenue: invoice.subtotal,
+                productCost: sql<number>`COALESCE(SUM(${taskProduct.count} * ${product.cost}), 0)`
+            })
             .from(invoice)
-            .where(and(isNull(invoice.taskId), gte(invoice.created_at, previousMonthStart), lte(invoice.created_at, previousMonthEnd))),
+            .leftJoin(taskProduct, eq(taskProduct.taskId, invoice.taskId))
+            .leftJoin(product, eq(taskProduct.productId, product.id))
+            .where(and(gte(invoice.created_at, previousMonthStart), lte(invoice.created_at, previousMonthEnd)))
+            .groupBy(invoice.id, invoice.taskId, invoice.subtotal),
 
         // tabGroupsStatsData
         db.query.tabGroup.findMany({
@@ -308,22 +352,37 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 
     const totalTasksCount = Number(totalTasksSnapshot) || 1;
 
-    // Build monthly chart data
+    // Build monthly chart data, respecting the selected revenueSource:
+    //  - 'tasks'    -> task.price only, invoices are ignored entirely
+    //  - 'invoices' -> invoice.subtotal only (all invoices, task-linked or standalone)
+    //  - 'both'     -> invoice.subtotal when a task is invoiced, otherwise task.price,
+    //                  plus standalone invoices (the previous merged behavior)
     type MonthStats = { profit: number; revenue: number };
-    const monthlyStats = monthlyProfitsFromTasks.reduce((acc, item) => {
-        const rev = Number(item.revenue || 0);
-        const cost = Number(item.productCost || 0);
-        if (!acc[item.month]) acc[item.month] = { profit: 0, revenue: 0 };
-        acc[item.month].profit += rev - cost;
-        acc[item.month].revenue += rev;
-        return acc;
-    }, {} as Record<string, MonthStats>);
-    monthlyProfitsFromStandaloneInvoices.forEach((item) => {
-        const rev = Number(item.revenue || 0);
-        if (!monthlyStats[item.month]) monthlyStats[item.month] = { profit: 0, revenue: 0 };
-        monthlyStats[item.month].profit += rev;
-        monthlyStats[item.month].revenue += rev;
-    });
+    function addStat(acc: Record<string, MonthStats>, month: string, rev: number, cost: number) {
+        if (!acc[month]) acc[month] = { profit: 0, revenue: 0 };
+        acc[month].profit += rev - cost;
+        acc[month].revenue += rev;
+    }
+    const monthlyStats: Record<string, MonthStats> = {};
+    if (revenueSource === 'tasks') {
+        monthlyProfitsFromTasks.forEach((item) => {
+            addStat(monthlyStats, item.month, Number(item.taskPrice || 0), Number(item.productCost || 0));
+        });
+    } else if (revenueSource === 'invoices') {
+        monthlyProfitsFromStandaloneInvoices.forEach((item) => {
+            addStat(monthlyStats, item.month, Number(item.revenue || 0), Number(item.productCost || 0));
+        });
+    } else {
+        monthlyProfitsFromTasks.forEach((item) => {
+            const rev = Number(item.invoiceRevenue ?? item.taskPrice ?? 0);
+            addStat(monthlyStats, item.month, rev, Number(item.productCost || 0));
+        });
+        monthlyProfitsFromStandaloneInvoices
+            .filter((item) => item.taskId === null)
+            .forEach((item) => {
+                addStat(monthlyStats, item.month, Number(item.revenue || 0), 0);
+            });
+    }
     const monthlyTaskCountMap = monthlyTaskCounts.reduce((acc, item) => {
         acc[item.month] = Number(item.count);
         return acc;
@@ -337,18 +396,56 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         chartData.push({ month: monthStr, profit: stats?.profit ?? 0, revenue: stats?.revenue ?? 0, taskCount: monthlyTaskCountMap[monthStr] || 0 });
     }
 
-    const currentMonthProfit =
-        currentMonthTasksProfit.reduce((total, t) => total + Number(t.revenue || 0) - Number(t.productCost || 0), 0) +
-        currentMonthStandaloneInvoices.reduce((total, i) => total + Number(i.revenue || 0), 0);
-    const currentMonthRevenue =
-        currentMonthTasksProfit.reduce((total, t) => total + Number(t.revenue || 0), 0) +
-        currentMonthStandaloneInvoices.reduce((total, i) => total + Number(i.revenue || 0), 0);
-    const previousMonthProfit =
-        previousMonthTasksProfit.reduce((total, t) => total + Number(t.revenue || 0) - Number(t.productCost || 0), 0) +
-        previousMonthStandaloneInvoices.reduce((total, i) => total + Number(i.revenue || 0), 0);
-    const previousMonthRevenue =
-        previousMonthTasksProfit.reduce((total, t) => total + Number(t.revenue || 0), 0) +
-        previousMonthStandaloneInvoices.reduce((total, i) => total + Number(i.revenue || 0), 0);
+    function sumProfitRevenue(
+        taskRows: { taskPrice: number; invoiceRevenue: number | null; productCost: number }[],
+        invoiceRows: { taskId: number | null; revenue: number | null; productCost: number }[]
+    ) {
+        if (revenueSource === 'tasks') {
+            return taskRows.reduce(
+                (acc, t) => {
+                    const rev = Number(t.taskPrice || 0);
+                    const cost = Number(t.productCost || 0);
+                    return { profit: acc.profit + rev - cost, revenue: acc.revenue + rev };
+                },
+                { profit: 0, revenue: 0 }
+            );
+        }
+        if (revenueSource === 'invoices') {
+            return invoiceRows.reduce(
+                (acc, i) => {
+                    const rev = Number(i.revenue || 0);
+                    const cost = Number(i.productCost || 0);
+                    return { profit: acc.profit + rev - cost, revenue: acc.revenue + rev };
+                },
+                { profit: 0, revenue: 0 }
+            );
+        }
+        const taskTotals = taskRows.reduce(
+            (acc, t) => {
+                const rev = Number(t.invoiceRevenue ?? t.taskPrice ?? 0);
+                const cost = Number(t.productCost || 0);
+                return { profit: acc.profit + rev - cost, revenue: acc.revenue + rev };
+            },
+            { profit: 0, revenue: 0 }
+        );
+        const standaloneTotals = invoiceRows
+            .filter((i) => i.taskId === null)
+            .reduce(
+                (acc, i) => {
+                    const rev = Number(i.revenue || 0);
+                    return { profit: acc.profit + rev, revenue: acc.revenue + rev };
+                },
+                { profit: 0, revenue: 0 }
+            );
+        return { profit: taskTotals.profit + standaloneTotals.profit, revenue: taskTotals.revenue + standaloneTotals.revenue };
+    }
+
+    const currentMonthTotals = sumProfitRevenue(currentMonthTasksProfit, currentMonthStandaloneInvoices);
+    const previousMonthTotals = sumProfitRevenue(previousMonthTasksProfit, previousMonthStandaloneInvoices);
+    const currentMonthProfit = currentMonthTotals.profit;
+    const currentMonthRevenue = currentMonthTotals.revenue;
+    const previousMonthProfit = previousMonthTotals.profit;
+    const previousMonthRevenue = previousMonthTotals.revenue;
 
     function calcChange(current: number, previous: number) {
         if (previous !== 0) return Math.round(((current - previous) / Math.abs(previous)) * 100);
@@ -389,6 +486,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
         profitChange,
         revenueChange,
         profitMode,
+        revenueSource,
         tabGroupsStats,
         allTabsForSelect,
         hiddenTabGroups,
