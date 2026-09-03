@@ -2,12 +2,17 @@
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card/index.js';
+	import { Input } from '$lib/components/ui/input/index.js';
+	import { Label } from '$lib/components/ui/label/index.js';
 	import X from '@lucide/svelte/icons/x';
 	import FormError from '$lib/components/form-error.svelte';
 	import Send from '@lucide/svelte/icons/send';
 	import * as m from '$lib/paraglide/messages';
 
 	let { data, form } = $props();
+
+	let to = $state(data.item?.client?.email ?? '');
+	let cc = $state('');
 </script>
 
 <svelte:head>
@@ -30,7 +35,6 @@
 			<Card.Content class="p-6 pb-2">
 				<div class="mb-4 text-sm text-gray-600">
 					<p><strong>{m["invoices.send.to_client"]()}</strong> {data.item?.client?.name}</p>
-					<p><strong>{m["invoices.send.email"]()}</strong> {data.item?.client?.email || m["invoices.send.no_email_found"]()}</p>
 					<p><strong>{m["invoices.send.email_total"]({ total: String((data.item?.total / 100).toFixed(2)) }).replace('Total: ', '').replace('Summa apmaksai: ', '')}</strong></p>
 				</div>
 
@@ -38,16 +42,21 @@
 					<FormError error={form?.message} />
 				{/if}
 
-				{#if !data.item?.client?.email}
-					<div class="mb-4 rounded border border-red-200 bg-red-50 p-2 text-sm text-red-600">
-						{m["invoices.send.no_email_configured"]()}
+				<form method="POST" use:enhance class="space-y-4">
+					<div class="space-y-1.5">
+						<Label for="to">{m["invoices.send.email"]()}</Label>
+						<Input id="to" name="to" type="text" bind:value={to} placeholder="klients@example.com" />
 					</div>
-				{/if}
 
-				<form method="POST" use:enhance>
+					<div class="space-y-1.5">
+						<Label for="cc">{m["invoices.send.cc"]()}</Label>
+						<Input id="cc" name="cc" type="text" bind:value={cc} placeholder={m["invoices.send.cc_placeholder"]()} />
+						<p class="text-xs text-muted-foreground">{m["invoices.send.cc_hint"]()}</p>
+					</div>
+
 					<div class="flex items-center justify-end gap-2">
 						<Button href="/rekini" variant="outline">{m["invoices.send.cancel"]()}</Button>
-						<Button type="submit" disabled={!data.item?.client?.email} class="gap-2">
+						<Button type="submit" disabled={!to.trim()} class="gap-2">
 							<Send size="16" /> {m["invoices.send.send_button"]()}
 						</Button>
 					</div>

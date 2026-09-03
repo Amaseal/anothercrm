@@ -27,14 +27,16 @@ export async function sendPasswordResetEmail(to: string, resetLink: string) {
 }
 
 export async function sendEmail(
-	to: string,
+	to: string | string[],
 	subject: string,
 	html: string,
-	attachments?: import('nodemailer/lib/mailer').Attachment[]
+	attachments?: import('nodemailer/lib/mailer').Attachment[],
+	cc?: string | string[]
 ) {
 	await transporter.sendMail({
 		from: env.SMTP_FROM || 'noreply@yourdomain.com',
 		to: to,
+		cc: cc && cc.length ? cc : undefined,
 		subject: subject,
 		html: html,
 		attachments: attachments

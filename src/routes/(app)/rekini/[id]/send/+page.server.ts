@@ -20,9 +20,32 @@ export const load: PageServerLoad = async ({ params }) => {
     return { item };
 };
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function parseEmails(raw: FormDataEntryValue | null): string[] {
+    if (!raw) return [];
+    return String(raw)
+        .split(/[,;\s]+/)
+        .map((e) => e.trim())
+        .filter(Boolean);
+}
+
 export const actions: Actions = {
-    default: async ({ params, url }) => {
+    default: async ({ params, url, request }) => {
         const id = Number(params.id);
+
+        const formData = await request.formData();
+        const toList = parseEmails(formData.get('to'));
+        const ccList = parseEmails(formData.get('cc'));
+
+        if (toList.length === 0) {
+            return fail(400, { message: 'Recipient email is required' });
+        }
+
+        const invalid = [...toList, ...ccList].filter((e) => !EMAIL_RE.test(e));
+        if (invalid.length) {
+            return fail(400, { message: `Invalid email address: ${invalid.join(', ')}` });
+        }
 
         // Fetch invoice with client email
         const item = await db.query.invoice.findFirst({
@@ -33,8 +56,8 @@ export const actions: Actions = {
             }
         });
 
-        if (!item || !item.client?.email) {
-            return fail(400, { message: 'Invoice or Client Email not found' });
+        if (!item) {
+            return fail(400, { message: 'Invoice not found' });
         }
 
         const company = await db.query.companySettings.findFirst();
@@ -50,7 +73,7 @@ export const actions: Actions = {
         const pdfLink = `${url.origin}/api/invoices/${id}`;
 
         const html = `
-            <p>${m["invoices.send.email_greeting"]({ client: item.client.name }, { locale: lang })}</p>
+            <p>${m["invoices.send.email_greeting"]({ client: item.client?.name || '' }, { locale: lang })}</p>
             <p>${m["invoices.send.email_attached"]({ number: item.invoiceNumber }, { locale: lang })}</p>
             <p><strong>${m["invoices.send.email_total"]({ total: totalFormatted }, { locale: lang })}</strong></p>
             <p>${m["invoices.send.email_view"]({}, { locale: lang })} <a href="${pdfLink}">${m["invoices.send.email_view_link"]({}, { locale: lang })}</a></p>
@@ -65,7 +88,7 @@ export const actions: Actions = {
         };
 
         try {
-            await sendEmail(item.client.email, subject, html, [attachment]);
+            await sendEmail(toList, subject, html, [attachment], ccList);
 
             // Update status to 'sent'
             await db.update(invoice)
