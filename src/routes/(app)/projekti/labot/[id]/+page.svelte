@@ -55,7 +55,9 @@
 	);
 	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
 	let datePlaceholder = $state<DateValue>(today(getLocalTimeZone()));
-	$effect(() => { datePlaceholder = dateValue ?? today(getLocalTimeZone()); });
+	$effect(() => {
+		datePlaceholder = dateValue ?? today(getLocalTimeZone());
+	});
 
 	// Tiptap Content
 	let descriptionContent = $state(data.item.description || '');
@@ -63,6 +65,7 @@
 	// Total Price from ProductList
 	let totalPrice = $state(data.item.price || 0);
 	let totalCost = $state(0);
+	let showClientPrices = $state(false);
 
 	let isSubmitting = $state(false);
 	let isUploading = $state(false);
@@ -341,6 +344,7 @@
 							<ProductList
 								products={data.products}
 								priceClientId={selectedClientId ? Number(selectedClientId) : null}
+								bind:showClientPrices
 								bind:totalPrice
 								bind:totalCost
 								initialEntries={initialProductEntries}
@@ -464,6 +468,18 @@
 							<span
 								class="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
 							></span>
+						{/if}
+						{#if $isAdmin && selectedClientId}
+							<label
+								class="flex cursor-pointer items-center gap-2 text-sm font-medium print:hidden"
+							>
+								<input
+									type="checkbox"
+									bind:checked={showClientPrices}
+									class="size-4 accent-primary"
+								/>
+								{m['products.client_specific_prices']()}
+							</label>
 						{/if}
 						{m['components.save']()}
 						<!-- Change to Save/Update if distinct label exists, or create_button is typically 'Saglabāt' -->

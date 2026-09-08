@@ -56,6 +56,7 @@
 
 	let totalPrice = $state(data.item.price || 0);
 	let totalCost = $state(0);
+	let showClientPrices = $state(false);
 
 	let selectedClientName = $derived(
 		data.clients.find((c: { id: { toString: () => any } }) => c.id.toString() === selectedClientId)
@@ -274,6 +275,7 @@
 							<ProductList
 								products={data.products}
 								priceClientId={data.item.clientId}
+								bind:showClientPrices
 								bind:totalPrice
 								bind:totalCost
 								initialEntries={initialProductEntries}
@@ -357,6 +359,16 @@
 						<div class="text-sm text-muted-foreground">
 							Izmaksas: €{formatPrice(totalCost)}
 						</div>
+					{/if}
+					{#if $isAdmin && data.item.clientId !== null}
+						<label class="flex cursor-pointer items-center gap-2 text-sm font-medium print:hidden">
+							<input
+								type="checkbox"
+								bind:checked={showClientPrices}
+								class="size-4 accent-primary"
+							/>
+							{m['products.client_specific_prices']()}
+						</label>
 					{/if}
 				</div>
 				<div class="flex items-center gap-2 print:hidden">

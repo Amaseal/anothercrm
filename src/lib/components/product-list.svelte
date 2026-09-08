@@ -29,7 +29,8 @@
 		initialEntries = [],
 		readonly = false,
 		isAdmin = false,
-		priceClientId = null
+		priceClientId = null,
+		showClientPrices = $bindable(false)
 	} = $props<{
 		products: Product[];
 		totalPrice?: number;
@@ -38,9 +39,8 @@
 		readonly?: boolean;
 		isAdmin?: boolean;
 		priceClientId?: number | null;
+		showClientPrices?: boolean;
 	}>();
-
-	let showClientPrices = $state(false);
 
 	function effectivePrice(product: Product): number {
 		if (isAdmin && showClientPrices && priceClientId !== null) {
@@ -162,12 +162,6 @@
 </script>
 
 <div class="space-y-4">
-	{#if isAdmin && priceClientId !== null}
-		<label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
-			<input type="checkbox" bind:checked={showClientPrices} class="size-4 accent-primary" />
-			{m['products.client_specific_prices']()}
-		</label>
-	{/if}
 	{#each entries as entry, index}
 		<div class="flex items-end gap-2">
 			<!-- Product Selector -->
