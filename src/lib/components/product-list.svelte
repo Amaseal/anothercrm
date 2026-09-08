@@ -241,7 +241,7 @@
 			</div>
 
 			<!-- Count Input -->
-			<div class="grid">
+			<div class="mb-5 grid">
 				<Label>{m['projects.count_label']()}</Label>
 				<NumberField.Root min={1} max={1000} bind:value={entry.count}>
 					<NumberField.Group>
@@ -259,7 +259,7 @@
 					variant="ghost"
 					size="icon"
 					onclick={() => removeEntry(index)}
-					class="mb-0.5"
+					class="mb-5"
 					title="Noņemt"
 				>
 					<X class="h-4 w-4" />

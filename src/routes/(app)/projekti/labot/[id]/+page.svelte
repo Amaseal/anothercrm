@@ -439,7 +439,18 @@
 							{m['projects.total_cost']()}: €{formatPrice(totalCost)}
 						</div>
 					{/if}
+					{#if $isAdmin && selectedClientId}
+						<label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
+							<input
+								type="checkbox"
+								bind:checked={showClientPrices}
+								class="size-4 accent-primary"
+							/>
+							{m['products.client_specific_prices']()}
+						</label>
+					{/if}
 				</div>
+
 				<div class="flex items-center gap-2 print:hidden">
 					<Button
 						type="button"
@@ -463,23 +474,12 @@
 							<span class="sr-only">Create Invoice</span>
 						</Button>
 					{/if}
+
 					<Button type="submit" size="lg" disabled={isSubmitting || isUploading}>
 						{#if isSubmitting || isUploading}
 							<span
 								class="mr-2 inline-block size-4 animate-spin rounded-full border-2 border-current border-t-transparent"
 							></span>
-						{/if}
-						{#if $isAdmin && selectedClientId}
-							<label
-								class="flex cursor-pointer items-center gap-2 text-sm font-medium print:hidden"
-							>
-								<input
-									type="checkbox"
-									bind:checked={showClientPrices}
-									class="size-4 accent-primary"
-								/>
-								{m['products.client_specific_prices']()}
-							</label>
 						{/if}
 						{m['components.save']()}
 						<!-- Change to Save/Update if distinct label exists, or create_button is typically 'Saglabāt' -->
