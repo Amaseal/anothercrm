@@ -18,6 +18,7 @@
 		cost: number;
 		price: number;
 		clientPrice?: number | null;
+		clientPrices?: { clientId: number; price: number }[];
 		translations?: { language: string; title: string; description: string | null }[];
 	}
 
@@ -27,7 +28,8 @@
 		totalCost = $bindable(0),
 		initialEntries = [],
 		readonly = false,
-		isAdmin = false
+		isAdmin = false,
+		priceClientId = null
 	} = $props<{
 		products: Product[];
 		totalPrice?: number;
@@ -35,7 +37,20 @@
 		initialEntries?: { productId: number; count: number; isOpen: boolean }[];
 		readonly?: boolean;
 		isAdmin?: boolean;
+		priceClientId?: number | null;
 	}>();
+
+	let showClientPrices = $state(false);
+
+	function effectivePrice(product: Product): number {
+		if (isAdmin && showClientPrices && priceClientId !== null) {
+			return (
+				product.clientPrices?.find((price) => price.clientId === priceClientId)?.price ??
+				product.price
+			);
+		}
+		return product.clientPrice ?? product.price;
+	}
 
 	let entries = $state<{ productId: number; count: number; isOpen: boolean }[]>(
 		initialEntries.length > 0 ? initialEntries : [{ productId: 0, count: 1, isOpen: false }]
@@ -117,8 +132,7 @@
 			const product = products.find((p: { id: number }) => p.id === entry.productId);
 			if (product && entry.count > 0) {
 				// Use clientPrice if set, else selling price
-				const effectivePrice = product.clientPrice ?? product.price;
-				return total + effectivePrice * entry.count;
+				return total + effectivePrice(product) * entry.count;
 			}
 			return total;
 		}, 0);
@@ -148,6 +162,12 @@
 </script>
 
 <div class="space-y-4">
+	{#if isAdmin && priceClientId !== null}
+		<label class="flex cursor-pointer items-center gap-2 text-sm font-medium">
+			<input type="checkbox" bind:checked={showClientPrices} class="size-4 accent-primary" />
+			{m['products.client_specific_prices']()}
+		</label>
+	{/if}
 	{#each entries as entry, index}
 		<div class="flex items-end gap-2">
 			<!-- Product Selector -->
@@ -216,6 +236,14 @@
 						</Command.Root>
 					</Popover.Content>
 				</Popover.Root>
+				{#if readonly || (isAdmin && priceClientId !== null)}
+					{@const selectedProduct = products.find((product) => product.id === entry.productId)}
+					{#if selectedProduct}
+						<span class="mt-1 text-xs text-muted-foreground">
+							{m['projects.price_label']()}: €{formatPrice(effectivePrice(selectedProduct))}
+						</span>
+					{/if}
+				{/if}
 			</div>
 
 			<!-- Count Input -->

@@ -273,6 +273,7 @@
 						<div class="flex-1">
 							<ProductList
 								products={data.products}
+								priceClientId={data.item.clientId}
 								bind:totalPrice
 								bind:totalCost
 								initialEntries={initialProductEntries}

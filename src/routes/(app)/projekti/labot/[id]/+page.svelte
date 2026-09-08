@@ -340,6 +340,7 @@
 						<div class="flex-1">
 							<ProductList
 								products={data.products}
+								priceClientId={selectedClientId ? Number(selectedClientId) : null}
 								bind:totalPrice
 								bind:totalCost
 								initialEntries={initialProductEntries}
