@@ -1,33 +1,42 @@
+import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from '@sveltejs/kit';
-import { writeFile } from 'fs/promises';
+import { open, unlink } from 'node:fs/promises';
+import { Readable } from 'node:stream';
+import type { ReadableStream as NodeReadableStream } from 'node:stream/web';
+import { pipeline } from 'node:stream/promises';
 import {
 	ensureUploadsDir,
 	getUploadPath,
-	makeTimestampFilename,
+	makeTaskFileFilename,
 	toUploadsUrl
 } from '$lib/server/upload-storage';
 
-export const POST: RequestHandler = async ({ request, locals }) => {
-	if (!locals.user) {
-		return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+export const POST: RequestHandler = async ({ request, locals, url }) => {
+	if (!locals.user) error(401, 'Unauthorized');
+	let name = url.searchParams.get('filename');
+	let body = request.body;
+	// Keep compatibility with existing multipart upload callers.
+	if (!name) {
+		const form = await request.formData();
+		const file = form.get('file');
+		if (!(file instanceof File)) error(400, 'No file uploaded');
+		name = file.name;
+		body = file.stream();
 	}
-	const formData = await request.formData();
-	const file = formData.get('file') as File | null;
-	if (!file) {
-		return new Response(JSON.stringify({ success: false, error: 'No file uploaded' }), {
-			status: 400
-		});
-	}
-	const buffer = Buffer.from(await file.arrayBuffer());
-	const fileName = makeTimestampFilename(file.name);
-	const filePath = getUploadPath(fileName);
-
+	if (!body || !name || name.length > 255) error(400, 'Invalid file');
+	await ensureUploadsDir();
+	const filename = makeTaskFileFilename(name);
+	const path = getUploadPath(filename);
+	const destination = await open(path, 'wx');
 	try {
-		await ensureUploadsDir();
-		await writeFile(filePath, buffer);
-		const publicUrl = toUploadsUrl(fileName);
-		return new Response(JSON.stringify({ success: true, path: publicUrl }), { status: 200 });
-	} catch (e) {
-		return new Response(JSON.stringify({ success: false, error: e }), { status: 500 });
+		await pipeline(
+			Readable.fromWeb(body as NodeReadableStream<Uint8Array>),
+			destination.createWriteStream()
+		);
+		return json({ success: true, path: toUploadsUrl(filename) });
+	} catch (cause) {
+		await unlink(path).catch(() => {});
+		console.error('File upload failed:', cause);
+		return json({ success: false, error: 'Upload failed' }, { status: 500 });
 	}
 };

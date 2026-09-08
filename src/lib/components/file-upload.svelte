@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import Upload from '@lucide/svelte/icons/upload';
 	import FileIcon from '@lucide/svelte/icons/file';
 	import X from '@lucide/svelte/icons/x';
@@ -7,7 +6,6 @@
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import * as m from '$lib/paraglide/messages';
 	import { browser } from '$app/environment';
-	import JSZip from 'jszip';
 	import { Button } from '$lib/components/ui/button';
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { cn } from '$lib/utils'; // Assuming this exists, standard shadcn
@@ -23,8 +21,7 @@
 		uploading = $bindable(false),
 		label = '',
 		readonly = false,
-		zipFilename = 'files',
-		...restProps
+		zipFilename = 'files'
 	} = $props<{
 		files?: FileData[];
 		uploading?: boolean;
@@ -33,9 +30,7 @@
 		zipFilename?: string;
 	}>();
 
-	let isUploading = $state(false);
 	let isZipping = $state(false);
-	let uploadProgress = $state<Record<string, number>>({});
 	let fileInputElement = $state<HTMLInputElement | undefined>(undefined);
 	let dragOver = $state(false);
 
@@ -55,7 +50,7 @@
 	let uploadingFiles = $state<UploadingFile[]>([]);
 
 	$effect(() => {
-		uploading = uploadingFiles.length > 0;
+		uploading = uploadingFiles.some((file) => !file.error);
 	});
 
 	async function handleInputChange(event: Event) {
@@ -76,62 +71,55 @@
 		}
 	}
 
+	let activeUploads = 0;
+	const uploadQueue: UploadingFile[] = [];
+
 	function handleFiles(newFiles: File[]) {
 		for (const file of newFiles) {
-			uploadFile(file);
+			const entry: UploadingFile = { id: crypto.randomUUID(), file, progress: 0 };
+			uploadingFiles = [...uploadingFiles, entry];
+			uploadQueue.push(entry);
+		}
+		startUploads();
+	}
+
+	function startUploads() {
+		while (activeUploads < 2 && uploadQueue.length) {
+			const entry = uploadQueue.shift()!;
+			activeUploads++;
+			uploadFile(entry);
 		}
 	}
 
-	function uploadFile(file: File) {
-		const tempId = Math.random().toString(36).substring(7);
-		const uploadingFile: UploadingFile = {
-			id: tempId,
-			file,
-			progress: 0
-		};
-
-		uploadingFiles = [...uploadingFiles, uploadingFile];
-
-		const formData = new FormData();
-		formData.append('file', file);
-
+	function uploadFile({ id: tempId, file }: UploadingFile) {
 		const xhr = new XMLHttpRequest();
-
 		xhr.upload.addEventListener('progress', (event) => {
-			if (event.lengthComputable) {
-				const percent = Math.round((event.loaded / event.total) * 100);
-				updateProgress(tempId, percent);
-			}
+			if (event.lengthComputable)
+				updateProgress(tempId, Math.round((event.loaded / event.total) * 100));
 		});
-
 		xhr.addEventListener('load', () => {
-			if (xhr.status >= 200 && xhr.status < 300) {
+			try {
 				const response = JSON.parse(xhr.responseText);
-				if (response.success && response.path) {
-					// Add to main list
-					const newFile: FileData = {
-						name: file.name,
-						path: response.path,
-						size: file.size,
-						type: file.type
-					};
-					files = [...files, newFile];
-					// Remove from uploading list
-					uploadingFiles = uploadingFiles.filter((f) => f.id !== tempId);
-				} else {
-					handleError(tempId, response.error || 'Upload failed');
-				}
-			} else {
+				if (xhr.status < 200 || xhr.status >= 300 || !response.success || !response.path)
+					throw new Error('Upload failed');
+				files = [
+					...files,
+					{ name: file.name, path: response.path, size: file.size, type: file.type }
+				];
+				uploadingFiles = uploadingFiles.filter((entry) => entry.id !== tempId);
+			} catch {
 				handleError(tempId, 'Upload failed');
 			}
 		});
-
-		xhr.addEventListener('error', () => {
-			handleError(tempId, 'Network error');
+		xhr.addEventListener('error', () => handleError(tempId, 'Network error'));
+		xhr.addEventListener('abort', () => handleError(tempId, 'Upload cancelled'));
+		xhr.addEventListener('loadend', () => {
+			activeUploads--;
+			startUploads();
 		});
-
-		xhr.open('POST', '/api/upload');
-		xhr.send(formData);
+		xhr.open('POST', `/api/upload?filename=${encodeURIComponent(file.name)}`);
+		xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+		xhr.send(file);
 	}
 
 	function updateProgress(id: string, progress: number) {
@@ -153,7 +141,7 @@
 		// Let's wait for success to be safe, or just remove if it fails (not essential to sync perfectly if UI shows it gone)
 
 		try {
-			const res = await fetch('/api/remove', {
+			await fetch('/api/remove', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ path: fileToDelete.path })
@@ -165,42 +153,38 @@
 
 		files = files.filter((_: unknown, i: number) => i !== index);
 	}
-	async function downloadAll() {
+	function downloadAll() {
 		if (files.length === 0 || isZipping) return;
-
 		isZipping = true;
-		try {
-			const zip = new JSZip();
-			const folder = zip.folder('files');
-
-			// Fetch all files
-			const promises = files.map(async (file: FileData) => {
-				try {
-					const response = await fetch(file.path);
-					const blob = await response.blob();
-					folder?.file(file.name, blob);
-				} catch (e) {
-					console.error(`Failed to download ${file.name}`, e);
-				}
-			});
-
-			await Promise.all(promises);
-
-			const content = await zip.generateAsync({ type: 'blob' });
-			const url = URL.createObjectURL(content);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `${zipFilename}.zip`;
-			a.click();
-			URL.revokeObjectURL(url);
-		} finally {
-			isZipping = false;
+		// A native form download lets the browser stream straight to disk.
+		const form = document.createElement('form');
+		form.method = 'POST';
+		form.action = '/api/taskfiles/download';
+		form.target = '_blank';
+		for (const [name, value] of Object.entries({
+			files: JSON.stringify(files.map(({ name, path }: FileData) => ({ name, path }))),
+			filename: zipFilename
+		})) {
+			const input = document.createElement('input');
+			input.type = 'hidden';
+			input.name = name;
+			input.value = value;
+			form.appendChild(input);
 		}
+		document.body.appendChild(form);
+		form.submit();
+		form.remove();
+		// Download completion is managed by the browser, outside this page.
+		setTimeout(() => {
+			isZipping = false;
+		}, 1000);
 	}
 
 	function downloadFile(file: FileData) {
 		const a = document.createElement('a');
-		a.href = file.path;
+		const url = new URL(file.path, window.location.origin);
+		url.searchParams.set('download', file.name);
+		a.href = url.href;
 		a.download = file.name;
 		a.target = '_blank';
 		a.click();
@@ -282,7 +266,7 @@
 	{#if files.length > 0 || uploadingFiles.length > 0}
 		<div class="grid gap-2">
 			<!-- Existing Files -->
-			{#each files as file, i}
+			{#each files as file, i (file)}
 				<div
 					class="grid grid-cols-[minmax(0,1fr)_auto] items-center rounded-lg border bg-card p-2 text-sm"
 				>
@@ -302,7 +286,10 @@
 								</Tooltip.Root>
 							</Tooltip.Provider>
 							{#if file.size}
-								<span class="text-xs text-muted-foreground">{(file.size / 1024).toFixed(1)} KB</span
+								<span class="text-xs text-muted-foreground"
+									>{file.size >= 1024 * 1024
+										? `${(file.size / (1024 * 1024)).toFixed(1)} MB`
+										: `${(file.size / 1024).toFixed(1)} KB`}</span
 								>
 							{/if}
 						</div>
@@ -377,7 +364,7 @@
 		<Button variant="outline" size="sm" class="w-full" onclick={downloadAll} disabled={isZipping}>
 			{#if isZipping}
 				<Loader2 class="mr-2 h-4 w-4 animate-spin" />
-				Preparing zip...
+				Starting download...
 			{:else}
 				<Download class="mr-2 h-4 w-4" />
 				Download All ({files.length})
