@@ -163,6 +163,8 @@
 
 <div class="space-y-4">
 	{#each entries as entry, index}
+		{@const selectedProduct = products.find((product) => product.id === entry.productId)}
+		{@const showPrice = !!selectedProduct && (readonly || (isAdmin && priceClientId !== null))}
 		<div class="flex items-end gap-2">
 			<!-- Product Selector -->
 			<div class="grid flex-1">
@@ -230,18 +232,15 @@
 						</Command.Root>
 					</Popover.Content>
 				</Popover.Root>
-				{#if readonly || (isAdmin && priceClientId !== null)}
-					{@const selectedProduct = products.find((product) => product.id === entry.productId)}
-					{#if selectedProduct}
+				{#if showPrice && selectedProduct}
 						<span class="mt-1 text-xs text-muted-foreground">
 							{m['projects.price_label']()}: €{formatPrice(effectivePrice(selectedProduct))}
 						</span>
 					{/if}
-				{/if}
 			</div>
 
 			<!-- Count Input -->
-			<div class="mb-5 grid">
+			<div class="grid" class:mb-5={showPrice}>
 				<Label>{m['projects.count_label']()}</Label>
 				<NumberField.Root min={1} max={1000} bind:value={entry.count}>
 					<NumberField.Group>
@@ -259,7 +258,7 @@
 					variant="ghost"
 					size="icon"
 					onclick={() => removeEntry(index)}
-					class="mb-5"
+					class={showPrice ? 'mb-5' : ''}
 					title="Noņemt"
 				>
 					<X class="h-4 w-4" />

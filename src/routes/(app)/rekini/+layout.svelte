@@ -157,7 +157,7 @@
 	} = $props();
 
 	function handleDownload(invoice: any) {
-		window.open(`/api/invoices/${invoice.id}`, '_blank');
+		window.open(`/api/invoices/${invoice.id}?v=${Date.now()}`, '_blank');
 	}
 
 	// Initialize state from server data

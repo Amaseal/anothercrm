@@ -53,6 +53,7 @@ export const POST: RequestHandler = async ({ params, locals }) => {
                         total: original.total,
                         notes: original.notes,
                         language: original.language,
+						isElectronic: original.isElectronic,
                         status: 'draft'
                     })
                     .returning({ id: invoice.id });

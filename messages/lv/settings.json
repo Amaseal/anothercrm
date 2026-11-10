@@ -20,6 +20,12 @@
 		"generate_code": "Ģenerēt kodu",
 		"company_info": "Uzņēmuma informācija",
 		"company_info_description": "Atjaunojiet sava uzņēmuma informāciju.",
+		"invoice_sender": "Rēķina izrakstītājs",
+		"invoice_sender_description": "Pārvaldiet izrakstītāja datus, kas tiek izmantoti visos rēķinos un drukāto rēķinu parakstu laukos. Izmaiņas attiecas arī uz esošajiem rēķiniem, tos apskatot vai ģenerējot atkārtoti. Ar * atzīmētie lauki ir obligāti.",
+		"company_name": "Uzņēmuma nosaukums",
+		"company_website": "Tīmekļa vietne",
+		"company_invalid": "Aizpildiet visus obligātos uzņēmuma laukus un pārbaudiet e-pasta un tīmekļa vietnes adreses.",
+		"company_save_failed": "Neizdevās saglabāt uzņēmuma datus. Lūdzu, mēģiniet vēlreiz.",
     	"menu_link": "Iestatījumi"
 	}
 }

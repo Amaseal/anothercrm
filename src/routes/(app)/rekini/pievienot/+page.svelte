@@ -17,6 +17,7 @@
 	import { toCurrency } from '$lib/utilities';
 	import * as m from '$lib/paraglide/messages';
 	import FastBreakLogo from '$lib/components/fastbreak-logo.svelte';
+	import InvoiceSignatures from '$lib/components/invoice-signatures.svelte';
 
 	let { data, form } = $props();
 	const { company, clients, products } = data;
@@ -38,6 +39,7 @@
 	]);
 	let vatRate = $state(21);
 	let language = $state('lv');
+	let isPrinted = $state(false);
 
 	// Editable Client Details State
 	let clientRegNo = $state('');
@@ -217,6 +219,7 @@
 				if (src.clientId) selectedClientId = src.clientId.toString();
 				if (src.taxRate != null) vatRate = src.taxRate;
 				if (src.language) language = src.language;
+				isPrinted = src.isElectronic === false;
 				if (src.items && src.items.length > 0) {
 					items = src.items.map((i: any) => ({
 						description: i.description,
@@ -845,10 +848,18 @@
 					</div>
 				</div>
 
-				<!-- Footnote -->
-				<div class="mt-8 text-sm italic">
-					Rekins/pavadzime ir izrakstits elektroniski un ir derigs bez paraksta
+				<div class="mt-8 flex items-center gap-3 print:hidden">
+					<Switch id="printed-invoice" bind:checked={isPrinted} />
+					<Label for="printed-invoice">{m['invoices.printed_invoice']()}</Label>
+					<input type="hidden" name="isPrinted" value={String(isPrinted)} />
 				</div>
+				{#if isPrinted}
+					<InvoiceSignatures {language} companyName={company?.name ?? ''} />
+				{:else}
+				<div class="mt-8 text-sm italic">
+						{m['invoices.electronic_footer']({}, { locale: language === 'en' ? 'en' : 'lv' })}
+				</div>
+				{/if}
 
 				<!-- Payment & Delivery Terms -->
 				<div class="mt-4 text-xs text-gray-600">

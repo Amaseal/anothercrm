@@ -207,8 +207,10 @@ export const actions: Actions = {
                         total,
                         notes,
                         language,
+							isElectronic: formData.get('isPrinted') !== 'true',
                         status: 'draft'
-                    }).returning({ id: invoice.id });
+						})
+						.returning({ id: invoice.id });
                     newInvoiceId = newInvoice.id;
 
                     if (processedItems.length > 0) {

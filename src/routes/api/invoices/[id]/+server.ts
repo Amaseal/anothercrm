@@ -36,6 +36,7 @@ export const GET: RequestHandler = async ({ params }) => {
 
     return new Response(pdfArrayBuffer, {
         headers: {
+			'Cache-Control': 'private, no-store',
             'Content-Type': 'application/pdf',
             'Content-Disposition': `inline; filename="${safeName}.pdf"`
         }

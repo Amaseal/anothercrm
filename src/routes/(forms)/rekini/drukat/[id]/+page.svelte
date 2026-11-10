@@ -1,5 +1,6 @@
 <script lang="ts">
 	import FastBreakLogo from '$lib/components/fastbreak-logo.svelte';
+	import InvoiceSignatures from '$lib/components/invoice-signatures.svelte';
 	import { numberToWordsLV, numberToWordsEN } from '$lib/numberToWords';
 	import { onMount } from 'svelte';
 
@@ -370,7 +371,11 @@
 	</div>
 
 	<!-- 8. Footer -->
+	{#if invoice.isElectronic === false}
+		<InvoiceSignatures language={invoice.language} companyName={company?.name ?? ''} />
+	{:else}
 	<div style="margin-top: 24px; font-size: 9px; font-style: italic;">
 		{l.footer}
 	</div>
+	{/if}
 </div>

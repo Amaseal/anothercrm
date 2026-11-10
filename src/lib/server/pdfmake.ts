@@ -1,12 +1,14 @@
 import { createRequire } from 'module';
 import { numberToWordsLV, numberToWordsEN } from '$lib/numberToWords';
+import { getInvoiceSignatureBlock } from '$lib/invoice-signatures';
 
 // pdfmake exports a singleton instance (not a class)
 const _require = createRequire(import.meta.url);
 const pdfInstance = _require('pdfmake/js/index');
 
 // Roboto is bundled with pdfmake
-const robotoDir = _require.resolve('pdfmake/fonts/Roboto/Roboto-Regular.ttf')
+const robotoDir = _require
+	.resolve('pdfmake/fonts/Roboto/Roboto-Regular.ttf')
     .replace(/Roboto-Regular\.ttf$/, '');
 
 const fonts = {
@@ -289,12 +291,17 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
 
             // Total in words
             {
-                text: [{ text: `${l.totalInWords}: `, bold: true, fontSize: 9 }, { text: totalInWords, fontSize: 9, italics: true }],
+				text: [
+					{ text: `${l.totalInWords}: `, bold: true, fontSize: 9 },
+					{ text: totalInWords, fontSize: 9, italics: true }
+				],
                 margin: [0, 0, 0, 20]
             },
 
             // Footer
-            { text: l.footer, fontSize: 8, italics: true, color: '#555555', margin: [0, 12, 0, 4] },
+			inv.isElectronic === false
+				? getInvoiceSignatureBlock(lang, company?.name ?? '')
+				: { text: l.footer, fontSize: 8, italics: true, color: '#555555', margin: [0, 12, 0, 4] },
 
             // Payment & Delivery Terms
             { text: l.terms, fontSize: 7, color: '#666666', margin: [0, 0, 0, 0] }

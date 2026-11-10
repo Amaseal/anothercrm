@@ -155,7 +155,8 @@ export const actions: Actions = {
                         taxAmount,
                         total,
                         notes,
-                        language
+						language,
+						isElectronic: formData.get('isPrinted') !== 'true'
                     })
                     .where(eq(invoice.id, invoiceId));
 

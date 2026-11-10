@@ -1,6 +1,7 @@
 import pdfMake from 'pdfmake/build/pdfmake';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
 import { toCurrency } from '$lib/utilities';
+import { getInvoiceSignatureBlock } from '$lib/invoice-signatures';
 
 // Initialize virtual file system for fonts
 if (pdfMake.vfs == undefined) {
@@ -21,6 +22,7 @@ type InvoiceData = {
     totalInWords?: string;
     notes?: string;
     language: 'lv' | 'en';
+	isElectronic?: boolean;
     company: {
         name: string;
         registrationNumber: string;
@@ -312,12 +314,13 @@ export const generatePdf = (data: InvoiceData) => {
             },
 
             // Footer
-            {
+			data.isElectronic === false
+				? getInvoiceSignatureBlock(data.language, data.company.name)
+				: {
                 text: l.footer,
                 style: 'footer',
                 absolutePosition: { x: 40, y: 800 } // Stick to bottom roughly
             }
-
         ],
         styles: styles,
         defaultStyle: {

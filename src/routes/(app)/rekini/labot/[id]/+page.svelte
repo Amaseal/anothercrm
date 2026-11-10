@@ -16,6 +16,7 @@
 	import FormError from '$lib/components/form-error.svelte';
 	import { toCurrency } from '$lib/utilities';
 	import FastBreakLogo from '$lib/components/fastbreak-logo.svelte';
+	import InvoiceSignatures from '$lib/components/invoice-signatures.svelte';
 	import * as m from '$lib/paraglide/messages';
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
@@ -75,6 +76,7 @@
 	let subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
 	let vatRate = $state(invoice.taxRate ?? 21);
 	let language = $state(invoice.language ?? 'lv');
+	let isPrinted = $state(invoice.isElectronic === false);
 
 	let taxAmount = $derived(subtotal * (vatRate / 100));
 	let total = $derived(subtotal + taxAmount);
@@ -796,10 +798,18 @@
 					</div>
 				</div>
 
-				<!-- Footnote -->
-				<div class="mt-8 text-sm italic">
-					Rēķins/pavadzīme ir izrakstīts elektroniski un ir derīgs bez paraksta
+				<div class="mt-8 flex items-center gap-3 print:hidden">
+					<Switch id="printed-invoice" bind:checked={isPrinted} />
+					<Label for="printed-invoice">{m['invoices.printed_invoice']()}</Label>
+					<input type="hidden" name="isPrinted" value={String(isPrinted)} />
 				</div>
+				{#if isPrinted}
+					<InvoiceSignatures {language} companyName={company?.name ?? ''} />
+				{:else}
+				<div class="mt-8 text-sm italic">
+						{m['invoices.electronic_footer']({}, { locale: language === 'en' ? 'en' : 'lv' })}
+				</div>
+				{/if}
 
 				<!-- Payment & Delivery Terms -->
 				<div class="mt-4 text-xs text-gray-600">

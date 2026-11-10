@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm';
 import { fail, redirect } from '@sveltejs/kit';
 import { hash } from '@node-rs/argon2';
 import * as m from '$lib/paraglide/messages';
+import { parseCompanySettings } from '$lib/server/company-settings';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -42,11 +43,33 @@ export const load: PageServerLoad = async ({ locals }) => {
 		user,
 		userSettings,
 		clients,
-		linkedClient
+		linkedClient,
+		company: user.type !== 'client' ? ((await db.query.companySettings.findFirst()) ?? null) : null
 	};
 };
 
 export const actions: Actions = {
+	updateCompany: async ({ request, locals }) => {
+		if (!locals.user || locals.user.type === 'client') return fail(403);
+		const company = parseCompanySettings(await request.formData());
+		if (!company) return fail(400, { message: m['settings.company_invalid']() });
+
+		try {
+			const existing = await db.query.companySettings.findFirst();
+			if (existing) {
+				await db
+					.update(table.companySettings)
+					.set(company)
+					.where(eq(table.companySettings.id, existing.id));
+			} else {
+				await db.insert(table.companySettings).values(company);
+			}
+		} catch (error) {
+			console.error('Failed to update invoice sender settings', error);
+			return fail(500, { message: m['settings.company_save_failed']() });
+		}
+		return { success: true };
+	},
 	updateProfile: async ({ request, locals }) => {
 		if (!locals.user) return fail(401);
 		const data = await request.formData();

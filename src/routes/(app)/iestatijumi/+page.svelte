@@ -15,6 +15,23 @@
 
     let inviteRole = $state<'admin' | 'client'>('client');
     let selectedClientId = $state('');
+	const companyFields = $derived([
+		{ name: 'name', label: m['settings.company_name'](), type: 'text', required: true },
+		{
+			name: 'registrationNumber',
+			label: m['clients.registration_number'](),
+			type: 'text',
+			required: true
+		},
+		{ name: 'vatNumber', label: m['clients.vat_number'](), type: 'text', required: true },
+		{ name: 'address', label: m['clients.address'](), type: 'text', required: true },
+		{ name: 'bankName', label: m['clients.bank'](), type: 'text', required: true },
+		{ name: 'bankCode', label: m['clients.swift'](), type: 'text', required: true },
+		{ name: 'bankAccount', label: m['clients.bank_account'](), type: 'text', required: true },
+		{ name: 'email', label: m['clients.email'](), type: 'email', required: false },
+		{ name: 'phone', label: m['clients.phone'](), type: 'tel', required: false },
+		{ name: 'website', label: m['settings.company_website'](), type: 'url', required: false }
+	] as const);
 
     // If an invite code was just generated, show it
     let generatedCode = $state(form?.code || '');
@@ -69,6 +86,44 @@
             </form>
         </Card.Content>
     </Card.Root>
+
+	{#if data.user.type !== 'client'}
+		<Card.Root>
+			<Card.Header>
+				<Card.Title>{m['settings.invoice_sender']()}</Card.Title>
+				<Card.Description>{m['settings.invoice_sender_description']()}</Card.Description>
+			</Card.Header>
+			<Card.Content>
+				<form
+					method="POST"
+					action="?/updateCompany"
+					use:enhance={() =>
+						async ({ update }) => {
+							await update({ reset: false });
+						}}
+					class="space-y-4"
+				>
+					<div class="grid gap-4 sm:grid-cols-2">
+						{#each companyFields as field (field.name)}
+							<div class="grid gap-2">
+								<Label for={`company-${field.name}`}
+									>{field.label}{field.required ? ' *' : ''}</Label
+								>
+								<Input
+									id={`company-${field.name}`}
+									name={field.name}
+									type={field.type}
+									required={field.required}
+									value={data.company?.[field.name] ?? ''}
+								/>
+							</div>
+						{/each}
+					</div>
+					<Button type="submit">{m['components.save']()}</Button>
+				</form>
+			</Card.Content>
+		</Card.Root>
+	{/if}
 
     <!-- SECTION 2: Admin Only Settings -->
     {#if data.user.type === 'admin'}

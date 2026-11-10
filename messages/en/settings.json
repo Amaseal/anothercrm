@@ -20,6 +20,12 @@
 		"generate_code": "Generate Code",
 		"company_info": "Company Information",
 		"company_info_description": "Update your company details.",
+		"invoice_sender": "Invoice Sender",
+		"invoice_sender_description": "Manage the sender details used on all invoices and in printed signature fields. Changes also affect existing invoices when viewed or regenerated. Fields marked * are required.",
+		"company_name": "Company Name",
+		"company_website": "Website",
+		"company_invalid": "Complete all required company fields and check the email and website addresses.",
+		"company_save_failed": "Could not save company details. Please try again.",
     	"menu_link": "Settings"
 	}
 }
