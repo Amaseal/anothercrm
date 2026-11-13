@@ -13,6 +13,10 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Eye from '@lucide/svelte/icons/eye';
 	import FileIcon from '@lucide/svelte/icons/file';
+	import FilePen from '@lucide/svelte/icons/file-pen';
+	import { resolve } from '$app/paths';
+	import { user } from '$lib/stores/user';
+	import { getDocumentEditorId } from '$lib/documents';
 	import Database from '@lucide/svelte/icons/database';
 	import HardDrive from '@lucide/svelte/icons/hard-drive';
 	import { Separator } from '$lib/components/ui/separator';
@@ -48,7 +52,7 @@
 		debouncedSearch(target.value);
 	};
 
-const debouncedSearch = debounce((value: string) => {
+	const debouncedSearch = debounce((value: string) => {
 		updateUrlAndNavigate({ search: value, page: 0 });
 	}, 500);
 
@@ -181,7 +185,7 @@ const debouncedSearch = debounce((value: string) => {
 					</Table.Head>
 
 					<!-- Actions -->
-					<Table.Head class="w-12 text-center">{m['files.delete']()}</Table.Head>
+					<Table.Head class="w-24 text-center">{m['files.actions']()}</Table.Head>
 				</Table.Row>
 			</Table.Header>
 			<Table.Body>
@@ -191,6 +195,12 @@ const debouncedSearch = debounce((value: string) => {
 					</Table.Row>
 				{:else}
 					{#each data.files as file (file.id)}
+						{@const editorId = getDocumentEditorId({
+							id: file.dbId,
+							name: file.filename,
+							path: file.url,
+							size: file.size
+						})}
 						<Table.Row class="hover:bg-muted/50">
 							<!-- Preview -->
 							<Table.Cell class="p-2 text-center">
@@ -261,28 +271,43 @@ const debouncedSearch = debounce((value: string) => {
 								{/if}
 							</Table.Cell>
 
-							<!-- Delete -->
+							<!-- Actions -->
 							<Table.Cell class="text-center">
-								<form action="?/delete" method="POST" use:enhance>
-									<input type="hidden" name="id" value={file.id} />
-									<input type="hidden" name="dbId" value={file.dbId || ''} />
-									<input type="hidden" name="filename" value={file.filename} />
-									<Button
-										variant="ghost"
-										size="icon"
-										type="submit"
-										disabled={file.usage.length > 0}
-										class="text-destructive hover:bg-destructive/10 hover:text-destructive"
-										title={file.usage.length > 0 ? m['files.used']() : m['files.delete']()}
-										onclick={(e) => {
-											if (!confirm(m['files.confirm_delete']())) {
-												e.preventDefault();
-											}
-										}}
-									>
-										<Trash2 size="18" />
-									</Button>
-								</form>
+								<div class="flex items-center justify-center gap-1">
+									{#if $user && $user.type !== 'client' && editorId}
+										<Button
+											href={resolve('/(app)/dokumenti/[id]', { id: editorId })}
+											target="_blank"
+											rel="noopener"
+											variant="ghost"
+											size="icon"
+											title={m['documents.open_editor']()}
+										>
+											<FilePen size="18" />
+											<span class="sr-only">{m['documents.open_editor']()}</span>
+										</Button>
+									{/if}
+									<form action="?/delete" method="POST" use:enhance>
+										<input type="hidden" name="id" value={file.id} />
+										<input type="hidden" name="dbId" value={file.dbId || ''} />
+										<input type="hidden" name="filename" value={file.filename} />
+										<Button
+											variant="ghost"
+											size="icon"
+											type="submit"
+											disabled={file.usage.length > 0}
+											class="text-destructive hover:bg-destructive/10 hover:text-destructive"
+											title={file.usage.length > 0 ? m['files.used']() : m['files.delete']()}
+											onclick={(e) => {
+												if (!confirm(m['files.confirm_delete']())) {
+													e.preventDefault();
+												}
+											}}
+										>
+											<Trash2 size="18" />
+										</Button>
+									</form>
+								</div>
 							</Table.Cell>
 						</Table.Row>
 					{/each}

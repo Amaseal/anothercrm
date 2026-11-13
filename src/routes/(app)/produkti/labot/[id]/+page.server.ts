@@ -1,7 +1,13 @@
 import { db } from '$lib/server/db';
 import { fail, redirect } from '@sveltejs/kit';
 
-import { product, client, productTranslation, clientProductPrice, user } from '$lib/server/db/schema';
+import {
+	product,
+	client,
+	productTranslation,
+	clientProductPrice,
+	user
+} from '$lib/server/db/schema';
 
 import { eq } from 'drizzle-orm';
 import type { Product } from '$lib/server/db/schema';
@@ -32,7 +38,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 	// Each user can have one or more userClients. Flatten the array.
 	const btbClients = usersDb.flatMap((u) =>
-		u.userClients.map(uc => ({
+		u.userClients.map((uc) => ({
 			id: uc.clientId,
 			name: `${u.name} (${uc.client?.name || 'Unknown Company'})`
 		}))
@@ -71,7 +77,8 @@ export const actions: Actions = {
 		const fallbackDescription = form.get(`description-${locales[0]}`) as string;
 
 		try {
-			await db.transaction(async (tx) => {			// 1. Update Base Product
+			await db.transaction(async (tx) => {
+				// 1. Update Base Product
 				await tx
 					.update(product)
 					.set({
@@ -85,7 +92,9 @@ export const actions: Actions = {
 
 				// 2. Update Translations
 				// Simple approach: delete all existing and re-insert
-				await tx.delete(productTranslation).where(eq(productTranslation.productId, Number(params.id)));
+				await tx
+					.delete(productTranslation)
+					.where(eq(productTranslation.productId, Number(params.id)));
 
 				const translationInserts = locales
 					.map((locale) => {
@@ -103,18 +112,20 @@ export const actions: Actions = {
 						return null;
 					})
 					.filter((t) => t !== null) as {
-						productId: number;
-						language: string;
-						title: string;
-						description: string;
-					}[];
+					productId: number;
+					language: string;
+					title: string;
+					description: string;
+				}[];
 
 				if (translationInserts.length > 0) {
 					await tx.insert(productTranslation).values(translationInserts);
 				}
 
 				// 3. Update Client Specific Prices
-				await tx.delete(clientProductPrice).where(eq(clientProductPrice.productId, Number(params.id)));
+				await tx
+					.delete(clientProductPrice)
+					.where(eq(clientProductPrice.productId, Number(params.id)));
 
 				if (validClientPrices.length > 0) {
 					const clientPriceInserts = validClientPrices.map((cp) => ({

@@ -1,6 +1,6 @@
 {
 	"$schema": "https://inlang.com/schema/inlang-message-format",
-	"settings": {	
+	"settings": {
 		"title": "Settings",
 		"profile_settings": "Profile Settings",
 		"profile_description": "Update your personal information.",
@@ -26,6 +26,6 @@
 		"company_website": "Website",
 		"company_invalid": "Complete all required company fields and check the email and website addresses.",
 		"company_save_failed": "Could not save company details. Please try again.",
-    	"menu_link": "Settings"
+		"menu_link": "Settings"
 	}
 }

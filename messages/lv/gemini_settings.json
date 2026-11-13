@@ -1,0 +1,23 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"gemini_settings": {
+		"title": "Gemini iestatījumi",
+		"description": "Darbinieku kopīgie AI apstrādes iestatījumi. Atslēgu un modeli var mainīt šeit bez servera pārstartēšanas. Saglabātās atslēgas netiek rādītas vai nosūtītas atpakaļ pārlūkam.",
+		"environment": "Datubāzē vēl nav saglabātu iestatījumu. Ja pieejamas servera vides vērtības, izmanto tās. Pirmajā saglabāšanā tās pārņem, ja atslēgu neaizstāj vai nenoņem.",
+		"database": "Izmanto CRM saglabātos iestatījumus. Iepriekšējās servera vides vērtības netiek izmantotas, arī pēc atslēgas noņemšanas.",
+		"ready": "Atslēga un modelis ir norādīti. Saderību pārbauda tikai ar atsevišķi apstiprinātu apstrādes pieprasījumu.",
+		"not_ready": "AI apstrāde ir atspējota, līdz norādīta atslēga un modelis. Tabulu nolasīšana bez maksas joprojām ir pieejama.",
+		"key": "Gemini API atslēga",
+		"key_saved": "Atslēga norādīta — atstājiet tukšu, lai saglabātu esošo",
+		"key_help": "Ievadiet jaunu atslēgu vai atstājiet tukšu, lai paturētu esošo. Šis ir kopīgs servera iestatījums, nevis personīga konta parole.",
+		"remove_key": "Noņemt saglabāto atslēgu un atspējot AI apstrādi",
+		"model": "Modeļa ID",
+		"model_help": "Atjaunojiet pieejamo modeļu sarakstu vai ievadiet precīzu Gemini modeļa ID. Saraksts nav ieprogrammēts. Atstājiet tukšu, lai atspējotu AI, paturot atslēgu.",
+		"refresh": "Atjaunot modeļus (bez ģenerēšanas)",
+		"refreshing": "Atjauno modeļus…",
+		"models_loaded": "Ielādēti {count} ģenerēšanas modeļi. Izvēlieties ieteikumu modeļa laukā vai ievadiet precīzu ID.",
+		"refresh_failed": "Neizdevās atjaunot Gemini modeļus. Pārbaudiet atslēgu un projekta piekļuvi, pēc tam mēģiniet vēlreiz.",
+		"save_failed": "Neizdevās saglabāt Gemini iestatījumus. Esošā konfigurācija nav mainīta; mēģiniet vēlreiz.",
+		"cost_notice": "Saglabāt un Atjaunot modeļus neveic maksas ģenerēšanu. Saraksts filtrē zināmos specializētos modeļus, bet neapstiprina attēlu/PDF/JSON atbalstu. Nospiežot Ģenerēt, tiek apstiprināta norādītā maksas apstrāde. Pēc iestatījumu maiņas pieprasījumi ar vecajiem iestatījumiem tiek noraidīti pirms maksas izsaukuma; pārbaudiet modeli un nospiediet Ģenerēt vēlreiz."
+	}
+}

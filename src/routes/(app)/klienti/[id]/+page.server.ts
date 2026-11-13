@@ -34,7 +34,16 @@ export const load: PageServerLoad = async ({ params }) => {
 		.leftJoin(taskProduct, eq(taskProduct.taskId, task.id))
 		.leftJoin(product, eq(product.id, taskProduct.productId))
 		.where(eq(task.clientId, clientId))
-		.groupBy(task.id, task.title, task.price, task.created_at, task.isDone, invoice.id, invoice.invoiceNumber, invoice.subtotal)
+		.groupBy(
+			task.id,
+			task.title,
+			task.price,
+			task.created_at,
+			task.isDone,
+			invoice.id,
+			invoice.invoiceNumber,
+			invoice.subtotal
+		)
 		.orderBy(task.created_at);
 
 	// Products per task (for the detail breakdown)
@@ -76,8 +85,7 @@ export const load: PageServerLoad = async ({ params }) => {
 	);
 
 	const tasks = taskRows.map((row) => {
-		const revenue =
-			row.invoiceSubtotal != null ? row.invoiceSubtotal : (row.taskPrice ?? 0);
+		const revenue = row.invoiceSubtotal != null ? row.invoiceSubtotal : (row.taskPrice ?? 0);
 		const cost = Number(row.productCost);
 		const profit = revenue - cost;
 		return {
@@ -97,8 +105,9 @@ export const load: PageServerLoad = async ({ params }) => {
 		};
 	});
 
-	const totalRevenue = tasks.reduce((s, t) => s + t.revenue, 0)
-		+ standaloneInvoices.reduce((s, i) => s + (i.subtotal ?? 0), 0);
+	const totalRevenue =
+		tasks.reduce((s, t) => s + t.revenue, 0) +
+		standaloneInvoices.reduce((s, i) => s + (i.subtotal ?? 0), 0);
 	const totalCost = tasks.reduce((s, t) => s + t.productCost, 0);
 	const totalProfit = totalRevenue - totalCost;
 

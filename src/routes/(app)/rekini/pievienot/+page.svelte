@@ -39,6 +39,9 @@
 	]);
 	let vatRate = $state(21);
 	let language = $state('lv');
+	let documentType = $state(
+		data.prefillInvoice?.documentType === 'proforma' ? 'proforma' : 'invoice'
+	);
 	let isPrinted = $state(false);
 
 	// Editable Client Details State
@@ -325,7 +328,23 @@
 
 					<!-- Invoice Meta Table -->
 					<div class="flex w-1/2 flex-col items-end">
-						<h1 class="mb-2 text-xl font-bold">Rekins/Pavadzime</h1>
+						<h1 class="mb-2 text-xl font-bold">
+							{documentType === 'proforma'
+								? m['invoices.proforma']({}, { locale: language === 'en' ? 'en' : 'lv' })
+								: m['invoices.standard_invoice']({}, { locale: language === 'en' ? 'en' : 'lv' })}
+						</h1>
+						<div class="mb-2 flex items-center gap-2">
+							<Label for="document-type">{m['invoices.type']()}</Label>
+							<select
+								id="document-type"
+								name="documentType"
+								bind:value={documentType}
+								class="rounded border border-gray-400 bg-white px-2 py-1 text-sm"
+							>
+								<option value="invoice">{m['invoices.standard_invoice']()}</option>
+								<option value="proforma">{m['invoices.proforma']()}</option>
+							</select>
+						</div>
 						<table class="w-full max-w-[300px] border-collapse border border-black text-sm">
 							<tbody>
 								<tr>
@@ -856,9 +875,9 @@
 				{#if isPrinted}
 					<InvoiceSignatures {language} companyName={company?.name ?? ''} />
 				{:else}
-				<div class="mt-8 text-sm italic">
+					<div class="mt-8 text-sm italic">
 						{m['invoices.electronic_footer']({}, { locale: language === 'en' ? 'en' : 'lv' })}
-				</div>
+					</div>
 				{/if}
 
 				<!-- Payment & Delivery Terms -->

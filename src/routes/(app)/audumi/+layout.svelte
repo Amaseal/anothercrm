@@ -67,7 +67,7 @@
 		debouncedSearch(target.value);
 	};
 
-const debouncedSearch = debounce((value: string) => {
+	const debouncedSearch = debounce((value: string) => {
 		updateUrlAndNavigate({ search: value, page: 0 });
 	}, 1200);
 

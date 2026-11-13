@@ -7,4 +7,15 @@ bun.lockb
 
 # Miscellaneous
 /static/
+/.cache/
+/.office/
 /drizzle/
+
+# Local agent settings and exported data
+/.claude/
+/.codex/
+/.agents/
+/exports/
+
+# Generated translations (legacy output directory)
+/src/paraglide/

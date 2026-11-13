@@ -28,7 +28,11 @@ export const load: LayoutServerLoad = async ({ locals, cookies }) => {
 
 	if (seen) {
 		// Sync the cookie so future loads skip the DB
-		cookies.set(CHANGELOG_COOKIE, currentVersion, { path: '/', maxAge: 60 * 60 * 24 * 365, httpOnly: false });
+		cookies.set(CHANGELOG_COOKIE, currentVersion, {
+			path: '/',
+			maxAge: 60 * 60 * 24 * 365,
+			httpOnly: false
+		});
 		return { user: locals.user, changelog: null };
 	}
 

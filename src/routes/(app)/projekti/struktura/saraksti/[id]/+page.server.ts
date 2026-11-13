@@ -79,7 +79,6 @@ export const actions: Actions = {
 
 			// Redirect on success
 		} catch (error) {
-
 			return {
 				success: false,
 				message: 'Something went wrong while adding the tab.'

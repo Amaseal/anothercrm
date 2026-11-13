@@ -21,6 +21,7 @@
 	import MultiSelect from '$lib/components/multi-select.svelte';
 	import ProductList from '$lib/components/product-list.svelte';
 	import FileUpload from '$lib/components/file-upload.svelte';
+	import ProductionProjects from '$lib/components/production-projects.svelte';
 	import ClientSelect from '$lib/components/client-select.svelte';
 	import ImagePreviewInput from '$lib/components/image-preview-input.svelte';
 	import type { PageData } from './$types';
@@ -98,7 +99,8 @@
 	);
 
 	let files = $state(
-		data.item.files.map((f: { filename: any; downloadUrl: any; size: any }) => ({
+		data.item.files.map((f: { id: number; filename: any; downloadUrl: any; size: any }) => ({
+			id: f.id,
 			name: f.filename,
 			path: f.downloadUrl,
 			size: f.size
@@ -330,6 +332,11 @@
 							<Label for="files">{m['projects.files_label']()}</Label>
 							<FileUpload bind:files readonly={true} zipFilename={data.item.title} />
 						</div>
+						{#if $isAdmin}
+							<div class="mt-6">
+								<ProductionProjects taskId={data.item.id} description={descriptionContent} />
+							</div>
+						{/if}
 					</div>
 					<!-- Left (65%) - Large Visual Reference -->
 					<div class="col-span-12 lg:col-span-8">

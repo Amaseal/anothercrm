@@ -2,7 +2,7 @@ services:
   app:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       - ORIGIN=${ORIGIN:-http://localhost:3000}
       # Provide the connection string to your Coolify/External Postgres instance

@@ -4,7 +4,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages';
 import type { Actions } from './$types';
 
-export const load = async () => { };
+export const load = async () => {};
 
 export const actions: Actions = {
 	default: async ({ request }) => {

@@ -260,6 +260,27 @@
       "when": 1786517420732,
       "tag": "0036_clumsy_moon_knight",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794398864116,
+      "tag": "0037_melodic_iron_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1794401328246,
+      "tag": "0038_lucky_iron_monger",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1794478632592,
+      "tag": "0039_calm_vargas",
+      "breakpoints": true
     }
   ]
 }

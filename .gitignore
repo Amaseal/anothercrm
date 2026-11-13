@@ -27,3 +27,16 @@ src/lib/paraglide
 
 # Uploads
 uploads/
+
+# Downloaded/generated office editor assets
+.cache/
+.office/
+static/office/
+
+# Retired generated runtime assets from the previous editor prototype
+static/sdkjs/
+static/web-apps/
+static/wasm/
+static/libs/
+static/dictionaries/
+static/fixtures/

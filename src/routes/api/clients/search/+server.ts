@@ -18,14 +18,11 @@ export const GET: RequestHandler = async ({ url }) => {
 		const normalizedQuery = normalizeLatvianText(query).toLowerCase();
 
 		// Get all clients and filter in JavaScript for better diacritic handling
-		const allClients = await db
-			.select()
-			.from(client)
-			.orderBy(asc(client.name));
+		const allClients = await db.select().from(client).orderBy(asc(client.name));
 
 		// Filter clients using normalized text comparison
 		const filteredClients = allClients
-			.filter(c => {
+			.filter((c) => {
 				const normalizedName = normalizeLatvianText(c.name).toLowerCase();
 				return normalizedName.includes(normalizedQuery);
 			})

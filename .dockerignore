@@ -4,3 +4,20 @@ node_modules
 .svelte-kit
 build
 uploads
+.cache
+.office
+static/office
+
+# Retired OnlyOffice prototype assets (the editor bundle is prepared in the builder).
+static/sdkjs
+static/web-apps
+static/wasm
+static/libs
+static/dictionaries
+static/fixtures
+static/document_editor_service_worker.js
+static/plugins.json
+static/reset.html
+static/sw.js
+static/themes.json
+static/onlyoffice-assets-readme.txt

@@ -6,6 +6,8 @@ import { env } from '$env/dynamic/private';
 import { db } from '$lib/server/db';
 import { file } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { resolve } from 'node:path';
+import { isProductionStoragePath } from '$lib/server/file-download';
 import {
 	UPLOADS_DIR,
 	ensureUploadsDir,
@@ -128,6 +130,11 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 
 		// Extract filename from path
 		const downloadUrl = fileRecord?.downloadUrl || filePath;
+		if (isProductionStoragePath(resolve(UPLOADS_DIR, downloadUrl.replace(/^\/uploads\//, ''))))
+			return json(
+				{ success: false, error: 'Use the task production project to manage this workbook.' },
+				{ status: 409 }
+			);
 		const filename = downloadUrl.split('/').pop();
 
 		if (!filename) {
@@ -196,6 +203,16 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			// If only path is provided, try to find by downloadUrl
 			[fileRecord] = await db.select().from(file).where(eq(file.downloadUrl, filePath));
 		}
+
+		const sourcePath = fileRecord?.downloadUrl || filePath;
+		if (
+			sourcePath &&
+			isProductionStoragePath(resolve(UPLOADS_DIR, sourcePath.replace(/^\/uploads\//, '')))
+		)
+			return json(
+				{ success: false, error: 'Use the authorized production-project endpoint.' },
+				{ status: 403 }
+			);
 
 		// If no record found, check if the physical file exists
 		if (!fileRecord && filePath) {

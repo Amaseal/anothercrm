@@ -3,6 +3,10 @@
 	import FileIcon from '@lucide/svelte/icons/file';
 	import X from '@lucide/svelte/icons/x';
 	import Download from '@lucide/svelte/icons/download';
+	import FilePen from '@lucide/svelte/icons/file-pen';
+	import { resolve } from '$app/paths';
+	import { user } from '$lib/stores/user';
+	import { getDocumentEditorId } from '$lib/documents';
 	import Loader2 from '@lucide/svelte/icons/loader-2';
 	import * as m from '$lib/paraglide/messages';
 	import { browser } from '$app/environment';
@@ -11,6 +15,7 @@
 	import { cn } from '$lib/utils'; // Assuming this exists, standard shadcn
 
 	type FileData = {
+		id?: number;
 		name: string;
 		path: string;
 		size?: number;
@@ -30,6 +35,7 @@
 		zipFilename?: string;
 	}>();
 
+	const canOpenDocuments = $derived(!!$user && $user.type !== 'client');
 	let isZipping = $state(false);
 	let fileInputElement = $state<HTMLInputElement | undefined>(undefined);
 	let dragOver = $state(false);
@@ -267,6 +273,7 @@
 		<div class="grid gap-2">
 			<!-- Existing Files -->
 			{#each files as file, i (file)}
+				{@const editorId = getDocumentEditorId(file)}
 				<div
 					class="grid grid-cols-[minmax(0,1fr)_auto] items-center rounded-lg border bg-card p-2 text-sm"
 				>
@@ -295,6 +302,20 @@
 						</div>
 					</div>
 					<div class="ml-2 flex shrink-0 items-center gap-1">
+						{#if canOpenDocuments && editorId}
+							<Button
+								href={resolve('/(app)/dokumenti/[id]', { id: editorId })}
+								target="_blank"
+								rel="noopener"
+								variant="ghost"
+								size="icon"
+								class="h-8 w-8 text-muted-foreground"
+								title={m['documents.open_editor']()}
+							>
+								<FilePen class="h-4 w-4" />
+								<span class="sr-only">{m['documents.open_editor']()}</span>
+							</Button>
+						{/if}
 						<Button
 							variant="ghost"
 							size="icon"

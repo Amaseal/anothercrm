@@ -17,21 +17,22 @@ export const actions: Actions = {
 	default: async ({ params, locals }) => {
 		if (!locals.user || locals.user.type !== 'admin') error(403);
 		try {
-            const invoiceId = Number(params.id);
-            const existingInvoice = await db.query.invoice.findFirst({
-                where: eq(invoice.id, invoiceId)
-            });
+			const invoiceId = Number(params.id);
+			const existingInvoice = await db.query.invoice.findFirst({
+				where: eq(invoice.id, invoiceId)
+			});
 
-            await db.transaction(async (tx) => {
-                if (existingInvoice?.clientId) {
-                    await tx.update(client)
-                        .set({
-                            totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) - ${existingInvoice.total}`
-                        })
-                        .where(eq(client.id, existingInvoice.clientId));
-                }
-                await tx.delete(invoice).where(eq(invoice.id, invoiceId));
-            });
+			await db.transaction(async (tx) => {
+				if (existingInvoice?.clientId) {
+					await tx
+						.update(client)
+						.set({
+							totalOrdered: sql`COALESCE(${client.totalOrdered}, 0) - ${existingInvoice.total}`
+						})
+						.where(eq(client.id, existingInvoice.clientId));
+				}
+				await tx.delete(invoice).where(eq(invoice.id, invoiceId));
+			});
 		} catch (e) {
 			console.error(e);
 			return fail(400, { message: 'Failed to delete invoice' });

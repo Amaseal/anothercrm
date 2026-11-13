@@ -16,10 +16,10 @@
 								{...props}
 								class="{$page.url.pathname === item.url
 									? 'bg-accent font-bold text-accent-foreground'
-									: ''} flex items-end gap-4 rounded-sm p-3 hover:bg-accent hover:text-accent-foreground"
+									: ''} flex items-center gap-4 rounded-sm p-3 hover:bg-accent hover:text-accent-foreground"
 							>
 								{#if item.icon}
-									<item.icon class="h-5 w-5" />
+									<item.icon class="h-5 w-5 shrink-0" />
 								{/if}
 								<span>{item.title}</span>
 							</a>

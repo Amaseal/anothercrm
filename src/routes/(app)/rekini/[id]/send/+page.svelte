@@ -16,7 +16,7 @@
 </script>
 
 <svelte:head>
-	<title>{m["invoices.send.title"]({ number: data.item?.invoiceNumber || '' })}</title>
+	<title>{m['invoices.send.title']({ number: data.item?.invoiceNumber || '' })}</title>
 </svelte:head>
 
 <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -29,13 +29,21 @@
 					><X /></a
 				>
 				<h2 class="text-lg font-semibold">
-					{m["invoices.send.title"]({ number: data.item?.invoiceNumber || '' })}
+					{m['invoices.send.title']({ number: data.item?.invoiceNumber || '' })}
 				</h2>
 			</Card.Header>
 			<Card.Content class="p-6 pb-2">
 				<div class="mb-4 text-sm text-gray-600">
-					<p><strong>{m["invoices.send.to_client"]()}</strong> {data.item?.client?.name}</p>
-					<p><strong>{m["invoices.send.email_total"]({ total: String((data.item?.total / 100).toFixed(2)) }).replace('Total: ', '').replace('Summa apmaksai: ', '')}</strong></p>
+					<p><strong>{m['invoices.send.to_client']()}</strong> {data.item?.client?.name}</p>
+					<p>
+						<strong
+							>{m['invoices.send.email_total']({
+								total: String((data.item?.total / 100).toFixed(2))
+							})
+								.replace('Total: ', '')
+								.replace('Summa apmaksai: ', '')}</strong
+						>
+					</p>
 				</div>
 
 				{#if form?.message}
@@ -44,20 +52,33 @@
 
 				<form method="POST" use:enhance class="space-y-4">
 					<div class="space-y-1.5">
-						<Label for="to">{m["invoices.send.email"]()}</Label>
-						<Input id="to" name="to" type="text" bind:value={to} placeholder="klients@example.com" />
+						<Label for="to">{m['invoices.send.email']()}</Label>
+						<Input
+							id="to"
+							name="to"
+							type="text"
+							bind:value={to}
+							placeholder="klients@example.com"
+						/>
 					</div>
 
 					<div class="space-y-1.5">
-						<Label for="cc">{m["invoices.send.cc"]()}</Label>
-						<Input id="cc" name="cc" type="text" bind:value={cc} placeholder={m["invoices.send.cc_placeholder"]()} />
-						<p class="text-xs text-muted-foreground">{m["invoices.send.cc_hint"]()}</p>
+						<Label for="cc">{m['invoices.send.cc']()}</Label>
+						<Input
+							id="cc"
+							name="cc"
+							type="text"
+							bind:value={cc}
+							placeholder={m['invoices.send.cc_placeholder']()}
+						/>
+						<p class="text-xs text-muted-foreground">{m['invoices.send.cc_hint']()}</p>
 					</div>
 
 					<div class="flex items-center justify-end gap-2">
-						<Button href="/rekini" variant="outline">{m["invoices.send.cancel"]()}</Button>
+						<Button href="/rekini" variant="outline">{m['invoices.send.cancel']()}</Button>
 						<Button type="submit" disabled={!to.trim()} class="gap-2">
-							<Send size="16" /> {m["invoices.send.send_button"]()}
+							<Send size="16" />
+							{m['invoices.send.send_button']()}
 						</Button>
 					</div>
 				</form>

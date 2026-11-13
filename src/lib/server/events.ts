@@ -2,14 +2,14 @@ import { EventEmitter } from 'events';
 import type { Task } from '$lib/server/db/schema';
 
 class TaskEmitter extends EventEmitter {
-    constructor() {
-        super();
-        this.setMaxListeners(100); // Allow many connections
-    }
+	constructor() {
+		super();
+		this.setMaxListeners(100); // Allow many connections
+	}
 
-    emitTaskUpdate(task: any, type: 'create' | 'update' | 'delete', assigneeUserIds: string[] = []) {
-        this.emit('task', { type, task, assigneeUserIds });
-    }
+	emitTaskUpdate(task: any, type: 'create' | 'update' | 'delete', assigneeUserIds: string[] = []) {
+		this.emit('task', { type, task, assigneeUserIds });
+	}
 }
 
 // Singleton instance

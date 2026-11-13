@@ -6,7 +6,7 @@ import { stat } from 'fs/promises';
 import { join } from 'path';
 import * as m from '$lib/paraglide/messages';
 
-export const load = async () => { };
+export const load = async () => {};
 
 export const actions: Actions = {
 	default: async ({ request }) => {

@@ -23,10 +23,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	if (search) {
 		const searchTerm = `%${search}%`;
 		filterConditions.push(
-			or(
-				ilikeNormalize(client.name, search),
-				sql`${client.type}::text ILIKE ${searchTerm}`
-			)
+			or(ilikeNormalize(client.name, search), sql`${client.type}::text ILIKE ${searchTerm}`)
 		);
 	}
 
@@ -66,8 +63,12 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 		.groupBy(client.id)
 		.orderBy(
 			isSortByRevenue
-				? (sortDirection === 'asc' ? asc(liveRevenue) : desc(liveRevenue))
-				: (sortDirection === 'asc' ? asc(columnToSort) : desc(columnToSort))
+				? sortDirection === 'asc'
+					? asc(liveRevenue)
+					: desc(liveRevenue)
+				: sortDirection === 'asc'
+					? asc(columnToSort)
+					: desc(columnToSort)
 		)
 		.limit(pageSize)
 		.offset(offset);
@@ -76,9 +77,10 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	const revenueMap = new Map(clientRows.map((r) => [r.id, Number(r.totalRevenue)]));
 
 	// Fetch full client records for this page
-	const clientRecords = clientIds.length > 0
-		? await db.query.client.findMany({ where: inArray(client.id, clientIds) })
-		: [];
+	const clientRecords =
+		clientIds.length > 0
+			? await db.query.client.findMany({ where: inArray(client.id, clientIds) })
+			: [];
 
 	// Merge live revenue into client records, preserving sort order
 	const clients = clientRows.map((row) => {

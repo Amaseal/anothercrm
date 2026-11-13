@@ -10,6 +10,8 @@ import {
 	boolean, // Boolean column type
 	unique, // Unique constraint
 	real,
+	uniqueIndex,
+	foreignKey,
 	index // Index for performance
 } from 'drizzle-orm/pg-core';
 import { check } from 'drizzle-orm/pg-core'; // Check constraint for custom validation rules
@@ -21,7 +23,6 @@ import { relations } from 'drizzle-orm'; // Define relationships between tables
 
 // User role types: defines whether a user is an admin or a client
 export const userRoleEnum = pgEnum('user_role', ['admin', 'client']);
-
 
 // Client type classification: BTC (Business-to-Consumer) or BTB (Business-to-Business)
 // Client type classification: BTC (Business-to-Consumer) or BTB (Business-to-Business)
@@ -87,40 +88,56 @@ export const companySettings = pgTable('company_settings', {
 	...timestamps
 });
 
+export const geminiSettings = pgTable(
+	'gemini_settings',
+	{
+		id: integer('id').primaryKey().default(1),
+		// shortcut: DB/backup controls protect keys, add encryption if DB-only exposure is in scope.
+		apiKey: text('api_key').notNull().default(''),
+		model: text('model').notNull().default('')
+	},
+	(table) => [check('gemini_settings_singleton', sql`${table.id} = 1`)]
+);
+
 // Invoices
-export const invoice = pgTable('invoices', {
-	id: serial('id').primaryKey(),
-	invoiceNumber: text('invoice_number').notNull().unique(), // e.g., "18062025-7k"
-	documentType: text('document_type')
-		.$type<'invoice' | 'delivery_note' | 'invoice_delivery'>()
-		.default('invoice')
-		.notNull(),
-	taskId: integer('task_id').references(() => task.id), clientId: integer('client_id')
-		.notNull()
-		.references(() => client.id),
-	companyId: integer('company_id').references(() => companySettings.id), // Reference to company settings
-	status: text('status')
-		.$type<'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'>()
-		.default('draft')
-		.notNull(),
-	issueDate: text('issue_date').notNull(), // Date when invoice was issued
-	dueDate: text('due_date').notNull(), // Payment due date (Apmaksas termiņš)
-	paymentTermDays: integer('payment_term_days').default(7), // Default 7 days
-	subtotal: integer('subtotal').notNull().default(0), // Amount in cents before tax
-	taxRate: real('tax_rate').default(21.0), // Tax rate percentage (21% in Latvia)
-	taxAmount: integer('tax_amount').notNull().default(0), // Tax amount in cents
-	total: integer('total').notNull().default(0), // Total amount in cents
-	totalInWords: text('total_in_words'), // Amount in words (Summa vārdiem)
-	currency: text('currency').default('EUR').notNull(), // Currency
-	notes: text('notes'), // Additional notes or terms
-	language: text('language').default('lv').notNull(), // Language for the invoice PDF (lv/en)
-	isElectronic: boolean('is_electronic').default(true).notNull(), // Electronic document flag
-	...timestamps
-}, (table) => [
-	index('invoices_client_id_idx').on(table.clientId),
-	index('invoices_task_id_idx').on(table.taskId),
-	index('invoices_status_idx').on(table.status)
-]);
+export const invoice = pgTable(
+	'invoices',
+	{
+		id: serial('id').primaryKey(),
+		invoiceNumber: text('invoice_number').notNull().unique(), // e.g., "18062025-7k"
+		documentType: text('document_type')
+			.$type<'invoice' | 'proforma' | 'delivery_note' | 'invoice_delivery'>()
+			.default('invoice')
+			.notNull(),
+		taskId: integer('task_id').references(() => task.id),
+		clientId: integer('client_id')
+			.notNull()
+			.references(() => client.id),
+		companyId: integer('company_id').references(() => companySettings.id), // Reference to company settings
+		status: text('status')
+			.$type<'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled'>()
+			.default('draft')
+			.notNull(),
+		issueDate: text('issue_date').notNull(), // Date when invoice was issued
+		dueDate: text('due_date').notNull(), // Payment due date (Apmaksas termiņš)
+		paymentTermDays: integer('payment_term_days').default(7), // Default 7 days
+		subtotal: integer('subtotal').notNull().default(0), // Amount in cents before tax
+		taxRate: real('tax_rate').default(21.0), // Tax rate percentage (21% in Latvia)
+		taxAmount: integer('tax_amount').notNull().default(0), // Tax amount in cents
+		total: integer('total').notNull().default(0), // Total amount in cents
+		totalInWords: text('total_in_words'), // Amount in words (Summa vārdiem)
+		currency: text('currency').default('EUR').notNull(), // Currency
+		notes: text('notes'), // Additional notes or terms
+		language: text('language').default('lv').notNull(), // Language for the invoice PDF (lv/en)
+		isElectronic: boolean('is_electronic').default(true).notNull(), // Electronic document flag
+		...timestamps
+	},
+	(table) => [
+		index('invoices_client_id_idx').on(table.clientId),
+		index('invoices_task_id_idx').on(table.taskId),
+		index('invoices_status_idx').on(table.status)
+	]
+);
 
 /**
  * INVITE CODES TABLE
@@ -161,19 +178,23 @@ export const passwordResetToken = pgTable('password_reset_token', {
  * Behavior: User deletion will fail if settings exist - settings must be deleted first
  * This could be changed to CASCADE if settings should auto-delete with user
  */
-export const settings = pgTable('settings', {
-	id: text('id').primaryKey(), // Unique identifier for settings record
-	userId: text('user_id')
-		.notNull()
-		.references(() => user.id, { onDelete: 'cascade' }), // CASCADE: User deletion removes all their settings
-	language: text('language').notNull(), // User's preferred language code
-	nextcloud: text('nextcloud'), // Nextcloud server URL (optional)
-	nextcloud_username: text('nextcloud_username'), // Nextcloud username for integration (optional)
-	nextcloud_password: text('nextcloud_password'), // Nextcloud password (should be encrypted!) (optional)
-	lastSeenChangelogVersion: text('last_seen_changelog_version') // null = never shown a changelog
-}, (table) => [
-	unique().on(table.userId) // one settings row per user
-]);
+export const settings = pgTable(
+	'settings',
+	{
+		id: text('id').primaryKey(), // Unique identifier for settings record
+		userId: text('user_id')
+			.notNull()
+			.references(() => user.id, { onDelete: 'cascade' }), // CASCADE: User deletion removes all their settings
+		language: text('language').notNull(), // User's preferred language code
+		nextcloud: text('nextcloud'), // Nextcloud server URL (optional)
+		nextcloud_username: text('nextcloud_username'), // Nextcloud username for integration (optional)
+		nextcloud_password: text('nextcloud_password'), // Nextcloud password (should be encrypted!) (optional)
+		lastSeenChangelogVersion: text('last_seen_changelog_version') // null = never shown a changelog
+	},
+	(table) => [
+		unique().on(table.userId) // one settings row per user
+	]
+);
 
 // ==================== MATERIALS & PRODUCTS TABLES ====================
 
@@ -208,6 +229,48 @@ export const product = pgTable('products', {
 	image: text('image'), // Product image URL/path (optional)
 	...timestamps // Includes created_at and updated_at
 });
+
+// Manufacturing templates are independent of the commercial products catalog.
+export const productionProduct = pgTable(
+	'production_products',
+	{
+		id: serial('id').primaryKey(),
+		name: text('name').notNull().unique()
+	},
+	(table) => [
+		check('production_products_name_valid', sql`length(btrim(${table.name})) between 1 and 120`)
+	]
+);
+
+export const productionSize = pgTable(
+	'production_sizes',
+	{
+		id: serial('id').primaryKey(),
+		productId: integer('product_id')
+			.notNull()
+			.references(() => productionProduct.id, { onDelete: 'cascade' }),
+		label: text('label').notNull(),
+		isBase: boolean('is_base').notNull().default(false)
+	},
+	(table) => [
+		unique().on(table.productId, table.label),
+		uniqueIndex('production_sizes_one_base_idx')
+			.on(table.productId)
+			.where(sql`${table.isBase}`),
+		check('production_sizes_label_valid', sql`length(btrim(${table.label})) between 1 and 40`)
+	]
+);
+
+export const productionProductRelations = relations(productionProduct, ({ many }) => ({
+	sizes: many(productionSize)
+}));
+
+export const productionSizeRelations = relations(productionSize, ({ one }) => ({
+	product: one(productionProduct, {
+		fields: [productionSize.productId],
+		references: [productionProduct.id]
+	})
+}));
 
 export const productTranslation = pgTable(
 	'product_translations',
@@ -244,23 +307,29 @@ export const clientProductPrice = pgTable(
 	]
 );
 
-
 export const taskMaterial = pgTable('taskMaterials', {
 	id: serial('id').primaryKey(),
-	taskId: integer('task_id').notNull().references(() => task.id),
-	materialId: integer('material_id').notNull().references(() => material.id),
+	taskId: integer('task_id')
+		.notNull()
+		.references(() => task.id),
+	materialId: integer('material_id')
+		.notNull()
+		.references(() => material.id),
 	...timestamps
 });
 
 // TaskProducts
 export const taskProduct = pgTable('taskProducts', {
 	id: serial('id').primaryKey(),
-	taskId: integer('task_id').notNull().references(() => task.id),
-	productId: integer('product_id').notNull().references(() => product.id),
+	taskId: integer('task_id')
+		.notNull()
+		.references(() => task.id),
+	productId: integer('product_id')
+		.notNull()
+		.references(() => product.id),
 	count: integer('count').default(1),
 	...timestamps
 });
-
 
 export const materialRelations = relations(material, ({ many }) => ({
 	taskMaterials: many(taskMaterial)
@@ -289,7 +358,6 @@ export const clientProductPriceRelations = relations(clientProductPrice, ({ one 
 		references: [client.id]
 	})
 }));
-
 
 // ==================== CLIENT MANAGEMENT TABLE ====================
 
@@ -497,30 +565,34 @@ export const tabTranslation = pgTable(
  *   - NO ACTION on managerId: User deletion fails if they are a manager on any task
  *     Manager must be changed or task deleted before user can be removed
  */
-export const task = pgTable('tasks', {
-	id: serial('id').primaryKey(), // Auto-incrementing task ID
-	title: text('title').notNull(), // Task title/name (required)
-	description: text('description'), // Detailed description (optional)
-	tabId: integer('tab_id')
-		.notNull()
-		.references(() => tab.id, { onDelete: 'restrict' }), // RESTRICT: Cannot delete tab with tasks
-	clientId: integer('client_id').references(() => client.id, { onDelete: 'set null' }), // SET NULL: Task survives client deletion
-	createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
-	seamstress: text('seamstress'), // Name of seamstress (stored as text, not FK)
-	count: integer('count'), // Quantity/count for this task (optional)
-	endDate: date('end_date', { mode: 'string' }), // Due date (optional)
-	isDone: boolean('is_done').notNull().default(false), // Completion status
-	isPrinted: boolean('is_printed'), // Whether task has been printed (optional)
-	price: integer('price'), // Task price (likely in cents) (optional)
-	preview: text('preview'), // Preview image URL/path (optional)
-	...timestamps // Includes created_at and updated_at
-}, (table) => [
-	index('tasks_client_id_idx').on(table.clientId),
-	index('tasks_is_done_idx').on(table.isDone),
-	index('tasks_tab_id_idx').on(table.tabId),
-	index('tasks_end_date_idx').on(table.endDate),
-	index('tasks_created_at_idx').on(table.created_at)
-]);
+export const task = pgTable(
+	'tasks',
+	{
+		id: serial('id').primaryKey(), // Auto-incrementing task ID
+		title: text('title').notNull(), // Task title/name (required)
+		description: text('description'), // Detailed description (optional)
+		tabId: integer('tab_id')
+			.notNull()
+			.references(() => tab.id, { onDelete: 'restrict' }), // RESTRICT: Cannot delete tab with tasks
+		clientId: integer('client_id').references(() => client.id, { onDelete: 'set null' }), // SET NULL: Task survives client deletion
+		createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }), // SET NULL: Task survives user deletion
+		seamstress: text('seamstress'), // Name of seamstress (stored as text, not FK)
+		count: integer('count'), // Quantity/count for this task (optional)
+		endDate: date('end_date', { mode: 'string' }), // Due date (optional)
+		isDone: boolean('is_done').notNull().default(false), // Completion status
+		isPrinted: boolean('is_printed'), // Whether task has been printed (optional)
+		price: integer('price'), // Task price (likely in cents) (optional)
+		preview: text('preview'), // Preview image URL/path (optional)
+		...timestamps // Includes created_at and updated_at
+	},
+	(table) => [
+		index('tasks_client_id_idx').on(table.clientId),
+		index('tasks_is_done_idx').on(table.isDone),
+		index('tasks_tab_id_idx').on(table.tabId),
+		index('tasks_end_date_idx').on(table.endDate),
+		index('tasks_created_at_idx').on(table.created_at)
+	]
+);
 
 /**
  * TASK ASSIGNEE TABLE
@@ -594,14 +666,41 @@ export const taskEditSession = pgTable('task_edit_sessions', {
  *   Files must be deleted first before the task can be removed
  *   This could be changed to CASCADE to auto-delete files with their task
  */
-export const file = pgTable('files', {
-	id: serial('id').primaryKey(), // Auto-incrementing file ID
-	filename: text('filename').notNull(), // Original filename
-	downloadUrl: text('download_url').notNull(), // URL or path to download the file
-	size: integer('size').notNull(), // File size in bytes
-	taskId: integer('task_id').references(() => task.id, { onDelete: 'cascade' }), // CASCADE: Deletes files if task is deleted
-	...timestamps // Includes created_at and updated_at
-});
+export const file = pgTable(
+	'files',
+	{
+		id: serial('id').primaryKey(),
+		filename: text('filename').notNull(),
+		downloadUrl: text('download_url').notNull(),
+		size: integer('size').notNull(),
+		taskId: integer('task_id').references(() => task.id, { onDelete: 'cascade' }),
+		...timestamps
+	},
+	(table) => [unique('files_id_task_id_unique').on(table.id, table.taskId)]
+);
+
+export const productionProject = pgTable(
+	'production_projects',
+	{
+		id: serial('id').primaryKey(),
+		taskId: integer('task_id')
+			.notNull()
+			.references(() => task.id, { onDelete: 'restrict' }),
+		fileId: integer('file_id').notNull().unique()
+	},
+	(table) => [
+		index('production_projects_task_id_idx').on(table.taskId),
+		foreignKey({
+			columns: [table.fileId, table.taskId],
+			foreignColumns: [file.id, file.taskId],
+			name: 'production_projects_file_task_fk'
+		}).onDelete('restrict')
+	]
+);
+
+export const productionProjectRelations = relations(productionProject, ({ one }) => ({
+	file: one(file, { fields: [productionProject.fileId], references: [file.id] })
+}));
 
 // ==================== MANY-TO-MANY JUNCTION TABLE ====================
 

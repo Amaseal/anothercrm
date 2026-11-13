@@ -69,10 +69,7 @@ export const actions: Actions = {
 		});
 
 		try {
-			await db
-				.update(user)
-				.set({ password: passwordHash })
-				.where(eq(user.id, dbToken.userId));
+			await db.update(user).set({ password: passwordHash }).where(eq(user.id, dbToken.userId));
 			// Mark the token as used so the reset link cannot be reused
 			await db
 				.update(passwordResetToken)

@@ -1,0 +1,33 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"production_parse": {
+		"title": "Generate size list",
+		"source": "Source",
+		"text": "Paste text or screenshot",
+		"file": "Choose a file",
+		"use_editor_text": "Task description text",
+		"excerpt": "Selected text, or paste one screenshot",
+		"sheet": "Worksheet",
+		"selected_image": "Selected source image",
+		"open_pdf": "Open selected PDF",
+		"generate": "Generate",
+		"retry_save": "Finish saving result",
+		"retry_notice": "Generation finished. This retries saving the result without another AI call.",
+		"preparing": "Reading source…",
+		"free_notice": "Structured table — generates locally without AI charges.",
+		"generate_consent": "Clicking Generate authorizes sending this selected source to Google Gemini ({model}) and may incur AI charges.",
+		"configure": "AI is not configured. Set the shared key and model in Gemini settings, then return here.",
+		"working": "Generating a new draft… Existing workbooks are unchanged.",
+		"cancel": "Cancel",
+		"cancelled": "Cancelled. The source and existing results were kept. A started AI request may still be billed.",
+		"failed": "Could not generate or save. Your source and previous results were kept. If a save response was lost, refresh the saved list before retrying.",
+		"no_rows": "No garments found. Select the relevant size-list content and generate again.",
+		"unsaved_result": "Result not yet saved — {source}",
+		"generated_draft": "Generated draft. Use Edit for corrections; choose production setup in Edit or Print Tools before production.",
+		"one_image": "Paste one screenshot at a time so the selected source is unambiguous.",
+		"unsaved_warning": "An in-progress generation or unsaved result may be lost. A started AI request may still be billed. Leave this task?",
+		"loading": "Loading sources…",
+		"previous": "Previous rows",
+		"next": "Next rows"
+	}
+}

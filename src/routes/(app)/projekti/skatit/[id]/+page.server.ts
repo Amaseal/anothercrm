@@ -1,106 +1,127 @@
 // Copied from labot server file, removed actions
 import { db } from '$lib/server/db';
-import { task, material, product, taskMaterial, taskProduct, file, invoice, userClient } from '$lib/server/db/schema';
+import {
+	task,
+	material,
+	product,
+	taskMaterial,
+	taskProduct,
+	file,
+	invoice,
+	userClient
+} from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { eq, and, inArray, desc } from 'drizzle-orm';
+import { assertTaskAccess } from '$lib/server/task-access';
+import { productionFileIds } from '$lib/server/production-projects';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-    const taskId = Number(params.id);
+	const taskId = Number(params.id);
+	await assertTaskAccess(locals, taskId);
 
-    // Fetch dropdown data in parallel with restricted columns
-    const [clients, users, materials, products] = await Promise.all([
-        db.query.client.findMany({ columns: { id: true, name: true, email: true, phone: true } }),
-        db.query.user.findMany({ where: (u, { eq }) => eq(u.type, 'admin'), columns: { id: true, name: true, type: true } }),
-        db.query.material.findMany({ columns: { id: true, title: true, article: true, unit: true, price: true, image: true, remaining: true } }),
-        db.query.product.findMany({ with: { translations: true, clientPrices: true } })
-    ]);
+	// Fetch dropdown data in parallel with restricted columns
+	const [clients, users, materials, products] = await Promise.all([
+		db.query.client.findMany({ columns: { id: true, name: true, email: true, phone: true } }),
+		db.query.user.findMany({
+			where: (u, { eq }) => eq(u.type, 'admin'),
+			columns: { id: true, name: true, type: true }
+		}),
+		db.query.material.findMany({
+			columns: { id: true, title: true, article: true, image: true, remaining: true }
+		}),
+		db.query.product.findMany({ with: { translations: true, clientPrices: true } })
+	]);
 
-    // Fetch the task to view
-    const item = await db.query.task.findFirst({
-        where: eq(task.id, taskId),
-        with: {
-            taskMaterials: {
-                with: {
-                    material: true
-                }
-            },
-            taskProducts: {
-                with: {
-                    product: true
-                }
-            },
-            files: true,
-            history: {
-                with: {
-                    user: { columns: { name: true } }
-                },
-                orderBy: (history, { desc }) => [desc(history.createdAt)]
-            }
-        }
-    });
+	// Fetch the task to view
+	const item = await db.query.task.findFirst({
+		where: eq(task.id, taskId),
+		with: {
+			taskMaterials: {
+				with: {
+					material: true
+				}
+			},
+			taskProducts: {
+				with: {
+					product: true
+				}
+			},
+			files: true,
+			history: {
+				with: {
+					user: { columns: { name: true } }
+				},
+				orderBy: (history, { desc }) => [desc(history.createdAt)]
+			}
+		}
+	});
 
-    if (!item) {
-        throw redirect(303, '/projekti');
-    }
+	if (!item) {
+		throw redirect(303, '/projekti');
+	}
 
-    let userClientId: number | null = null;
-    if (locals.user && locals.user.type === 'client') {
-        const { userClient } = await import('$lib/server/db/schema');
-        const result = await db
-            .select({ clientId: userClient.clientId })
-            .from(userClient)
-            .where(eq(userClient.userId, locals.user.id))
-            .limit(1);
+	const productionFiles = await productionFileIds(taskId);
+	item.files = item.files.filter((entry) => !productionFiles.has(entry.id));
 
-        if (result.length > 0) {
-            userClientId = result[0].clientId;
-        }
+	let userClientId: number | null = null;
+	if (locals.user && locals.user.type === 'client') {
+		const { userClient } = await import('$lib/server/db/schema');
+		const result = await db
+			.select({ clientId: userClient.clientId })
+			.from(userClient)
+			.where(eq(userClient.userId, locals.user.id))
+			.limit(1);
 
-        // Filter history for clients: hide 'seamstress' changes
-        if (item.history) {
-            item.history = item.history.filter((h) => {
-                if (h.changeData) {
-                    try {
-                        const changes = JSON.parse(h.changeData);
-                        if (Array.isArray(changes)) {
-                            const filteredChanges = changes.filter((c: any) => c.field !== 'seamstress');
+		if (result.length > 0) {
+			userClientId = result[0].clientId;
+		}
 
-                            // If no changes remain after filtering, and it was structured data, hide the entry
-                            if (filteredChanges.length === 0) {
-                                return false;
-                            }
+		// Filter history for clients: hide 'seamstress' changes
+		if (item.history) {
+			item.history = item.history.filter((h) => {
+				if (h.changeData) {
+					try {
+						const changes = JSON.parse(h.changeData);
+						if (Array.isArray(changes)) {
+							const filteredChanges = changes.filter((c: any) => c.field !== 'seamstress');
 
-                            h.changeData = JSON.stringify(filteredChanges);
-                        }
-                    } catch (e) {
-                        // ignore parse errors
-                    }
-                }
-                return true;
-            });
-        }
-    }
+							// If no changes remain after filtering, and it was structured data, hide the entry
+							if (filteredChanges.length === 0) {
+								return false;
+							}
 
-    // Attach clientPrice for the current user's client
-    const productsWithClientPrice = products.map((p) => ({
-        ...p,
-        clientPrice: userClientId
-            ? (p.clientPrices.find((cp: { clientId: number }) => cp.clientId === userClientId)?.price ?? null)
-            : null
-    }));
+							h.changeData = JSON.stringify(filteredChanges);
+						}
+					} catch (e) {
+						// ignore parse errors
+					}
+				}
+				return true;
+			});
+		}
+	}
 
-    const taskInvoices = await db.query.invoice.findMany({
-        where: eq(invoice.taskId, taskId)
-    });
+	// Attach clientPrice for the current user's client
+	const productsWithClientPrice = products.map((p) => ({
+		...p,
+		clientPrice: userClientId
+			? (p.clientPrices.find((cp: { clientId: number }) => cp.clientId === userClientId)?.price ??
+				null)
+			: null
+	}));
 
-    return {
-        item,
-        clients,
-        users,
-        materials,
-        products: productsWithClientPrice,
-        userClientId,
-        taskInvoices
-    };
+	const taskInvoices = await db.query.invoice.findMany({
+		where: eq(invoice.taskId, taskId)
+	});
+
+	return {
+		item,
+		clients,
+		users,
+		materials,
+		products: productsWithClientPrice,
+		userClientId,
+		taskInvoices
+	};
 };

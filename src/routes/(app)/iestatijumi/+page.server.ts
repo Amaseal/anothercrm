@@ -1,12 +1,14 @@
-
 import type { PageServerLoad, Actions } from './$types';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { fail, redirect } from '@sveltejs/kit';
+import { fail, redirect, isHttpError } from '@sveltejs/kit';
 import { hash } from '@node-rs/argon2';
 import * as m from '$lib/paraglide/messages';
 import { parseCompanySettings } from '$lib/server/company-settings';
+import { productionAiStatus } from '$lib/server/production-ai';
+import { saveGeminiSettings } from '$lib/server/production-ai-settings';
+import { assertProductionStaff } from '$lib/server/production';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) {
@@ -20,7 +22,24 @@ export const load: PageServerLoad = async ({ locals }) => {
 		where: eq(table.settings.userId, user.id)
 	});
 
-	let clients: { id: number; email: string | null; name: string; type: "BTC" | "BTB"; registrationNumber: string | null; vatNumber: string | null; address: string | null; bankName: string | null; bankCode: string | null; bankAccount: string | null; phone: string | null; created_at: Date; updated_at: Date; description: string | null; vatRate: number; totalOrdered: number | null; }[] = [];
+	let clients: {
+		id: number;
+		email: string | null;
+		name: string;
+		type: 'BTC' | 'BTB';
+		registrationNumber: string | null;
+		vatNumber: string | null;
+		address: string | null;
+		bankName: string | null;
+		bankCode: string | null;
+		bankAccount: string | null;
+		phone: string | null;
+		created_at: Date;
+		updated_at: Date;
+		description: string | null;
+		vatRate: number;
+		totalOrdered: number | null;
+	}[] = [];
 	let linkedClient = null;
 
 	if (user.type === 'admin') {
@@ -44,11 +63,23 @@ export const load: PageServerLoad = async ({ locals }) => {
 		userSettings,
 		clients,
 		linkedClient,
+		gemini: user.type === 'admin' ? await productionAiStatus() : null,
 		company: user.type !== 'client' ? ((await db.query.companySettings.findFirst()) ?? null) : null
 	};
 };
 
 export const actions: Actions = {
+	updateGemini: async ({ request, locals }) => {
+		assertProductionStaff(locals);
+		try {
+			await saveGeminiSettings(await request.formData());
+		} catch (cause) {
+			if (isHttpError(cause)) return fail(cause.status, { message: cause.body.message });
+			// Database errors may include SQL parameters containing the submitted key; do not log them.
+			return fail(500, { message: m['gemini_settings.save_failed']() });
+		}
+		return { success: true };
+	},
 	updateCompany: async ({ request, locals }) => {
 		if (!locals.user || locals.user.type === 'client') return fail(403);
 		const company = parseCompanySettings(await request.formData());
@@ -87,7 +118,8 @@ export const actions: Actions = {
 				outputLen: 32,
 				parallelism: 1
 			});
-			await db.update(table.user)
+			await db
+				.update(table.user)
 				.set({ password: passwordHash })
 				.where(eq(table.user.id, locals.user.id));
 		}
@@ -115,7 +147,8 @@ export const actions: Actions = {
 		}
 
 		if (existing) {
-			await db.update(table.settings)
+			await db
+				.update(table.settings)
 				.set(settingsData)
 				.where(eq(table.settings.userId, locals.user.id));
 		} else {
@@ -157,11 +190,12 @@ export const actions: Actions = {
 
 		// Find linked client
 		const userClientLink = await db.query.userClient.findFirst({
-			where: eq(table.userClient.userId, locals.user.id),
+			where: eq(table.userClient.userId, locals.user.id)
 		});
 
 		if (userClientLink) {
-			await db.update(table.client)
+			await db
+				.update(table.client)
 				.set({
 					name: data.get('name') as string,
 					email: data.get('email') as string,

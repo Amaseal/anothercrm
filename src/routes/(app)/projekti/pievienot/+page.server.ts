@@ -1,5 +1,19 @@
 import { db } from '$lib/server/db';
-import { client, tab, task, user, material, product, taskMaterial, taskProduct, file, userClient, clientProductPrice, taskAssignee } from '$lib/server/db/schema';
+import { assertOrdinaryStoragePath } from '$lib/server/production-projects';
+import {
+	client,
+	tab,
+	task,
+	user,
+	material,
+	product,
+	taskMaterial,
+	taskProduct,
+	file,
+	userClient,
+	clientProductPrice,
+	taskAssignee
+} from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
@@ -36,11 +50,15 @@ export const load: PageServerLoad = async ({ locals }) => {
 			userClientId = result[0].clientId;
 		}
 	}
-	const clients = await db.query.client.findMany({ columns: { id: true, name: true, email: true, phone: true } });
+	const clients = await db.query.client.findMany({
+		columns: { id: true, name: true, email: true, phone: true }
+	});
 	const users = await db.query.user.findMany({
 		columns: { id: true, name: true, type: true }
 	});
-	const materials = await db.query.material.findMany({ columns: { id: true, title: true, article: true, unit: true, price: true, image: true, remaining: true } });
+	const materials = await db.query.material.findMany({
+		columns: { id: true, title: true, article: true, image: true, remaining: true }
+	});
 	const rawProducts = await db.query.product.findMany({
 		with: {
 			translations: true,
@@ -99,15 +117,18 @@ export const actions: Actions = {
 		const tabId = defaultTab.id;
 		const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
 		const assignedToUserIdsStr = formData.get('assignedToUserIds') as string;
-		const assignedToUserIds = assignedToUserIdsStr ? assignedToUserIdsStr.split(',').filter(id => id.trim() !== '') : [];
+		const assignedToUserIds = assignedToUserIdsStr
+			? assignedToUserIdsStr.split(',').filter((id) => id.trim() !== '')
+			: [];
 		const endDate = formData.get('endDate') as string;
-
 
 		const seamstress = formData.get('seamstress') as string;
 
-		const materialIds = formData.getAll('materials').map(id => parseInt(id as string));
-		const productIds = formData.getAll('productIds').map(id => parseInt(id as string));
-		const productCounts = formData.getAll('productCounts').map(count => parseInt(count as string));
+		const materialIds = formData.getAll('materials').map((id) => parseInt(id as string));
+		const productIds = formData.getAll('productIds').map((id) => parseInt(id as string));
+		const productCounts = formData
+			.getAll('productCounts')
+			.map((count) => parseInt(count as string));
 
 		// Calculate total count from products
 		let calculatedCount = 0;
@@ -136,14 +157,14 @@ export const actions: Actions = {
 
 				// Build a price map (clientPrice > price > cost fallback)
 				calculatedPrice = productIds.reduce((total, id, index) => {
-					const prod = selectedProducts.find(p => p.id === id);
+					const prod = selectedProducts.find((p) => p.id === id);
 					if (!prod) return total;
 					const clientPriceEntry = userLinkedClientId
-						? prod.clientPrices.find(cp => cp.clientId === userLinkedClientId)
+						? prod.clientPrices.find((cp) => cp.clientId === userLinkedClientId)
 						: null;
 					const effectivePrice = clientPriceEntry?.price ?? prod.price;
 					const count = productCounts[index] || 0;
-					return total + (effectivePrice * count);
+					return total + effectivePrice * count;
 				}, 0);
 			}
 		}
@@ -176,19 +197,22 @@ export const actions: Actions = {
 		}
 
 		try {
-			const [newTask] = await db.insert(task).values({
-				title,
-				description,
-				tabId,
-				clientId,
-				createdById: userId,
-				endDate,
-				price: finalPrice,
-				count: calculatedCount,
-				seamstress: seamstress || null,
-				preview: previewUrl,
-				isDone: false
-			}).returning();
+			const [newTask] = await db
+				.insert(task)
+				.values({
+					title,
+					description,
+					tabId,
+					clientId,
+					createdById: userId,
+					endDate,
+					price: finalPrice,
+					count: calculatedCount,
+					seamstress: seamstress || null,
+					preview: previewUrl,
+					isDone: false
+				})
+				.returning();
 
 			if (newTask) {
 				if (assignedToUserIds.length > 0) {
@@ -238,7 +262,11 @@ export const actions: Actions = {
 			});
 			// Dynamic import to avoid circular dep issues during init if any, though here it's fine.
 			const { taskEvents } = await import('$lib/server/events');
-			taskEvents.emitTaskUpdate(fullTask, 'create', fullTask?.assignees?.map((a: { userId: string }) => a.userId) ?? []);
+			taskEvents.emitTaskUpdate(
+				fullTask,
+				'create',
+				fullTask?.assignees?.map((a: { userId: string }) => a.userId) ?? []
+			);
 
 			// Handle File Uploads
 			const filesJson = formData.get('files');
@@ -246,6 +274,10 @@ export const actions: Actions = {
 				try {
 					const uploadedFiles = JSON.parse(filesJson);
 					if (Array.isArray(uploadedFiles) && uploadedFiles.length > 0) {
+						for (const entry of uploadedFiles)
+							assertOrdinaryStoragePath(
+								join('uploads', String(entry.path).replace(/^\/uploads\//, ''))
+							);
 						await db.insert(file).values(
 							uploadedFiles.map((f: any) => ({
 								filename: f.name,
@@ -260,7 +292,6 @@ export const actions: Actions = {
 					console.error('Failed to parse uploaded files JSON', e);
 				}
 			}
-
 		} catch (err) {
 			console.error(err);
 			return fail(500, { error: 'Failed to create task' });

@@ -6,6 +6,6 @@ import { normalizeLatvianText } from '$lib/utilities';
 export const normalizeString = normalizeLatvianText;
 
 export const ilikeNormalize = (column: AnyColumn, searchTerm: string) => {
-    const normalizedSearch = `%${normalizeString(searchTerm)}%`;
-    return sql`translate(lower(${column}), 'āčēģīķļņšūž', 'acegiklnsuz') ILIKE ${normalizedSearch}`;
+	const normalizedSearch = `%${normalizeString(searchTerm)}%`;
+	return sql`translate(lower(${column}), 'āčēģīķļņšūž', 'acegiklnsuz') ILIKE ${normalizedSearch}`;
 };

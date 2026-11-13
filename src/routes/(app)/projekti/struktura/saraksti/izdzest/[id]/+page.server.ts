@@ -19,7 +19,9 @@ export const actions: Actions = {
 		try {
 			await db.delete(tab).where(eq(tab.id, Number(params.id)));
 		} catch (error) {
-			return fail(400, { message: m['components.delete_modal.error']({ item: tabGroup.id }) + error });
+			return fail(400, {
+				message: m['components.delete_modal.error']({ item: tabGroup.id }) + error
+			});
 		}
 		redirect(303, '/projekti/struktura');
 	}

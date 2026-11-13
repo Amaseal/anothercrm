@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
-import { user } from '$lib/server/db/schema';
+import { settings } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
 
@@ -11,17 +11,13 @@ export const POST: RequestHandler = async ({ locals }) => {
 		return json({ error: 'Nav autorizēts' }, { status: 401 });
 	}
 
-	// Get full user data from database
-	const fullUser = await db.query.user.findFirst({
-		where: eq(user.id, sessionUser.id)
+	// Get the integration credentials saved in user settings
+	const userSettings = await db.query.settings.findFirst({
+		where: eq(settings.userId, sessionUser.id)
 	});
 
-	if (!fullUser) {
-		return json({ error: 'Lietotājs nav atrasts' }, { status: 404 });
-	}
-
 	// Check if user has Nextcloud credentials configured
-	if (!fullUser.nextcloud_username || !fullUser.nextcloud_password) {
+	if (!userSettings?.nextcloud_username || !userSettings.nextcloud_password) {
 		return json(
 			{
 				error: 'Nextcloud iestatījumi nav konfigurēti. Lūdzu, dodieties uz iestatījumiem.'
@@ -30,7 +26,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 		);
 	}
 
-	const NEXTCLOUD_URL = env.NEXTCLOUD_URL;
+	const NEXTCLOUD_URL = userSettings.nextcloud || env.NEXTCLOUD_URL;
 	if (!NEXTCLOUD_URL) {
 		return json({ error: 'Nextcloud URL nav konfigurēts sistēmā' }, { status: 500 });
 	}
@@ -40,7 +36,7 @@ export const POST: RequestHandler = async ({ locals }) => {
 
 		// Create auth header using user's stored credentials
 		const auth = Buffer.from(
-			`${fullUser.nextcloud_username}:${fullUser.nextcloud_password}`
+			`${userSettings.nextcloud_username}:${userSettings.nextcloud_password}`
 		).toString('base64');
 		const headers = {
 			Authorization: `Basic ${auth}`,

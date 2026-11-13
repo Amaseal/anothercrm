@@ -1,5 +1,11 @@
 import { db } from '$lib/server/db';
-import { product, productTranslation, clientProductPrice, client, user } from '$lib/server/db/schema';
+import {
+	product,
+	productTranslation,
+	clientProductPrice,
+	client,
+	user
+} from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import * as m from '$lib/paraglide/messages';
@@ -21,7 +27,7 @@ export const load = async ({ url }) => {
 
 	// Each user can have one or more userClients. Flatten the array.
 	const btbClients = usersDb.flatMap((u) =>
-		u.userClients.map(uc => ({
+		u.userClients.map((uc) => ({
 			id: uc.clientId,
 			name: `${u.name} (${uc.client?.name || 'Unknown Company'})`
 		}))
@@ -104,11 +110,11 @@ export const actions: Actions = {
 						return null;
 					})
 					.filter((t) => t !== null) as {
-						productId: number;
-						language: string;
-						title: string;
-						description: string;
-					}[];
+					productId: number;
+					language: string;
+					title: string;
+					description: string;
+				}[];
 
 				if (translationInserts.length > 0) {
 					await tx.insert(productTranslation).values(translationInserts);

@@ -1,6 +1,7 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { unlink } from 'fs/promises';
 import path from 'path';
+import { assertOrdinaryStoragePath } from '$lib/server/production-projects';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
@@ -27,6 +28,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 	}
 
+	assertOrdinaryStoragePath(filePath);
 	try {
 		await unlink(filePath);
 		return new Response(JSON.stringify({ success: true }), { status: 200 });

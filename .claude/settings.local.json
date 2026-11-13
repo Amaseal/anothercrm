@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd d:\\\\majaslapas\\\\anothercrm; $raw = Get-Content \"$env:TEMP\\\\fallow-out.json\" -Raw; $json = $raw | ConvertFrom-Json; Write-Host \"=== HEALTH ===\"; $json.health | ConvertTo-Json -Depth 5; Write-Host \"=== CHECK ===\"; $json.check | ConvertTo-Json -Depth 5)"
+    ]
+  }
+}

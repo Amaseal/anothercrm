@@ -45,6 +45,7 @@ src/routes/
 ### List pages pattern
 
 Every list route (`klienti`, `audumi`, `produkti`, `rekini`, `pabeigtie`) uses a **layout-level** load:
+
 - `+layout.server.ts` — handles filtering, sorting, pagination, and cookie persistence via `handleListParams()` from `src/lib/server/paramState.ts`
 - `+layout.svelte` — renders the header (search, add button) and the table; child `+page.svelte` is usually empty or a modal overlay
 
@@ -60,7 +61,7 @@ Client-side role checks use derived Svelte stores: `import { isAdmin, isClient }
 
 ### Database
 
-Drizzle ORM + PostgreSQL. Schema at `src/lib/server/db/schema.ts`. All tables use `const db = import { db } from '$lib/server/db'`. 
+Drizzle ORM + PostgreSQL. Schema at `src/lib/server/db/schema.ts`. All tables use `const db = import { db } from '$lib/server/db'`.
 
 Latvian text search is diacritic-insensitive — always use `ilikeNormalize(column, term)` from `src/lib/server/dbUtils.ts` instead of raw `ilike`.
 

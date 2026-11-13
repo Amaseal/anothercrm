@@ -23,10 +23,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 
 	if (search) {
 		filterConditions.push(
-			or(
-				ilikeNormalize(product.title, search),
-				ilikeNormalize(product.description, search)
-			)
+			or(ilikeNormalize(product.title, search), ilikeNormalize(product.description, search))
 		);
 	}
 

@@ -232,11 +232,13 @@
 				<div class="mt-1 flex items-center justify-between">
 					<p class="text-xs text-muted-foreground">
 						{#if currentMonthChange > 0}
-							<span class="text-green-600">+{currentMonthChange}%</span> no pagājušā mēneša
+							<span class="text-green-600">+{currentMonthChange}%</span> pret tādu pašu periodu pagājušajā
+							mēnesī
 						{:else if currentMonthChange < 0}
-							<span class="text-red-600">{currentMonthChange}%</span> no pagājušā mēneša
+							<span class="text-red-600">{currentMonthChange}%</span> pret tādu pašu periodu pagājušajā
+							mēnesī
 						{:else}
-							Nav izmaiņu pret pagājušo mēnesi
+							Nav izmaiņu pret tādu pašu periodu pagājušajā mēnesī
 						{/if}
 					</p>
 					<div class="flex gap-0.5 rounded-md border p-0.5">

@@ -2,7 +2,6 @@
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import type { InvoiceWithRelations } from '../../+layout.svelte'; // Reuse type or just use simplistic one logic
 	import X from '@lucide/svelte/icons/x';
 	import * as m from '$lib/paraglide/messages';
 	import FormError from '$lib/components/form-error.svelte';

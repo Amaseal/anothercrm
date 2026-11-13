@@ -12,7 +12,7 @@
 	import { cn } from '$lib/utils';
 	import * as Select from '$lib/components/ui/select';
 	import FormError from '$lib/components/form-error.svelte';
-	import {isAdmin} from '$lib/stores/user';
+	import { isAdmin } from '$lib/stores/user';
 
 	interface Client {
 		id: number | string;
@@ -25,7 +25,7 @@
 		value = $bindable(''),
 		classes,
 		disabled = false
-	}: { clients: Client[]; value: string; disabled?: boolean, classes?: string } = $props();
+	}: { clients: Client[]; value: string; disabled?: boolean; classes?: string } = $props();
 
 	let open = $state(false);
 	let dialogOpen = $state(false);
@@ -55,9 +55,7 @@
 		clients.find((c) => c.id.toString() === value)?.name || m['projects.client_label']()
 	);
 
-	let selectedClient = $derived(
-		clients.find((c) => c.id.toString() === value)
-	);
+	let selectedClient = $derived(clients.find((c) => c.id.toString() === value));
 
 	// Sync width when opening
 	$effect(() => {
@@ -112,7 +110,7 @@
 					bankCode,
 					bankAccount,
 					description,
-                    sportType
+					sportType
 				}),
 				headers: { 'Content-Type': 'application/json' }
 			});
@@ -186,8 +184,7 @@
 								<div class="flex flex-col items-start justify-center">
 									<span>{client.name}</span>
 									{#if client.email || client.phone}
-										<span class="text-xs text-muted-foreground"
-											>{client.email || client.phone}</span
+										<span class="text-xs text-muted-foreground">{client.email || client.phone}</span
 										>
 									{/if}
 								</div>
@@ -200,29 +197,29 @@
 	</Popover.Root>
 
 	{#if selectedClient}
-	<Button
-		variant="outline"
-		size="icon"
-		class="shrink-0"
-		type="button"
-		onclick={() => (viewDialogOpen = true)}
-		title={m['clients.details'] ? m['clients.details']() : 'Klienta informācija'}
-	>
-		<Eye class="h-4 w-4" />
-	</Button>
+		<Button
+			variant="outline"
+			size="icon"
+			class="shrink-0"
+			type="button"
+			onclick={() => (viewDialogOpen = true)}
+			title={m['clients.details'] ? m['clients.details']() : 'Klienta informācija'}
+		>
+			<Eye class="h-4 w-4" />
+		</Button>
 	{/if}
 
 	{#if $isAdmin}
-	<Button
-		variant="outline"
-		size="icon"
-		class="shrink-0"
-		type="button"
-		onclick={() => (dialogOpen = true)}
-		{disabled}
-	>
-		<Plus class="h-4 w-4" />
-	</Button>
+		<Button
+			variant="outline"
+			size="icon"
+			class="shrink-0"
+			type="button"
+			onclick={() => (dialogOpen = true)}
+			{disabled}
+		>
+			<Plus class="h-4 w-4" />
+		</Button>
 	{/if}
 </div>
 
@@ -322,9 +319,9 @@
 					<div class="flex-1">
 						<Label>{m['clients.sport_type']()}</Label>
 						<Select.Root type="single" bind:value={sportType}>
-							<Select.Trigger class="w-full text-ellipsis overflow-hidden whitespace-nowrap">
-                                {sportType || m['clients.sport_type_placeholder']()}
-                            </Select.Trigger>
+							<Select.Trigger class="w-full overflow-hidden text-ellipsis whitespace-nowrap">
+								{sportType || m['clients.sport_type_placeholder']()}
+							</Select.Trigger>
 							<Select.Content class="max-h-[300px] overflow-y-auto">
 								{#each SPORT_TYPES as type}
 									<Select.Item value={type} label={type} />
@@ -362,16 +359,18 @@
 <Dialog.Root bind:open={viewDialogOpen}>
 	<Dialog.Content class="max-h-[90vh] w-full max-w-2xl overflow-hidden p-0">
 		<Dialog.Header class="px-6 pt-6">
-			<Dialog.Title>{m['clients.details'] ? m['clients.details']() : 'Klienta informācija'}</Dialog.Title>
+			<Dialog.Title
+				>{m['clients.details'] ? m['clients.details']() : 'Klienta informācija'}</Dialog.Title
+			>
 		</Dialog.Header>
 		<div class="custom-scroll max-h-[calc(90vh-80px)] overflow-y-auto px-6 pb-6">
 			{#if selectedClient}
 				<div class="grid gap-6 py-4">
-					<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+					<div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 						<!-- Name & Type -->
 						<div>
 							<Label class="text-xs text-muted-foreground">{m['clients.name']()}</Label>
-							<div class="font-medium text-lg mt-1">{selectedClient.name}</div>
+							<div class="mt-1 text-lg font-medium">{selectedClient.name}</div>
 						</div>
 						<div>
 							<Label class="text-xs text-muted-foreground">{m['clients.type']()}</Label>
@@ -390,7 +389,9 @@
 
 						<!-- Reg & VAT -->
 						<div>
-							<Label class="text-xs text-muted-foreground">{m['clients.registration_number']()}</Label>
+							<Label class="text-xs text-muted-foreground"
+								>{m['clients.registration_number']()}</Label
+							>
 							<div class="mt-1">{selectedClient.registrationNumber || '-'}</div>
 						</div>
 						<div>
@@ -427,7 +428,7 @@
 						<!-- Description -->
 						<div class="col-span-1 md:col-span-2">
 							<Label class="text-xs text-muted-foreground">{m['clients.description']()}</Label>
-							<p class="whitespace-pre-wrap mt-1 text-sm">{selectedClient.description || '-'}</p>
+							<p class="mt-1 text-sm whitespace-pre-wrap">{selectedClient.description || '-'}</p>
 						</div>
 					</div>
 				</div>

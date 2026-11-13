@@ -30,7 +30,11 @@ export const POST: RequestHandler = async ({ locals, cookies }) => {
 		});
 	}
 
-	cookies.set('changelog_seen', version, { path: '/', maxAge: 60 * 60 * 24 * 365, httpOnly: false });
+	cookies.set('changelog_seen', version, {
+		path: '/',
+		maxAge: 60 * 60 * 24 * 365,
+		httpOnly: false
+	});
 
 	return json({ ok: true });
 };

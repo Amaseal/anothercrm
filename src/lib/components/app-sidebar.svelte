@@ -10,6 +10,7 @@
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import Save from '@lucide/svelte/icons/save';
 	import FileText from '@lucide/svelte/icons/file-text';
+	import Files from '@lucide/svelte/icons/files';
 	import Logo from './logo.svelte';
 	import NavUser from './nav-user.svelte';
 	import { isClient } from '$lib/stores/user';
@@ -49,9 +50,19 @@
 				icon: Blocks
 			},
 			{
+				title: m['production.title'](),
+				url: '/razosana',
+				icon: Blocks
+			},
+			{
 				title: m['menu.files'](),
 				url: '/faili',
 				icon: Save
+			},
+			{
+				title: m['menu.documents'](),
+				url: '/dokumenti',
+				icon: Files
 			},
 			{
 				title: m['menu.invoices'](),
@@ -60,7 +71,9 @@
 			}
 		].filter((item) => {
 			if ($isClient) {
-				return !['/klienti', '/audumi', '/faili', '/'].includes(item.url);
+				return !['/klienti', '/audumi', '/faili', '/dokumenti', '/razosana', '/'].includes(
+					item.url
+				);
 			}
 			return true;
 		})

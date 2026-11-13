@@ -10,6 +10,8 @@
 			"./messages/{locale}/common.json",
 			"./messages/{locale}/components.json",
 			"./messages/{locale}/products.json",
+			"./messages/{locale}/production.json",
+			"./messages/{locale}/production_parsing.json",
 			"./messages/{locale}/clients.json",
 			"./messages/{locale}/materials.json",
 			"./messages/{locale}/projects.json",
@@ -19,15 +21,14 @@
 			"./messages/{locale}/invoices.json",
 			"./messages/{locale}/completed.json",
 			"./messages/{locale}/files.json",
+			"./messages/{locale}/documents.json",
 			"./messages/{locale}/settings.json",
+			"./messages/{locale}/gemini_settings.json",
 			"./messages/{locale}/roles.json",
 			"./messages/{locale}/product_card.json",
 			"./messages/{locale}/history.json"
 		]
 	},
 	"baseLocale": "en",
-	"locales": [
-		"en",
-		"lv"
-	]
+	"locales": ["en", "lv"]
 }

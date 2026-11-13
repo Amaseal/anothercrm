@@ -10,6 +10,7 @@
 	const labels = {
 		lv: {
 			invoice: 'Rēķins/Pavadzīme',
+			proforma: 'Proforma rēķins',
 			date: 'Datums',
 			invoiceNr: 'Rēķina nr.',
 			dueDate: 'Apmaksas termiņš',
@@ -36,6 +37,7 @@
 		},
 		en: {
 			invoice: 'Commercial Invoice',
+			proforma: 'Proforma Invoice',
 			date: 'Issue Date',
 			invoiceNr: 'Invoice No.',
 			dueDate: 'Due Date',
@@ -154,7 +156,9 @@
 			<FastBreakLogo />
 		</div>
 		<div style="text-align: right;">
-			<div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">{l.invoice}</div>
+			<div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">
+				{invoice.documentType === 'proforma' ? l.proforma : l.invoice}
+			</div>
 			<table
 				style="border-collapse: collapse; font-size: 11px; min-width: 200px; margin-left: auto;"
 			>
@@ -374,8 +378,8 @@
 	{#if invoice.isElectronic === false}
 		<InvoiceSignatures language={invoice.language} companyName={company?.name ?? ''} />
 	{:else}
-	<div style="margin-top: 24px; font-size: 9px; font-style: italic;">
-		{l.footer}
-	</div>
+		<div style="margin-top: 24px; font-size: 9px; font-style: italic;">
+			{l.footer}
+		</div>
 	{/if}
 </div>

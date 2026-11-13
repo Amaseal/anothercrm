@@ -1,0 +1,33 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"production_parse": {
+		"title": "Ģenerēt izmēru sarakstu",
+		"source": "Avots",
+		"text": "Ielīmēt tekstu vai ekrānuzņēmumu",
+		"file": "Izvēlēties failu",
+		"use_editor_text": "Uzdevuma apraksta teksts",
+		"excerpt": "Izvēlētais teksts vai viens ielīmēts ekrānuzņēmums",
+		"sheet": "Darblapa",
+		"selected_image": "Izvēlētais avota attēls",
+		"open_pdf": "Atvērt izvēlēto PDF",
+		"generate": "Ģenerēt",
+		"retry_save": "Pabeigt rezultāta saglabāšanu",
+		"retry_notice": "Ģenerēšana pabeigta. Šī darbība atkārto tikai saglabāšanu bez jauna AI izsaukuma.",
+		"preparing": "Nolasa avotu…",
+		"free_notice": "Strukturēta tabula — ģenerē lokāli bez AI maksas.",
+		"generate_consent": "Nospiežot Ģenerēt, atļaujat nosūtīt šo izvēlēto avotu Google Gemini ({model}); par AI apstrādi var tikt piemērota maksa.",
+		"configure": "AI nav konfigurēts. Gemini iestatījumos norādiet kopīgo atslēgu un modeli, pēc tam atgriezieties šeit.",
+		"working": "Ģenerē jaunu melnrakstu… Esošās darbgrāmatas netiek mainītas.",
+		"cancel": "Atcelt",
+		"cancelled": "Atcelts. Avots un esošie rezultāti palika. Par iesāktu AI pieprasījumu joprojām var piemērot maksu.",
+		"failed": "Neizdevās ģenerēt vai saglabāt. Avots un iepriekšējie rezultāti palika. Ja saglabāšanas atbilde pazuda, pirms atkārtošanas atjaunojiet saglabāto failu sarakstu.",
+		"no_rows": "Vienības nav atrastas. Izvēlieties attiecīgo izmēru sarakstu un ģenerējiet vēlreiz.",
+		"unsaved_result": "Rezultāts vēl nav saglabāts — {source}",
+		"generated_draft": "Ģenerēts melnraksts. Labojumiem izmantojiet Labot; pirms ražošanas izvēlieties ražošanas iestatījumus redaktorā vai Print Tools.",
+		"one_image": "Ielīmējiet vienu ekrānuzņēmumu reizē, lai avots būtu nepārprotams.",
+		"unsaved_warning": "Iesāktā ģenerēšana vai nesaglabātais rezultāts var pazust. Par iesāktu AI pieprasījumu joprojām var piemērot maksu. Vai iziet no uzdevuma?",
+		"loading": "Ielādē avotus…",
+		"previous": "Iepriekšējās rindas",
+		"next": "Nākamās rindas"
+	}
+}

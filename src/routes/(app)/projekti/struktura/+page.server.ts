@@ -7,8 +7,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	// Fetch user preferences if user is logged in
 	const preferences = locals.user
 		? await db.query.userTabPreference.findMany({
-			where: eq(userTabPreference.userId, locals.user.id)
-		})
+				where: eq(userTabPreference.userId, locals.user.id)
+			})
 		: [];
 
 	// Helper to merge preferences into tabs
@@ -47,7 +47,6 @@ export const load: PageServerLoad = async ({ locals }) => {
 		...group,
 		tabs: enhanceTabs(group.tabs)
 	}));
-
 
 	return {
 		tabGroups
@@ -125,10 +124,7 @@ export const actions: Actions = {
 		try {
 			// Check if preference exists
 			const existingPref = await db.query.userTabPreference.findFirst({
-				where: and(
-					eq(userTabPreference.userId, locals.user.id),
-					eq(userTabPreference.tabId, tabId)
-				)
+				where: and(eq(userTabPreference.userId, locals.user.id), eq(userTabPreference.tabId, tabId))
 			});
 
 			if (existingPref) {

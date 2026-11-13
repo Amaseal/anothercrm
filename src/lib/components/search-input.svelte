@@ -18,17 +18,11 @@
 </script>
 
 <div class="relative {className}">
-	<Input
-		type="text"
-		class="mb-0 w-full {value ? 'pr-8' : ''}"
-		{placeholder}
-		{value}
-		{oninput}
-	/>
+	<Input type="text" class="mb-0 w-full {value ? 'pr-8' : ''}" {placeholder} {value} {oninput} />
 	{#if value}
 		<button
 			type="button"
-			class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+			class="absolute top-1/2 right-2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
 			onclick={onclear}
 		>
 			<X class="size-4" />

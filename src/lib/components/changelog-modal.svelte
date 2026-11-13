@@ -18,8 +18,13 @@
 	}
 </script>
 
-<Dialog.Root bind:open onOpenChange={(v) => { if (!v) dismiss(); }}>
-	<Dialog.Content class="max-h-[80vh] w-full max-w-lg overflow-hidden flex flex-col">
+<Dialog.Root
+	bind:open
+	onOpenChange={(v) => {
+		if (!v) dismiss();
+	}}
+>
+	<Dialog.Content class="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden">
 		<Dialog.Header>
 			<Dialog.Title class="text-xl">
 				{changelog[0].content[locale as 'lv' | 'en']?.title ?? changelog[0].content.en.title}
@@ -33,7 +38,7 @@
 			{#each changelog as entry}
 				{@const content = entry.content[locale as 'lv' | 'en'] ?? entry.content.en}
 				{#if entry !== changelog[0]}
-					<p class="mb-1 mt-4 text-sm font-semibold text-muted-foreground">{entry.date}</p>
+					<p class="mt-4 mb-1 text-sm font-semibold text-muted-foreground">{entry.date}</p>
 				{/if}
 				<ul class="space-y-2">
 					{#each content.items as item}

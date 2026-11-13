@@ -13,7 +13,6 @@
 		const currentLocale = getLocale();
 		return translations.find((t) => t.language === currentLocale);
 	};
-
 </script>
 
 <svelte:head>

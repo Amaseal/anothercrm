@@ -1,0 +1,33 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"documents": {
+		"title": "Dokumenti",
+		"name_placeholder": "Dokumenta nosaukums",
+		"create_title": "Izveidot dokumentu",
+		"create_description": "Ievadiet nosaukumu un izvēlieties dokumenta veidu.",
+		"document_type": "Dokumenta veids",
+		"select_type": "Izvēlieties veidu…",
+		"create_confirm": "Izveidot",
+		"create_required": "Ievadiet dokumenta nosaukumu un izvēlieties Word vai Excel.",
+		"name_too_long": "Dokumenta nosaukums ir pārāk garš. Lūdzu, saīsiniet to.",
+		"open_editor": "Atvērt redaktorā",
+		"upload": "Augšupielādēt dokumentu",
+		"empty": "Dokumentu vēl nav.",
+		"save": "Saglabāt",
+		"back_to_documents": "Atpakaļ uz dokumentiem",
+		"saved": "Dokuments saglabāts.",
+		"saved_more_edits": "Dokuments saglabāts. Jaunākās izmaiņas vēl jāsaglabā.",
+		"open": "Atvērt",
+		"unsaved": "Nesaglabātas izmaiņas",
+		"editor_title": "Dokumentu redaktors",
+		"loading": "Atver dokumentu…",
+		"saving": "Saglabā…",
+		"open_failed": "Neizdevās atvērt dokumentu.",
+		"save_failed": "Neizdevās saglabāt dokumentu. Izmaiņas joprojām ir redaktorā; lūdzu, mēģiniet vēlreiz.",
+		"save_conflict": "Dokuments ir mainīts vai tiek saglabāts citur. Pirms jaunākās versijas atvēršanas lejupielādējiet savas izmaiņas no redaktora.",
+		"invalid_file": "Izmantojiet derīgu DOCX, XLSX, PPTX vai CSV failu līdz 25 MB. Saglabājot jāsaglabā sākotnējais formāts.",
+		"leave_unsaved": "Ir nesaglabātas izmaiņas. Vai tomēr atstāt dokumentu?",
+		"editor_unavailable": "Neizdevās palaist redaktoru. Pārliecinieties, ka tā faili ir uzstādīti ar pnpm office:prepare, un pārlādējiet lapu.",
+		"supported_formats": "DOCX, XLSX, PPTX un CSV · līdz 25 MB. Iegultais redaktors pašlaik ir angļu valodā."
+	}
+}

@@ -1,0 +1,23 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"gemini_settings": {
+		"title": "Gemini settings",
+		"description": "Shared AI parsing configuration for staff. Change the key or model here without restarting the server. Saved keys are never displayed or sent back to the browser.",
+		"environment": "No database settings saved yet. Existing server environment values are used if present; the first Save adopts them unless you replace or remove the key.",
+		"database": "Using saved CRM settings. Legacy environment values are ignored, including after removing the saved key.",
+		"ready": "A key and model are configured. Compatibility is checked only by an explicitly approved parsing request.",
+		"not_ready": "AI parsing is disabled until a key and model are configured. Free table parsing remains available.",
+		"key": "Gemini API key",
+		"key_saved": "Key configured — leave blank to keep it",
+		"key_help": "Enter a replacement key, or leave blank to keep the current key. This is a shared server-side setting, not a personal account credential.",
+		"remove_key": "Remove the saved key and disable AI parsing",
+		"model": "Model ID",
+		"model_help": "Refresh the available models or enter an exact Gemini model ID. No model list is hardcoded. Leave blank to disable AI while retaining the key.",
+		"refresh": "Refresh models (no generation)",
+		"refreshing": "Refreshing models…",
+		"models_loaded": "Loaded {count} generation models. Choose a suggestion in the model field or enter an exact ID.",
+		"refresh_failed": "Could not refresh Gemini models. Check the key and project permissions, then retry.",
+		"save_failed": "Could not save Gemini settings. Your existing configuration was kept; please try again.",
+		"cost_notice": "Save and Refresh models make no paid generation requests. The list filters known special-purpose models but does not prove image/PDF/JSON support. Clicking Generate authorizes the disclosed paid parsing call. A configuration change rejects requests using old settings before billing; check the current model and click Generate again."
+	}
+}

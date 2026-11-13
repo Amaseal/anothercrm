@@ -5,6 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
+		"office:prepare": "node scripts/prepare-office.mjs",
 		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
@@ -84,7 +85,7 @@
 		"svelte-dnd-action": "^0.9.67",
 		"svelte-sonner": "^1.0.7",
 		"svelte-tiptap": "^3.0.1",
-		"xlsx": "^0.18.5"
+		"xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

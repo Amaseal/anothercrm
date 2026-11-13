@@ -38,7 +38,8 @@
 			"logout": "Atslēgties",
 			"light": "Gaišs",
 			"dark": "Tumšs"
-		},		"search": "Meklēt...",
+		},
+		"search": "Meklēt...",
 		"add": "Pievienot",
 		"cancel": "Atcelt",
 		"close": "Aizvērt",

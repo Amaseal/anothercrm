@@ -163,7 +163,7 @@
 
 <div class="space-y-4">
 	{#each entries as entry, index}
-		{@const selectedProduct = products.find((product) => product.id === entry.productId)}
+		{@const selectedProduct = products.find((product: Product) => product.id === entry.productId)}
 		{@const showPrice = !!selectedProduct && (readonly || (isAdmin && priceClientId !== null))}
 		<div class="flex items-end gap-2">
 			<!-- Product Selector -->
@@ -233,10 +233,10 @@
 					</Popover.Content>
 				</Popover.Root>
 				{#if showPrice && selectedProduct}
-						<span class="mt-1 text-xs text-muted-foreground">
-							{m['projects.price_label']()}: €{formatPrice(effectivePrice(selectedProduct))}
-						</span>
-					{/if}
+					<span class="mt-1 text-xs text-muted-foreground">
+						{m['projects.price_label']()}: €{formatPrice(effectivePrice(selectedProduct))}
+					</span>
+				{/if}
 			</div>
 
 			<!-- Count Input -->

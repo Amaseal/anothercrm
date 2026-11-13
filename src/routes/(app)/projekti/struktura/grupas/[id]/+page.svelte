@@ -14,7 +14,6 @@
 	const getLanguageName = (code: string) => {
 		return new Intl.DisplayNames([getLocale()], { type: 'language' }).of(code) || code;
 	};
-
 </script>
 
 <svelte:head>

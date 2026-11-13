@@ -1,4 +1,4 @@
-
+import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { invoice, client, task, userClient } from '$lib/server/db/schema';
 import type { LayoutServerLoad } from './$types';
@@ -7,6 +7,7 @@ import { handleListParams } from '$lib/server/paramState';
 import { ilikeNormalize } from '$lib/server/dbUtils';
 
 export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
+	if (!locals.user) redirect(302, '/login');
 	const activeParams = handleListParams(url, cookies, '/rekini', 'rekini_filters');
 
 	const page = parseInt(activeParams.get('page') || '0');
@@ -49,10 +50,7 @@ export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
 					.from(invoice)
 					.leftJoin(client, eq(invoice.clientId, client.id))
 					.where(
-						or(
-							ilikeNormalize(invoice.invoiceNumber, search),
-							ilikeNormalize(client.name, search)
-						)
+						or(ilikeNormalize(invoice.invoiceNumber, search), ilikeNormalize(client.name, search))
 					)
 			)
 		);
@@ -72,7 +70,7 @@ export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
 		issueDate: invoice.issueDate,
 		dueDate: invoice.dueDate,
 		total: invoice.total,
-		status: invoice.status,
+		status: invoice.status
 		// clientName: client.name // Sorting by joined column in db.query is elusive, stick to invoice main cols or use sort on ID from subquery
 	};
 

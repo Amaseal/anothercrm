@@ -1,0 +1,33 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"documents": {
+		"title": "Documents",
+		"name_placeholder": "Document name",
+		"create_title": "Create document",
+		"create_description": "Enter a name and choose a document type.",
+		"document_type": "Document type",
+		"select_type": "Choose a type…",
+		"create_confirm": "Create",
+		"create_required": "Enter a document name and choose Word or Excel.",
+		"name_too_long": "The document name is too long. Please shorten it.",
+		"open_editor": "Open in editor",
+		"upload": "Upload document",
+		"empty": "No documents yet.",
+		"save": "Save",
+		"back_to_documents": "Back to documents",
+		"saved": "Document saved.",
+		"saved_more_edits": "Document saved. Newer changes still need saving.",
+		"open": "Open",
+		"unsaved": "Unsaved changes",
+		"editor_title": "Document editor",
+		"loading": "Opening document…",
+		"saving": "Saving…",
+		"open_failed": "Could not open the document.",
+		"save_failed": "Could not save the document. Your edits are still in the editor; please try again.",
+		"save_conflict": "This document has changed or is being saved elsewhere. Download your edits from the editor before reopening the latest version.",
+		"invalid_file": "Use a valid DOCX, XLSX, PPTX or CSV file, up to 25 MB. Saved files must keep the original format.",
+		"leave_unsaved": "You have unsaved changes. Leave this document anyway?",
+		"editor_unavailable": "The editor could not start. Ensure its assets are installed with pnpm office:prepare, then reload.",
+		"supported_formats": "DOCX, XLSX, PPTX and CSV · maximum 25 MB. The embedded editor currently uses English."
+	}
+}

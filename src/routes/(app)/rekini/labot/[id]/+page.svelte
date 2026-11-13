@@ -76,6 +76,7 @@
 	let subtotal = $derived(items.reduce((acc, item) => acc + itemLineTotal(item), 0));
 	let vatRate = $state(invoice.taxRate ?? 21);
 	let language = $state(invoice.language ?? 'lv');
+	let documentType = $state(invoice.documentType);
 	let isPrinted = $state(invoice.isElectronic === false);
 
 	let taxAmount = $derived(subtotal * (vatRate / 100));
@@ -90,7 +91,8 @@
 				quantity: 1,
 				price: 0,
 				discountType: 'percent',
-				discountValue: 0
+				discountValue: 0,
+				isAutoFilled: false
 			}
 		];
 	}
@@ -264,7 +266,6 @@
 			style="font-family: Arial, sans-serif;"
 		>
 			<form method="POST" use:enhance>
-	
 				<!-- 1. Header Row -->
 				<div class="mb-2 flex items-start justify-between">
 					<!-- Logo -->
@@ -275,7 +276,26 @@
 
 					<!-- Invoice Meta Table -->
 					<div class="flex w-1/2 flex-col items-end">
-						<h1 class="mb-2 text-xl font-bold">Rēķins/Pavadzīme</h1>
+						<h1 class="mb-2 text-xl font-bold">
+							{documentType === 'proforma'
+								? m['invoices.proforma']({}, { locale: language === 'en' ? 'en' : 'lv' })
+								: m['invoices.standard_invoice']({}, { locale: language === 'en' ? 'en' : 'lv' })}
+						</h1>
+						<div class="mb-2 flex items-center gap-2">
+							<Label for="document-type">{m['invoices.type']()}</Label>
+							<select
+								id="document-type"
+								name="documentType"
+								bind:value={documentType}
+								class="rounded border border-gray-400 bg-white px-2 py-1 text-sm"
+							>
+								<option value="invoice">{m['invoices.standard_invoice']()}</option>
+								<option value="proforma">{m['invoices.proforma']()}</option>
+								{#if invoice.documentType === 'delivery_note' || invoice.documentType === 'invoice_delivery'}
+									<option value={invoice.documentType}>{m['invoices.standard_invoice']()}</option>
+								{/if}
+							</select>
+						</div>
 						<table class="w-full max-w-[400px] border-collapse border border-black text-sm">
 							<tbody>
 								<tr>
@@ -446,8 +466,6 @@
 							{/if}
 						</div>
 
-						<!-- Hidden switch for edit mode simplicity, maybe user wants to create new here? 
-                                 Let's keep it consistent. -->
 						<div class="flex items-center gap-2 text-xs">
 							<Label for="new-client-mode">{m['invoices.new_client']()}</Label>
 							<Switch
@@ -499,6 +517,16 @@
 									placeholder={m['clients.email_placeholder']()}
 								/>
 							</div>
+							<div class="flex items-center text-sm">
+								<Label class="w-32 text-gray-500">{m['invoices.phone']()}</Label>
+								<Input
+									name="newClientPhone"
+									type="tel"
+									class="h-6 w-64 text-sm"
+									placeholder={m['clients.phone_placeholder']()}
+								/>
+							</div>
+							<p class="text-xs text-gray-500">{m['invoices.phone_or_email_required']()}</p>
 							<div class="flex items-center text-sm">
 								<Label class="w-32 text-gray-500">{m['invoices.bank']()}</Label>
 								<Input
@@ -806,9 +834,9 @@
 				{#if isPrinted}
 					<InvoiceSignatures {language} companyName={company?.name ?? ''} />
 				{:else}
-				<div class="mt-8 text-sm italic">
+					<div class="mt-8 text-sm italic">
 						{m['invoices.electronic_footer']({}, { locale: language === 'en' ? 'en' : 'lv' })}
-				</div>
+					</div>
 				{/if}
 
 				<!-- Payment & Delivery Terms -->
@@ -841,7 +869,8 @@
 						<!-- Hidden Task Linker -->
 						<input type="hidden" name="items" value={JSON.stringify(items)} />
 
-						<Button href="/rekini" variant="outline">{m['components.delete_modal.cancel']()}</Button>
+						<Button href="/rekini" variant="outline">{m['components.delete_modal.cancel']()}</Button
+						>
 						<Button type="submit" size="lg" class="px-8"
 							>{invoice.status === 'draft' ? 'Update Draft' : 'Update Invoice'}</Button
 						>
