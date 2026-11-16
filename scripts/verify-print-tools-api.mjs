@@ -7,6 +7,7 @@ const server = await createServer({ server: { middlewareMode: true }, appType: '
 try {
 	const { db } = await server.ssrLoadModule('/src/lib/server/db/index.ts');
 	const auth = await server.ssrLoadModule('/src/lib/server/print-tools/auth.ts');
+	const settingsPage = await server.ssrLoadModule('/src/routes/(app)/iestatijumi/+page.server.ts');
 	const validation = await server.ssrLoadModule('/src/lib/server/print-tools/validation.ts');
 	const { limitCrmRequest } = await server.ssrLoadModule('/src/lib/server/request-size.ts');
 	const api = await server.ssrLoadModule('/src/routes/api/print-tools/[...path]/+server.ts');
@@ -33,6 +34,10 @@ try {
 		assert.equal((await api.GET({ request: req, url: new URL(req.url) })).status, 401);
 	}
 	for (const locals of [{ user: null }, { user: { id: 'client', type: 'client' } }]) {
+		for (const name of ['createPrintToolsToken', 'revokePrintToolsToken'])
+			await assert.rejects(() => settingsPage.actions[name]({ locals }), {
+				status: locals.user ? 403 : 401
+			});
 		await assert.rejects(() => auth.createPrintToolsToken(locals), {
 			status: locals.user ? 403 : 401
 		});

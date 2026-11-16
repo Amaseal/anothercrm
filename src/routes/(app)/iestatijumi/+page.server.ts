@@ -9,13 +9,19 @@ import { parseCompanySettings } from '$lib/server/company-settings';
 import { productionAiStatus } from '$lib/server/production-ai';
 import { saveGeminiSettings } from '$lib/server/production-ai-settings';
 import { assertProductionStaff } from '$lib/server/production';
+import {
+	listPrintToolsTokens,
+	createPrintToolsToken,
+	revokePrintToolsToken
+} from '$lib/server/print-tools/auth';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url, request, setHeaders }) => {
 	if (!locals.user) {
 		throw redirect(302, '/login');
 	}
 
 	const user = locals.user;
+	if (request.method === 'GET') setHeaders({ 'Cache-Control': 'private, no-store' });
 
 	// Fetch user settings
 	const userSettings = await db.query.settings.findFirst({
@@ -63,12 +69,36 @@ export const load: PageServerLoad = async ({ locals }) => {
 		userSettings,
 		clients,
 		linkedClient,
+		printToolsTokens: user.type === 'admin' ? await listPrintToolsTokens(locals) : [],
+		printToolsUrl: `${url.origin}/api/print-tools`,
 		gemini: user.type === 'admin' ? await productionAiStatus() : null,
 		company: user.type !== 'client' ? ((await db.query.companySettings.findFirst()) ?? null) : null
 	};
 };
 
 export const actions: Actions = {
+	createPrintToolsToken: async ({ locals, setHeaders }) => {
+		assertProductionStaff(locals);
+		setHeaders({ 'Cache-Control': 'private, no-store' });
+		try {
+			return { printToolsToken: await createPrintToolsToken(locals) };
+		} catch (cause) {
+			return fail(isHttpError(cause) ? cause.status : 500, {
+				message: isHttpError(cause) ? cause.body.message : m['print_tools.save_failed']()
+			});
+		}
+	},
+	revokePrintToolsToken: async ({ locals, request }) => {
+		assertProductionStaff(locals);
+		try {
+			await revokePrintToolsToken(locals, (await request.formData()).get('tokenId'));
+			return { success: true };
+		} catch (cause) {
+			return fail(isHttpError(cause) ? cause.status : 500, {
+				message: isHttpError(cause) ? cause.body.message : m['print_tools.save_failed']()
+			});
+		}
+	},
 	updateGemini: async ({ request, locals }) => {
 		assertProductionStaff(locals);
 		try {

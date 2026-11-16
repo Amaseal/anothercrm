@@ -24,7 +24,7 @@ Staff can use **Generate size list** on task pages: select a source, click **Gen
 
 ## Print Tools plugin API
 
-CRM now exposes compatible production-library and shared AI endpoints at `/api/print-tools`. Apply migration `0040`, configure 52 MiB proxy/adapter request limits, and create a personal plugin credential in **Production** before switching plugin 1.27.0. See [docs/print-tools-api.md](docs/print-tools-api.md) for endpoints, security, deployment and remaining workbook integration. Code is not automatically deployed or staged.
+CRM now exposes compatible production-library and shared AI endpoints at `/api/print-tools`. Apply migration `0040`, configure 52 MiB proxy/adapter request limits, and create a personal plugin credential in **Settings → Print Tools plugin connection** before switching plugin 1.27.0. See [docs/print-tools-api.md](docs/print-tools-api.md) for endpoints, security, deployment and remaining workbook integration. Code is not automatically deployed or staged.
 
 ## Developing
 

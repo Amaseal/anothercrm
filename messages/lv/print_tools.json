@@ -1,11 +1,13 @@
 {
 	"print_tools": {
 		"title": "Print Tools spraudņa savienojums",
-		"help": "Izveidojiet personīgu piekļuves atslēgu uz 90 dienām un ievadiet šo API adresi un atslēgu spraudņa CRM savienojuma iestatījumos. Atslēga ļauj mainīt ražošanas bibliotēku, kopīgos Gemini iestatījumus un veikt tieši pieprasītus maksas AI izsaukumus. CRM glabā tikai atslēgas jaucējvērtību; piekļuvi var atsaukt šeit. Nekopīgojiet atslēgu ar klientiem.",
+		"help": "Šī spraudņa atslēga nav Gemini API atslēga. Izveidojiet personīgu piekļuves atslēgu uz 90 dienām un ievadiet šo API adresi un atslēgu spraudņa CRM savienojuma iestatījumos. Atslēga ļauj mainīt ražošanas bibliotēku, kopīgos Gemini iestatījumus un veikt tieši pieprasītus maksas AI izsaukumus. CRM glabā tikai atslēgas jaucējvērtību; piekļuvi var atsaukt šeit. Nekopīgojiet atslēgu ar klientiem.",
 		"url": "CRM API adrese",
 		"create": "Izveidot spraudņa atslēgu",
 		"copy_once": "Nokopējiet tagad — atslēga redzama tikai vienu reizi",
 		"expires": "Derīga līdz",
-		"revoke": "Atsaukt"
+		"revoke": "Atsaukt",
+		"settings_link": "Spraudņa savienojuma iestatījumi",
+		"save_failed": "Neizdevās mainīt spraudņa piekļuves atslēgu. Mēģiniet vēlreiz."
 	}
 }

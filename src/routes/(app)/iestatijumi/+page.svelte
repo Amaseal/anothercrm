@@ -11,6 +11,7 @@
 	import { copyToClipboard } from '$lib/utilities';
 	import ClientSelect from '$lib/components/client-select.svelte';
 	import GeminiSettings from '$lib/components/gemini-settings.svelte';
+	import PrintToolsCredentials from '$lib/components/print-tools-credentials.svelte';
 
 	let { data, form } = $props();
 
@@ -123,6 +124,13 @@
 	<!-- SECTION 2: Admin Only Settings -->
 	{#if data.user.type === 'admin'}
 		{#if data.gemini}<GeminiSettings settings={data.gemini} />{/if}
+		<div id="print-tools">
+			<PrintToolsCredentials
+				url={data.printToolsUrl}
+				tokens={data.printToolsTokens}
+				createdToken={form?.printToolsToken ?? ''}
+			/>
+		</div>
 		<Card.Root>
 			<Card.Header>
 				<Card.Title>{m['settings.system_settings']()}</Card.Title>

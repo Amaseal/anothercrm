@@ -1,11 +1,13 @@
 {
 	"print_tools": {
 		"title": "Print Tools plugin connection",
-		"help": "Create a personal 90-day credential, then enter this API URL and credential in the plugin's CRM connection settings. Credentials allow production-library changes, shared Gemini configuration and explicitly requested paid AI calls. They are stored hashed in CRM and can be revoked here. Never share them with clients.",
+		"help": "This plugin credential is separate from the Gemini API key. Create a personal 90-day credential, then enter this API URL and credential in the plugin's CRM connection settings. Credentials allow production-library changes, shared Gemini configuration and explicitly requested paid AI calls. They are stored hashed in CRM and can be revoked here. Never share them with clients.",
 		"url": "CRM API URL",
 		"create": "Create plugin credential",
 		"copy_once": "Copy now — this credential is shown only once",
 		"expires": "Expires",
-		"revoke": "Revoke"
+		"revoke": "Revoke",
+		"settings_link": "Plugin connection settings",
+		"save_failed": "Could not update the plugin credential. Try again."
 	}
 }

@@ -7,7 +7,6 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import FormError from '$lib/components/form-error.svelte';
-	import PrintToolsCredentials from '$lib/components/print-tools-credentials.svelte';
 	import * as m from '$lib/paraglide/messages';
 	import type { PageProps } from './$types';
 
@@ -22,17 +21,14 @@
 	<div>
 		<h1 class="text-2xl font-semibold">{m['production.title']()}</h1>
 		<p class="mt-2 text-sm text-muted-foreground">{m['production.description']()}</p>
+		<Button href={`${resolve('/iestatijumi')}#print-tools`} variant="link" class="px-0"
+			>{m['print_tools.settings_link']()}</Button
+		>
 	</div>
 
 	{#if form?.message}
 		<div role="alert"><FormError error={form.message} /></div>
 	{/if}
-
-	<PrintToolsCredentials
-		url={data.printToolsUrl}
-		tokens={data.printToolsTokens}
-		createdToken={form && 'printToolsToken' in form ? (form.printToolsToken ?? '') : ''}
-	/>
 
 	<div class="grid items-start gap-6 md:grid-cols-[minmax(16rem,1fr)_2fr]">
 		<Card.Root>

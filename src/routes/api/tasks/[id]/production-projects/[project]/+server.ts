@@ -2,6 +2,7 @@ import { error, json } from '@sveltejs/kit';
 import { assertProductionStaff, productionId } from '$lib/server/production';
 import {
 	openProductionProject,
+	deleteProductionProject,
 	saveProductionProject,
 	validateProductionBytes
 } from '$lib/server/production-projects';
@@ -31,6 +32,21 @@ export const GET: RequestHandler = async ({ locals, params, url }) => {
 	return json(
 		{ revision: document.revision, workbook: await validateProductionBytes(document.bytes) },
 		{ headers }
+	);
+};
+
+export const DELETE: RequestHandler = async ({ locals, params, request }) => {
+	assertProductionStaff(locals);
+	const input: unknown = await request.json().catch(() => error(400, 'Invalid deletion request.'));
+	if (!input || typeof input !== 'object' || !('revision' in input))
+		error(400, 'A saved workbook revision is required.');
+	return json(
+		await deleteProductionProject(
+			locals,
+			productionId(params.id),
+			productionId(params.project),
+			input.revision
+		)
 	);
 };
 

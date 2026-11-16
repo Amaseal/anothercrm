@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile, writeFile, rm, stat, utimes, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, rm, stat, utimes, mkdir, readdir } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { getTableName } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
@@ -91,6 +91,9 @@ try {
 	let nextId = 1000;
 	let failInsert = false;
 	let failMetadata = false;
+	let failDeletion = false;
+	let failCommit = false;
+	let inTransaction = false;
 	let deleteCondition;
 	const task = { id: 45, clientId: 7, createdById: 'owner', preview: null, files: [], tabId: 1 };
 	db.query.task.findFirst = async ({ where }) => {
@@ -99,7 +102,14 @@ try {
 	};
 	db.query.taskAssignee.findFirst = async () => undefined;
 	db.query.userClient.findFirst = async () => undefined;
-	db.query.file.findFirst = async ({ where }) => records.get(query(where).params[0]);
+	db.query.file.findFirst = async ({ where }) => {
+		assert.equal(
+			inTransaction,
+			false,
+			'Document lookup must not require another database connection during a transaction'
+		);
+		return records.get(query(where).params[0]);
+	};
 	db.query.productionProject.findFirst = async ({ where }) => {
 		const { sql, params } = query(where);
 		return [...references.values()].find((project) =>
@@ -115,8 +125,9 @@ try {
 	db.transaction = async (callback) => {
 		const beforeRecords = new Map(records);
 		const beforeReferences = new Map(references);
+		inTransaction = true;
 		try {
-			return await callback({
+			const result = await callback({
 				select: () => ({
 					from: () => ({
 						where: () => ({
@@ -126,6 +137,21 @@ try {
 							}
 						})
 					})
+				}),
+				delete: (table) => ({
+					where: async (condition) => {
+						const { params } = query(condition);
+						if (getTableName(table) === 'production_projects') {
+							const project = [...references.values()].find(
+								(entry) => entry.taskId === params[0] && entry.id === params[1]
+							);
+							if (project) references.delete(project.id);
+						} else {
+							if (failDeletion) throw new Error('simulated file metadata deletion failure');
+							assert.equal(records.get(params[0]).taskId, params[1]);
+							records.delete(params[0]);
+						}
+					}
 				}),
 				insert: (table) => ({
 					values: (value) => ({
@@ -144,12 +170,16 @@ try {
 					})
 				})
 			});
+			if (failCommit) throw new Error('simulated commit failure');
+			return result;
 		} catch (cause) {
 			records.clear();
 			references.clear();
 			for (const [id, value] of beforeRecords) records.set(id, value);
 			for (const [id, value] of beforeReferences) references.set(id, value);
 			throw cause;
+		} finally {
+			inTransaction = false;
 		}
 	};
 	db.update = (table) => ({
@@ -174,7 +204,7 @@ try {
 		return {
 			locals,
 			params,
-			request: { formData: async () => form },
+			request: { formData: async () => form, json: async () => data },
 			url: new URL('http://localhost/api/test')
 		};
 	};
@@ -187,6 +217,7 @@ try {
 			listing.POST,
 			detail.GET,
 			detail.POST,
+			detail.DELETE,
 			previous.GET,
 			previous.POST
 		])
@@ -399,8 +430,120 @@ try {
 		deleteCondition.sql.includes('not in') && deleteCondition.sql.includes('production_projects'),
 		'Completion DB deletion must exclude designated files'
 	);
+	// Explicit deletion removes only the selected workbook and its previous copy.
+	const sibling = await (await listing.POST(event({ file }))).json();
+	const siblingRecord = records.get(sibling.fileId);
+	const siblingPath = `uploads/${siblingRecord.downloadUrl.slice('/uploads/'.length)}`;
+	const revision = (await helpers.loadDocument(String(record.id))).revision;
+	await assert.rejects(() => detail.DELETE(event({ revision }, staff, { ...params, id: '46' })), {
+		status: 404
+	});
+	await assert.rejects(() => detail.DELETE(event({}, staff, params)), { status: 400 });
+	await assert.rejects(() => detail.DELETE(event({ revision: 'invalid' }, staff, params)), {
+		status: 400
+	});
+	await assert.rejects(() => detail.DELETE(event({ revision: null }, staff, params)), {
+		status: 409
+	});
+	await assert.rejects(() => detail.DELETE(event({ revision: created.revision }, staff, params)), {
+		status: 409
+	});
+	const malformed = event({}, staff, params);
+	malformed.request.json = async () => {
+		throw new SyntaxError('invalid JSON');
+	};
+	await assert.rejects(() => detail.DELETE(malformed), { status: 400 });
+	const storedUrl = record.downloadUrl;
+	try {
+		record.downloadUrl = '/uploads/ordinary.xlsx';
+		await assert.rejects(() => detail.DELETE(event({ revision }, staff, params)), { status: 404 });
+	} finally {
+		record.downloadUrl = storedUrl;
+	}
+	await writeFile(`${path}.lock`, 'another writer');
+	await assert.rejects(() => detail.DELETE(event({ revision }, staff, params)), { status: 409 });
+	assert.deepEqual(await readFile(path), edited);
+	await rm(`${path}.lock`);
+	for (const failure of ['metadata', 'commit']) {
+		failDeletion = failure === 'metadata';
+		failCommit = failure === 'commit';
+		await assert.rejects(() => detail.DELETE(event({ revision }, staff, params)), /simulated/);
+		failDeletion = false;
+		failCommit = false;
+		assert.ok(references.has(created.id));
+		assert.ok(records.has(record.id));
+		assert.deepEqual(await readFile(path), edited, 'Failed deletion must restore current bytes');
+		assert.deepEqual(
+			await readFile(`${path}.previous`),
+			fixture,
+			'Failed deletion must restore the recovery copy'
+		);
+		await assert.rejects(() => stat(`${path}.lock`), { code: 'ENOENT' });
+	}
+	const deleted = await detail.DELETE(event({ revision }, staff, params));
+	assert.deepEqual(await deleted.json(), { success: true, cleanupPending: false });
+	assert.equal(references.has(created.id), false);
+	assert.equal(records.has(record.id), false);
+	for (const removed of [path, `${path}.previous`, `${path}.lock`])
+		await assert.rejects(() => stat(removed), { code: 'ENOENT' });
+	assert.deepEqual(
+		await readFile(siblingPath),
+		fixture,
+		'Other generated versions must remain unchanged'
+	);
+	await assert.rejects(() => detail.GET(event({}, staff, params)), { status: 404 });
+	await assert.rejects(() => detail.POST(event({ file, revision }, staff, params)), {
+		status: 404
+	});
+	await assert.rejects(() => detail.DELETE(event({ revision }, staff, params)), { status: 404 });
+	// Missing workbooks can also be removed, including any remaining recovery copy.
+	await writeFile(`${siblingPath}.previous`, fixture);
+	paths.add(`${siblingPath}.previous`);
+	await rm(siblingPath);
+	const siblingParams = { id: '45', project: String(sibling.id) };
+	await assert.rejects(
+		() => detail.DELETE(event({ revision: sibling.revision }, staff, siblingParams)),
+		{ status: 409 }
+	);
+	assert.equal((await detail.DELETE(event({ revision: null }, staff, siblingParams))).status, 200);
+	assert.equal((await (await listing.GET(event())).json()).projects.length, 0);
+	await assert.rejects(() => stat(`${siblingPath}.previous`), { code: 'ENOENT' });
+	assert.deepEqual(
+		(await readdir('uploads/production')).filter(
+			(name) =>
+				name.startsWith(path.split('/').at(-1)) || name.startsWith(siblingPath.split('/').at(-1))
+		),
+		[],
+		'Successful deletion must not leave locks or staged copies'
+	);
+	// Cleanup failure must be reported, not silently presented as complete disk cleanup.
+	const pending = await (await listing.POST(event({ file }))).json();
+	const pendingPath = `uploads/${records.get(pending.fileId).downloadUrl.slice('/uploads/'.length)}`;
+	await mkdir(`${pendingPath}.previous`);
+	const logged = [];
+	const originalError = console.error;
+	try {
+		console.error = (...args) => logged.push(args[0]);
+		const result = await detail.DELETE(
+			event({ revision: pending.revision }, staff, { id: '45', project: String(pending.id) })
+		);
+		assert.deepEqual(await result.json(), { success: true, cleanupPending: true });
+		assert.equal(logged.length, 1);
+		assert.equal(references.has(pending.id), false);
+		const staged = (await readdir('uploads/production')).filter((name) =>
+			name.startsWith(`${pendingPath.split('/').at(-1)}.previous.`)
+		);
+		assert.equal(staged.length, 1, 'Failed cleanup must retain the staged recovery data');
+	} finally {
+		console.error = originalError;
+		await rm(`${pendingPath}.previous`, { recursive: true, force: true });
+		for (const name of await readdir('uploads/production')) {
+			if (name.startsWith(`${pendingPath.split('/').at(-1)}.`) && name.endsWith('.deleted'))
+				await rm(`uploads/production/${name}`, { recursive: true, force: true });
+		}
+	}
 	console.log(
-		'Production project checks passed: bounded workbook validation, authorization, create rollback, scoped identity, private storage, safe office/API saves, conflicts, recovery and completion retention.'
+		'Production project checks passed: bounded workbook validation, authorization, create rollback, scoped identity, private storage, safe office/API saves, conflicts, recovery, completion retention and revision-checked deletion/rollback.'
 	);
 } finally {
 	for (const path of paths) await rm(path, { force: true });

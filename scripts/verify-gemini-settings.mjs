@@ -12,7 +12,17 @@ try {
 	const { db } = await server.ssrLoadModule('/src/lib/server/db/index.ts');
 	const settings = await server.ssrLoadModule('/src/lib/server/production-ai-settings.ts');
 	const ai = await server.ssrLoadModule('/src/lib/server/production-ai.ts');
-	const page = await server.ssrLoadModule('/src/routes/(app)/iestatijumi/+page.server.ts');
+	const pageModule = await server.ssrLoadModule('/src/routes/(app)/iestatijumi/+page.server.ts');
+	const page = {
+		...pageModule,
+		load: (event) =>
+			pageModule.load({
+				...event,
+				url: new URL('https://crm.invalid/iestatijumi'),
+				request: { method: 'GET' },
+				setHeaders() {}
+			})
+	};
 	const discovery = await server.ssrLoadModule('/src/routes/api/production-ai/models/+server.ts');
 	let row;
 	let reads = 0;
@@ -27,6 +37,7 @@ try {
 	db.query.client.findMany = async () => [];
 	db.query.userClient.findFirst = async () => undefined;
 	db.query.companySettings.findFirst = async () => undefined;
+	db.select = () => ({ from: () => ({ where: async () => [] }) });
 	db.insert = () => ({
 		values: (values) => ({
 			onConflictDoUpdate: async ({ set }) => {
@@ -113,6 +124,7 @@ try {
 	const beforeClient = reads;
 	const clientData = await page.load({ locals: client });
 	assert.equal(clientData.gemini, null);
+	assert.deepEqual(clientData.printToolsTokens, []);
 	assert.equal(reads, beforeClient);
 	assert.ok(!JSON.stringify(clientData).includes('selfcheck-env-key'));
 	assert.ok(!JSON.stringify(await page.load({ locals: staff })).includes('selfcheck-env-key'));

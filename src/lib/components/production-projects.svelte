@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { untrack } from 'svelte';
 	import { Button } from '$lib/components/ui/button';
 	import * as Dialog from '$lib/components/ui/dialog';
 	import ProductionOrderPreview from './production-order-preview.svelte';
@@ -24,10 +25,12 @@
 	let message = $state('');
 	let loading = $state(false);
 	let previewLoading = $state<number | null>(null);
+	let deleting = $state<number | null>(null);
 	let listRequest: AbortController | undefined;
 	let previewRequest: AbortController | undefined;
 
 	async function refresh(id: number) {
+		if (deleting !== null) return;
 		listRequest?.abort();
 		previewRequest?.abort();
 		previewLoading = null;
@@ -100,6 +103,54 @@
 		}
 	}
 
+	async function deleteProject(project: Project) {
+		if (
+			deleting !== null ||
+			!confirm(m['production_projects.confirm_delete']({ filename: project.filename }))
+		)
+			return;
+		const id = taskId;
+		deleting = project.id;
+		listRequest?.abort();
+		previewRequest?.abort();
+		loading = false;
+		previewLoading = null;
+		message = '';
+		try {
+			const response = await fetch(
+				resolve('/api/tasks/[id]/production-projects/[project]', {
+					id: String(id),
+					project: String(project.id)
+				}),
+				{
+					method: 'DELETE',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ revision: project.revision })
+				}
+			);
+			if (!response.ok)
+				throw new Error(
+					response.status === 409
+						? m['production_projects.delete_conflict']()
+						: m['production_projects.delete_failed']()
+				);
+			const result = await response.json();
+			if (taskId !== id) return;
+			projects = projects.filter((entry) => entry.id !== project.id);
+			if (preview?.id === project.id) {
+				preview = null;
+				previewOpen = false;
+			}
+			if (result.cleanupPending) message = m['production_projects.delete_cleanup_pending']();
+		} catch (cause) {
+			if (taskId === id)
+				message = cause instanceof Error ? cause.message : m['production_projects.delete_failed']();
+		} finally {
+			deleting = null;
+			if (taskId !== id) void refresh(taskId);
+		}
+	}
+
 	function generated(result: GeneratedProduction) {
 		listRequest?.abort();
 		previewRequest?.abort();
@@ -117,7 +168,7 @@
 		projects = [];
 		preview = null;
 		previewOpen = false;
-		void refresh(id);
+		void untrack(() => refresh(id));
 		return () => {
 			listRequest?.abort();
 			previewRequest?.abort();
@@ -137,7 +188,7 @@
 			variant="ghost"
 			size="sm"
 			onclick={() => refresh(taskId)}
-			disabled={loading}
+			disabled={loading || deleting !== null}
 		>
 			{m['production_projects.refresh']()}
 		</Button>
@@ -172,12 +223,13 @@
 						variant="ghost"
 						size="sm"
 						onclick={() => showPreview(project)}
-						disabled={project.revision === null || previewLoading === project.id}
-						>{m['production_projects.preview']()}</Button
+						disabled={project.revision === null ||
+							deleting === project.id ||
+							previewLoading === project.id}>{m['production_projects.preview']()}</Button
 					>
 					<Button
 						href={resolve('/(app)/dokumenti/[id]', { id: String(project.fileId) })}
-						disabled={project.revision === null}
+						disabled={project.revision === null || deleting === project.id}
 						target="_blank"
 						rel="noopener"
 						variant="ghost"
@@ -185,10 +237,22 @@
 					>
 					<Button
 						href={`${resolve('/api/tasks/[id]/production-projects/[project]', { id: String(taskId), project: String(project.id) })}?download`}
-						disabled={project.revision === null}
+						disabled={project.revision === null || deleting === project.id}
 						variant="ghost"
 						size="sm">{m['production_projects.download']()}</Button
 					>
+					<Button
+						type="button"
+						variant="ghost"
+						size="sm"
+						class="text-destructive hover:text-destructive"
+						disabled={deleting !== null}
+						onclick={() => deleteProject(project)}
+					>
+						{deleting === project.id
+							? m['production_projects.deleting']()
+							: m['production_projects.delete']()}
+					</Button>
 				</div>
 			</div>
 		</div>

@@ -6,11 +6,7 @@ const server = await createServer({ server: { middlewareMode: true }, appType: '
 try {
 	const { db } = await server.ssrLoadModule('/src/lib/server/db/index.ts');
 	const helpers = await server.ssrLoadModule('/src/lib/server/production.ts');
-	const module = await server.ssrLoadModule('/src/routes/(app)/razosana/+page.server.ts');
-	const route = {
-		...module,
-		load: (event) => module.load({ ...event, setHeaders() {}, request: { method: 'GET' } })
-	};
+	const route = await server.ssrLoadModule('/src/routes/(app)/razosana/+page.server.ts');
 	const { PgDialect } = await server.ssrLoadModule('/node_modules/drizzle-orm/pg-core/index.js');
 	const dialect = new PgDialect();
 	const sql = (condition) => dialect.sqlToQuery(condition);

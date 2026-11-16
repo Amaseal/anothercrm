@@ -8,7 +8,10 @@ import { assertProductionStaff, productionId } from '$lib/server/production';
 export async function authenticatePrintTools(request: Request) {
 	const token = request.headers.get('x-api-key') ?? '';
 	if (!/^pt_[a-f0-9]{64}$/.test(token))
-		error(401, 'Configure a CRM Print Tools credential from Production in CRM.');
+		error(
+			401,
+			'Configure a CRM Print Tools credential in CRM Settings → Print Tools plugin connection.'
+		);
 	const hash = createHash('sha256').update(token).digest('hex');
 	const [owner] = await db
 		.select({ id: user.id })
@@ -22,7 +25,10 @@ export async function authenticatePrintTools(request: Request) {
 			)
 		);
 	if (!owner)
-		error(401, 'CRM Print Tools credential expired or revoked. Create a new credential in CRM.');
+		error(
+			401,
+			'CRM Print Tools credential expired or revoked. Create a new credential in CRM Settings.'
+		);
 	return owner;
 }
 

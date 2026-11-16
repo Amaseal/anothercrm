@@ -1,6 +1,6 @@
 import { error, isHttpError } from '@sveltejs/kit';
 import { and, eq, notInArray } from 'drizzle-orm';
-import { mkdir, open, rm, readFile } from 'node:fs/promises';
+import { mkdir, open, rm, readFile, rename } from 'node:fs/promises';
 import { randomUUID, createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 import { db } from '$lib/server/db';
@@ -157,6 +157,97 @@ export async function createProductionProject(locals: App.Locals, taskId: number
 	} catch (cause) {
 		await rm(path, { force: true });
 		throw cause;
+	}
+}
+
+export async function deleteProductionProject(
+	locals: App.Locals,
+	taskId: number,
+	projectId: number,
+	revision: unknown
+) {
+	await assertTask(locals, taskId);
+	if (revision !== null && (typeof revision !== 'string' || !/^[a-f0-9]{64}$/.test(revision)))
+		error(400, 'A saved workbook revision is required.');
+	const condition = and(eq(productionProject.taskId, taskId), eq(productionProject.id, projectId));
+	const project = await db.query.productionProject.findFirst({ where: condition });
+	if (!project) error(404, 'Production project not found');
+	const record = await db.query.file.findFirst({ where: eq(file.id, project.fileId) });
+	if (
+		!record ||
+		record.taskId !== taskId ||
+		!/^\/uploads\/production\/[a-f0-9-]{36}\.xlsx$/.test(record.downloadUrl)
+	)
+		error(404, 'Production workbook not found');
+	const directory = resolve(UPLOADS_DIR, 'production');
+	await mkdir(directory, { recursive: true });
+	const path = resolve(UPLOADS_DIR, record.downloadUrl.slice('/uploads/'.length));
+	const lockPath = `${path}.lock`;
+	const lock = await open(lockPath, 'wx').catch((cause: NodeJS.ErrnoException) => {
+		if (cause.code === 'EEXIST')
+			error(409, 'Workbook is being saved or deleted. Refresh and try again.');
+		throw cause;
+	});
+	const moved: { source: string; temporary: string }[] = [];
+	try {
+		let currentRevision: string | null = null;
+		try {
+			currentRevision = (await loadDocument(String(record.id))).revision;
+		} catch (cause) {
+			if (!isHttpError(cause, 404)) throw cause;
+		}
+		if (revision !== currentRevision) error(409, 'Workbook changed. Refresh before deleting.');
+		try {
+			await db.transaction(async (tx) => {
+				const [current] = await tx
+					.select({ id: productionProject.id })
+					.from(productionProject)
+					.where(condition)
+					.for('update');
+				if (!current) error(404, 'Production project not found');
+				// Stage bytes first so a failed database transaction can restore both copies.
+				for (const source of [path, `${path}.previous`]) {
+					const temporary = `${source}.${randomUUID()}.deleted`;
+					try {
+						await rename(source, temporary);
+						moved.push({ source, temporary });
+					} catch (cause) {
+						if ((cause as NodeJS.ErrnoException).code !== 'ENOENT') throw cause;
+					}
+				}
+				await tx.delete(productionProject).where(condition);
+				await tx.delete(file).where(and(eq(file.id, record.id), eq(file.taskId, taskId)));
+			});
+		} catch (cause) {
+			const failures: unknown[] = [cause];
+			for (const { source, temporary } of moved) {
+				try {
+					await rename(temporary, source);
+				} catch (restoreError) {
+					failures.push(restoreError);
+				}
+			}
+			if (failures.length > 1)
+				throw new AggregateError(
+					failures,
+					`Deletion rollback failed; inspect recovery files for ${path}`
+				);
+			throw cause;
+		}
+		let cleanupPending = false;
+		// shortcut: a crash/cleanup failure after commit can leave staged files; reconcile these during storage maintenance.
+		for (const { temporary } of moved) {
+			try {
+				await rm(temporary, { force: true });
+			} catch (cause) {
+				cleanupPending = true;
+				console.error(`Could not remove deleted workbook recovery file ${temporary}`, cause);
+			}
+		}
+		return { success: true, cleanupPending };
+	} finally {
+		await lock.close();
+		await rm(lockPath, { force: true });
 	}
 }
 
