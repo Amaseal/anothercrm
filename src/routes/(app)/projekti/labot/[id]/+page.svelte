@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import * as m from '$lib/paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { Label } from '$lib/components/ui/label';
@@ -7,7 +9,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
-	import { CalendarIcon, Save, X, Printer, FileText, Clock } from '@lucide/svelte';
+	import { CalendarIcon, X, Printer, FileText, Clock } from '@lucide/svelte';
 	import * as Sheet from '$lib/components/ui/sheet';
 	import {
 		DateFormatter,
@@ -29,7 +31,7 @@
 
 	import { isClient, isAdmin } from '$lib/stores/user';
 
-	let { data } = $props<{ data: PageData }>();
+	let { data }: { data: PageData } = $props();
 
 	let selectedClientId = $state(data.item.clientId?.toString() || '');
 
@@ -40,13 +42,11 @@
 	});
 
 	let selectedAssigneeIds = $state<string[]>(
-		data.item.assignees ? data.item.assignees.map((a: any) => a.userId) : []
+		data.item.assignees ? data.item.assignees.map((a) => a.userId) : []
 	);
 	let selectedManagerId = $state(data.item.createdById || '');
 	let selectedSeamstress = $state(data.item.seamstress || '');
-	let selectedMaterialIds = $state<number[]>(
-		data.item.taskMaterials.map((m: { materialId: any }) => m.materialId)
-	);
+	let selectedMaterialIds = $state<number[]>(data.item.taskMaterials.map((m) => m.materialId));
 
 	// Date Picker State
 	// data.item.endDate is string (text) from DB, likely YYYY-MM-DD or similar standard format if saved correctly.
@@ -55,10 +55,7 @@
 		data.item.endDate ? parseDate(data.item.endDate) : undefined
 	);
 	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
-	let datePlaceholder = $state<DateValue>(today(getLocalTimeZone()));
-	$effect(() => {
-		datePlaceholder = dateValue ?? today(getLocalTimeZone());
-	});
+	let datePlaceholder = $derived(dateValue ?? today(getLocalTimeZone()));
 
 	// Tiptap Content
 	let descriptionContent = $state(data.item.description || '');
@@ -71,11 +68,11 @@
 	let isSubmitting = $state(false);
 	let isUploading = $state(false);
 
-	let initialProductTotalCents = data.item.taskProducts.reduce((sum: number, tp: any) => {
-		const prod = data.products.find((p: any) => p.id === tp.productId);
+	let initialProductTotalCents = data.item.taskProducts.reduce((sum: number, tp) => {
+		const prod = data.products.find((p) => p.id === tp.productId);
 		if (!prod) return sum;
 		const effectivePrice = prod.clientPrice ?? prod.price;
-		return sum + effectivePrice * tp.count;
+		return sum + effectivePrice * (tp.count ?? 0);
 	}, 0);
 
 	let customPriceInput = $state<string>(
@@ -86,21 +83,19 @@
 
 	// Derived Names
 	let selectedClientName = $derived(
-		data.clients.find((c: { id: { toString: () => any } }) => c.id.toString() === selectedClientId)
-			?.name || m['projects.client_label']()
+		data.clients.find((c) => c.id.toString() === selectedClientId)?.name ||
+			m['projects.client_label']()
 	);
 	let selectedAssigneeName = $derived(
 		selectedAssigneeIds.length > 0
 			? data.users
-					.filter((u: { id: any }) => selectedAssigneeIds.includes(u.id))
-					.map((u: any) => u.name)
+					.filter((u) => selectedAssigneeIds.includes(u.id))
+					.map((u) => u.name)
 					.join(', ')
 			: undefined
 	);
 
-	let selectedManagerName = $derived(
-		data.users.find((u: { id: any }) => u.id === selectedManagerId)?.name
-	);
+	let selectedManagerName = $derived(data.users.find((u) => u.id === selectedManagerId)?.name);
 
 	const seamstresses = [
 		{ value: 'Ikšķile', label: 'Ikšķile' },
@@ -117,7 +112,7 @@
 	// Prepare initial entries for ProductList
 	let initialProductEntries = $state(
 		data.item.taskProducts.length > 0
-			? data.item.taskProducts.map((tp: { productId: any; count: any }) => ({
+			? data.item.taskProducts.map((tp) => ({
 					productId: tp.productId,
 					count: tp.count || 1,
 					isOpen: false
@@ -128,7 +123,7 @@
 	// Prepare existing files for FileUpload
 	// FileUpload expects { name, path, size, type? }
 	let files = $state(
-		data.item.files.map((f: { id: number; filename: any; downloadUrl: any; size: any }) => ({
+		data.item.files.map((f) => ({
 			id: f.id,
 			name: f.filename,
 			path: f.downloadUrl,
@@ -147,10 +142,8 @@
 	managerName={selectedManagerName}
 	assigneeName={selectedAssigneeName}
 	seamstress={selectedSeamstress}
-	materials={data.item.taskMaterials.map(
-		(tm: any) => `${tm.material.title} (${tm.material.remaining})`
-	)}
-	products={data.item.taskProducts.map((tp: any) => ({
+	materials={data.item.taskMaterials.map((tm) => `${tm.material.title} (${tm.material.remaining})`)}
+	products={data.item.taskProducts.map((tp) => ({
 		name: tp.product.title,
 		count: tp.count,
 		price: tp.product.cost
@@ -286,14 +279,14 @@
 											{
 												label: 'Admins',
 												options: data.users
-													.filter((u: any) => u.type === 'admin')
-													.map((u: any) => ({ value: u.id, label: u.name }))
+													.filter((u) => u.type === 'admin')
+													.map((u) => ({ value: u.id, label: u.name }))
 											},
 											{
 												label: 'Klienti',
 												options: data.users
-													.filter((u: any) => u.type === 'client')
-													.map((u: any) => ({ value: u.id, label: u.name }))
+													.filter((u) => u.type === 'client')
+													.map((u) => ({ value: u.id, label: u.name }))
 											}
 										]}
 										bind:value={selectedAssigneeIds}
@@ -315,7 +308,7 @@
 											{selectedSeamstress || m['projects.seamstress_placeholder']()}
 										</Select.Trigger>
 										<Select.Content>
-											{#each seamstresses as s}
+											{#each seamstresses as s (s.value)}
 												<Select.Item value={s.value} label={s.label}>
 													{s.label}
 												</Select.Item>
@@ -328,14 +321,14 @@
 								<div class="grid gap-2">
 									<Label>{m['projects.materials_label']()}</Label>
 									<MultiSelect
-										options={data.materials.map((i: { id: any; title: any; remaining: any }) => ({
+										options={data.materials.map((i) => ({
 											value: i.id,
 											label: `${i.title} (${i.remaining})`
 										}))}
 										bind:value={selectedMaterialIds}
 										placeholder={m['projects.materials_placeholder']()}
 									/>
-									{#each selectedMaterialIds as id}
+									{#each selectedMaterialIds as id (id)}
 										<input type="hidden" name="materials" value={id} />
 									{/each}
 								</div>
@@ -372,9 +365,9 @@
 					<div class="mb-6 space-y-4">
 						<Label class="text-lg">Rēķini</Label>
 						<div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-							{#each data.taskInvoices as inv}
+							{#each data.taskInvoices as inv (inv.id)}
 								<a
-									href={`/rekini/labot/${inv.id}`}
+									href={resolve(...([`/rekini/labot/${inv.id}`] as Parameters<typeof resolve>))}
 									class="block rounded-lg border bg-gray-50/50 p-4 transition-colors hover:bg-gray-50"
 								>
 									<div class="mb-2 flex items-center justify-between">

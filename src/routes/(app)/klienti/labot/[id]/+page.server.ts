@@ -60,9 +60,9 @@ export const actions: Actions = {
 			};
 			await db
 				.update(client)
-				.set(payload as any)
+				.set(payload)
 				.where(eq(client.id, Number(params.id)));
-		} catch (error) {
+		} catch {
 			return fail(500, { message: m['clients.errors.something_went_wrong']() });
 		}
 		redirect(303, '/klienti');

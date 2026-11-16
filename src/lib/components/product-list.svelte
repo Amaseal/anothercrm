@@ -2,7 +2,7 @@
 	import { getLocale } from '$lib/paraglide/runtime';
 	import * as m from '$lib/paraglide/messages';
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+
 	import { Label } from '$lib/components/ui/label';
 	import * as Popover from '$lib/components/ui/popover';
 	import * as Command from '$lib/components/ui/command';
@@ -31,7 +31,7 @@
 		isAdmin = false,
 		priceClientId = null,
 		showClientPrices = $bindable(false)
-	} = $props<{
+	}: {
 		products: Product[];
 		totalPrice?: number;
 		totalCost?: number;
@@ -40,7 +40,7 @@
 		isAdmin?: boolean;
 		priceClientId?: number | null;
 		showClientPrices?: boolean;
-	}>();
+	} = $props();
 
 	function effectivePrice(product: Product): number {
 		if (isAdmin && showClientPrices && priceClientId !== null) {
@@ -57,7 +57,7 @@
 	);
 
 	let translatedProducts = $derived(
-		products.map((p: { translations: any[]; title: any; description: any }) => {
+		products.map((p) => {
 			const lang = getLocale();
 			const translation = p.translations?.find((t: { language: string }) => t.language === lang);
 			return {
@@ -162,7 +162,7 @@
 </script>
 
 <div class="space-y-4">
-	{#each entries as entry, index}
+	{#each entries as entry, index (index)}
 		{@const selectedProduct = products.find((product: Product) => product.id === entry.productId)}
 		{@const showPrice = !!selectedProduct && (readonly || (isAdmin && priceClientId !== null))}
 		<div class="flex items-end gap-2">

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import Plus from '@lucide/svelte/icons/plus';
@@ -8,10 +10,10 @@
 	import { Label } from '@/components/ui/label';
 	import * as m from '$lib/paraglide/messages';
 	import { locales, getLocale } from '@/paraglide/runtime.js';
-	import FormError from '$lib/components/form-error.svelte';
+
 	import { enhance } from '$app/forms';
 
-	let { data, form } = $props();
+	let { data } = $props();
 
 	const getLanguageName = (code: string) => {
 		return new Intl.DisplayNames([getLocale()], { type: 'language' }).of(code) || code;
@@ -28,7 +30,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-3xl max-w-3xl gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/projekti"
+					href={resolve('/projekti')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
 				>
@@ -39,7 +41,7 @@
 				<div class="w-full">
 					<h3 class="mb-2 font-bold">{m['tabs.value']()}</h3>
 					<form method="POST" use:enhance>
-						{#each locales as locale}
+						{#each locales as locale (locale)}
 							<Label>{m[`groups.name`]({ locale: getLanguageName(locale) })}</Label>
 							<Input
 								placeholder={m[`groups.name_placeholder`]({ locale: getLanguageName(locale) })}
@@ -59,7 +61,7 @@
 									m['tabs.group_placeholder']()}</Select.Trigger
 							>
 							<Select.Content>
-								{#each data.tabGroups as tabGroup}
+								{#each data.tabGroups as tabGroup (tabGroup.id)}
 									<Select.Item value={String(tabGroup.id)}
 										>{tabGroup.translations.find((t) => t.language === getLocale())?.name ||
 											''}</Select.Item

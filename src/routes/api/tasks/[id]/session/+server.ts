@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { taskEditSession, user } from '$lib/server/db/schema';
+import { taskEditSession } from '$lib/server/db/schema';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { eq, and, lt } from 'drizzle-orm';
 
@@ -82,7 +82,7 @@ export async function POST({ params, locals }: RequestEvent) {
 			expiresAt: expiresAt
 		});
 		return json({ success: true, status: 'created' });
-	} catch (e) {
+	} catch {
 		// Race condition: someone else grabbed it strictly before us
 		return json({ error: 'Task is currently being edited by another user' }, { status: 423 });
 	}

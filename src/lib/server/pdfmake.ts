@@ -1,4 +1,34 @@
 import { createRequire } from 'module';
+import type { Alignment, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
+
+type InvoiceParty = {
+	name: string;
+	registrationNumber?: string | null;
+	vatNumber?: string | null;
+	address?: string | null;
+	bankName?: string | null;
+	bankCode?: string | null;
+	bankAccount?: string | null;
+};
+type InvoicePdfData = {
+	invoiceNumber: string;
+	documentType?: string;
+	language?: string;
+	issueDate: string | Date;
+	dueDate: string | Date;
+	taxRate?: number | null;
+	notes?: string | null;
+	isElectronic?: boolean;
+	client?: InvoiceParty | null;
+};
+type InvoicePdfItem = {
+	description: string;
+	unit?: string | null;
+	quantity: number;
+	price: number;
+	discountValue?: number | null;
+	discountType?: string | null;
+};
 import { numberToWordsLV, numberToWordsEN } from '$lib/numberToWords';
 import { getInvoiceSignatureBlock } from '$lib/invoice-signatures';
 
@@ -26,7 +56,7 @@ const FASTBREAK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" xml:space="preser
 const labels = {
 	lv: {
 		invoice: 'Rēķins/Pavadzīme',
-		proforma: 'Proforma rēķins',
+		proforma: 'Priekšapmaksas rēķins',
 		date: 'Datums',
 		invoiceNr: 'Rēķina nr.',
 		dueDate: 'Apmaksas termiņš',
@@ -92,7 +122,7 @@ const formatDate = (d: string | Date | null): string => {
 
 const formatMoney = (cents: number): string => (cents / 100).toFixed(2);
 
-function itemLineTotal(item: any): number {
+function itemLineTotal(item: InvoicePdfItem): number {
 	const raw = item.quantity * item.price;
 	if (!item.discountValue) return raw;
 	if (item.discountType === 'fixed') return Math.max(0, raw - item.discountValue);
@@ -100,12 +130,16 @@ function itemLineTotal(item: any): number {
 }
 
 // Build a pdfmake document definition that matches the layout
-export function buildInvoiceDocDefinition(inv: any, items: any[], company: any): any {
+export function buildInvoiceDocDefinition(
+	inv: InvoicePdfData,
+	items: InvoicePdfItem[],
+	company: InvoiceParty | null | undefined
+) {
 	const lang = (inv.language as 'lv' | 'en') || 'lv';
 	const l = labels[lang];
 
-	const hasDiscount = items.some((item: any) => (item.discountValue ?? 0) > 0);
-	const subtotal = items.reduce((acc: number, item: any) => acc + itemLineTotal(item), 0);
+	const hasDiscount = items.some((item) => (item.discountValue ?? 0) > 0);
+	const subtotal = items.reduce((acc: number, item) => acc + itemLineTotal(item), 0);
 	const taxAmount = Math.round(subtotal * ((inv.taxRate ?? 21) / 100));
 	const total = subtotal + taxAmount;
 	const totalInWords = lang === 'en' ? numberToWordsEN(total) : numberToWordsLV(total);
@@ -119,16 +153,16 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
 		border: [true, true, true, true]
 	});
 
-	const bodyCell = (text: string, alignment: string = 'left', bold = false) => ({
+	const bodyCell = (text: string, alignment: Alignment = 'left', bold = false) => ({
 		text,
 		fontSize: 9,
 		alignment,
 		bold,
-		border: [true, true, true, true]
+		border: [true, true, true, true] as [boolean, boolean, boolean, boolean]
 	});
 
 	// Supplier section rows
-	const supplierRows: any[] = [
+	const supplierRows: TableCell[][] = [
 		[
 			{ text: l.supplier, bold: true, fontSize: 10, border: [false, false, false, false] },
 			{ text: company?.name || '', bold: true, fontSize: 10, border: [false, false, false, false] }
@@ -166,7 +200,7 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
 		]);
 
 	// Payer section rows
-	const payerRows: any[] = [
+	const payerRows: TableCell[][] = [
 		[
 			{ text: l.payer, bold: true, fontSize: 10, border: [false, false, false, false] },
 			{
@@ -209,14 +243,14 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
 		]);
 
 	// Items table rows
-	const itemRows = items.map((item: any, i: number) => {
+	const itemRows = items.map((item, i: number) => {
 		const discountDisplay =
 			(item.discountValue ?? 0) > 0
 				? item.discountType === 'fixed'
-					? `-€${formatMoney(item.discountValue)}`
+					? `-€${formatMoney(item.discountValue ?? 0)}`
 					: `-${item.discountValue}%`
 				: '-';
-		const row: any[] = [
+		const row: TableCell[] = [
 			bodyCell(String(i + 1), 'center'),
 			bodyCell(item.description || ''),
 			bodyCell(item.unit || '-', 'center'),
@@ -391,7 +425,8 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
 							]
 						},
 						layout: {
-							hLineWidth: (i: number, node: any) => (i === node.table.body.length - 1 ? 1 : 0),
+							hLineWidth: (i: number, node: { table: { body: unknown[] } }) =>
+								i === node.table.body.length - 1 ? 1 : 0,
 							vLineWidth: () => 0,
 							hLineColor: () => '#000000'
 						}
@@ -417,14 +452,14 @@ export function buildInvoiceDocDefinition(inv: any, items: any[], company: any):
 			// Payment & Delivery Terms
 			{ text: l.terms, fontSize: 7, color: '#666666', margin: [0, 0, 0, 0] }
 		]
-	};
+	} as TDocumentDefinitions;
 }
 
 // Generate the PDF and return a standard Blob/Buffer
 export async function generateInvoicePdfBuffer(
-	inv: any,
-	items: any[],
-	company: any
+	inv: InvoicePdfData,
+	items: InvoicePdfItem[],
+	company: InvoiceParty | null | undefined
 ): Promise<Buffer> {
 	pdfInstance.setFonts(fonts);
 	const docDefinition = buildInvoiceDocDefinition(inv, items, company);

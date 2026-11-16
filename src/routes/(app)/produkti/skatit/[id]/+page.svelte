@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card/index.js';
 	import X from '@lucide/svelte/icons/x';
@@ -17,7 +19,6 @@
 	}
 
 	const title = $derived(getLocalizedValue('title', getLocale()));
-	const description = $derived(getLocalizedValue('description', getLocale()));
 </script>
 
 <svelte:head>
@@ -29,7 +30,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full max-w-lg gap-0 overflow-y-auto">
 			<Card.Header class="pb-2">
 				<a
-					href="/produkti"
+					href={resolve('/produkti')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<X />

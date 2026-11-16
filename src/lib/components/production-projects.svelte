@@ -10,7 +10,13 @@
 	import type { GeneratedProduction } from '$lib/server/production-generation';
 
 	let { taskId, description = '' }: { taskId: number; description?: string } = $props();
-	type Project = { id: number; fileId: number; filename: string; size: number; revision: string };
+	type Project = {
+		id: number;
+		fileId: number;
+		filename: string;
+		size: number;
+		revision: string | null;
+	};
 	let projects = $state<Project[]>([]);
 	let preview = $state<{ id: number; revision: string; workbook: ProductionWorkbook } | null>(null);
 	let previewOpen = $state(false);
@@ -40,7 +46,7 @@
 			projects = result.projects;
 			if (preview) {
 				const current = projects.find((project) => project.id === preview?.id);
-				if (!current) {
+				if (!current || current.revision === null) {
 					preview = null;
 					previewOpen = false;
 				} else if (current.revision !== preview.revision) await showPreview(current);
@@ -153,6 +159,11 @@
 					<div class="min-w-0">
 						<p class="font-medium break-all">{project.filename}</p>
 						<p class="text-xs text-muted-foreground">{(project.size / 1024).toFixed(1)} KB</p>
+						{#if project.revision === null}
+							<p role="status" class="text-xs text-destructive">
+								{m['production_projects.file_unavailable']()}
+							</p>
+						{/if}
 					</div>
 				</div>
 				<div class="flex flex-wrap gap-1">
@@ -161,10 +172,12 @@
 						variant="ghost"
 						size="sm"
 						onclick={() => showPreview(project)}
-						disabled={previewLoading === project.id}>{m['production_projects.preview']()}</Button
+						disabled={project.revision === null || previewLoading === project.id}
+						>{m['production_projects.preview']()}</Button
 					>
 					<Button
 						href={resolve('/(app)/dokumenti/[id]', { id: String(project.fileId) })}
+						disabled={project.revision === null}
 						target="_blank"
 						rel="noopener"
 						variant="ghost"
@@ -172,6 +185,7 @@
 					>
 					<Button
 						href={`${resolve('/api/tasks/[id]/production-projects/[project]', { id: String(taskId), project: String(project.id) })}?download`}
+						disabled={project.revision === null}
 						variant="ghost"
 						size="sm">{m['production_projects.download']()}</Button
 					>

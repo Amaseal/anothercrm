@@ -55,7 +55,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 		try {
 			const parsed = JSON.parse(hiddenGroupsCookie);
 			hiddenTabGroups = Array.isArray(parsed) ? parsed : [];
-		} catch (e) {
+		} catch {
 			hiddenTabGroups = [];
 		}
 	}

@@ -7,7 +7,7 @@
 	import * as Select from '$lib/components/ui/select';
 	import * as Popover from '$lib/components/ui/popover';
 	import { Calendar } from '$lib/components/ui/calendar';
-	import { CalendarIcon, Save, X, Printer } from '@lucide/svelte';
+	import { CalendarIcon, X, Printer } from '@lucide/svelte';
 	import { DateFormatter, type DateValue, getLocalTimeZone, today } from '@internationalized/date';
 	import Tiptap from '$lib/components/tiptap.svelte';
 	import { cn } from '$lib/utils';
@@ -230,7 +230,7 @@
 											{selectedSeamstress || m['projects.seamstress_placeholder']()}
 										</Select.Trigger>
 										<Select.Content>
-											{#each seamstresses as s}
+											{#each seamstresses as s (s.value)}
 												<Select.Item value={s.value} label={s.label}>
 													{s.label}
 												</Select.Item>
@@ -250,7 +250,7 @@
 										bind:value={selectedMaterialIds}
 										placeholder={m['projects.materials_placeholder']()}
 									/>
-									{#each selectedMaterialIds as id}
+									{#each selectedMaterialIds as id (id)}
 										<input type="hidden" name="materials" value={id} />
 									{/each}
 								</div>

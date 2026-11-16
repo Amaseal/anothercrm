@@ -138,7 +138,10 @@ export const actions: Actions = {
 			where: eq(table.settings.userId, locals.user.id)
 		});
 
-		const settingsData: any = {
+		const settingsData: Pick<
+			typeof table.settings.$inferInsert,
+			'nextcloud' | 'nextcloud_username' | 'nextcloud_password'
+		> = {
 			nextcloud,
 			nextcloud_username
 		};

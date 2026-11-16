@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import * as Card from '$lib/components/ui/card/index.js';
 	import X from '@lucide/svelte/icons/x';
 	import * as m from '$lib/paraglide/messages';
@@ -16,7 +18,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/projekti"
+					href={resolve('/projekti')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<X />

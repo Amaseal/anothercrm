@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -9,7 +11,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import FormError from '$lib/components/form-error.svelte';
 	import { locales, getLocale } from '@/paraglide/runtime.js';
-	let { data, form } = $props();
+	let { form } = $props();
 
 	const getLanguageName = (code: string) => {
 		return new Intl.DisplayNames([getLocale()], { type: 'language' }).of(code) || code;
@@ -25,7 +27,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full max-w-md gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/projekti/struktura"
+					href={resolve('/projekti/struktura')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
 				>
@@ -34,7 +36,7 @@
 			</Card.Header>
 			<Card.Content class="p-6 pb-2">
 				<form method="POST" use:enhance>
-					{#each locales as locale}
+					{#each locales as locale (locale)}
 						<Label>{m[`groups.name`]({ locale: getLanguageName(locale) })}</Label>
 						<Input
 							placeholder={m[`groups.name_placeholder`]({ locale: getLanguageName(locale) })}

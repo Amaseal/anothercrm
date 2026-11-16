@@ -11,10 +11,10 @@
 	import { page } from '$app/state';
 	import { formatDate } from '$lib/utilities';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
-	import Eye from '@lucide/svelte/icons/eye';
+
 	import FileIcon from '@lucide/svelte/icons/file';
 	import FilePen from '@lucide/svelte/icons/file-pen';
-	import { resolve } from '$app/paths';
+	import { base, resolve } from '$app/paths';
 	import { user } from '$lib/stores/user';
 	import { getDocumentEditorId } from '$lib/documents';
 	import Database from '@lucide/svelte/icons/database';
@@ -28,8 +28,7 @@
 	let { data } = $props();
 
 	// Initialize state from server data
-	let currentPage = $state(data.pagination.page);
-	let pageSize = $state(data.pagination.pageSize);
+
 	let sortColumn = $state(data.pagination.sortColumn);
 	let sortDirection = $state(data.pagination.sortDirection);
 	let searchTerm = $state(data.pagination.search);
@@ -39,8 +38,6 @@
 
 	// Keep local state in sync with server data
 	$effect(() => {
-		currentPage = data.pagination.page;
-		pageSize = data.pagination.pageSize;
 		sortColumn = data.pagination.sortColumn;
 		sortDirection = data.pagination.sortDirection;
 		searchTerm = data.pagination.search;
@@ -57,7 +54,9 @@
 	}, 500);
 
 	// Update URL and navigate to the new page
-	function updateUrlAndNavigate(params: Record<string, any>) {
+	function updateUrlAndNavigate(
+		params: Record<string, string | number | boolean | null | undefined>
+	) {
 		const url = new URL(page.url);
 
 		// Update the provided parameters
@@ -74,7 +73,14 @@
 		}
 
 		// Navigate to the new URL
-		goto(url.toString(), { replaceState: true });
+		goto(
+			resolve(
+				...([`${url.pathname.slice(base.length)}${url.search}${url.hash}`] as Parameters<
+					typeof resolve
+				>)
+			),
+			{ replaceState: true }
+		);
 	}
 
 	// Handle sorting
@@ -84,11 +90,6 @@
 			sortColumn: column,
 			sortDirection: newDirection
 		});
-	}
-
-	function openPreview(url: string) {
-		previewUrl = url;
-		imageModalOpen = true;
 	}
 
 	function formatSize(bytes: number) {
@@ -214,7 +215,11 @@
 							<!-- Filename -->
 							<Table.Cell class="max-w-[200px] font-medium">
 								<div class="truncate" title={file.filename}>
-									<a href={file.url} target="_blank" class="hover:underline">{file.filename}</a>
+									<a
+										href={resolve(...([file.url] as Parameters<typeof resolve>))}
+										target="_blank"
+										class="hover:underline">{file.filename}</a
+									>
 								</div>
 							</Table.Cell>
 
@@ -250,7 +255,7 @@
 							<Table.Cell>
 								{#if file.usage.length > 0}
 									<div class="flex flex-wrap gap-1">
-										{#each file.usage as usage}
+										{#each file.usage as usage, entryIndex0 (entryIndex0)}
 											<Badge variant="outline" class="text-xs whitespace-nowrap">
 												{#if usage.type === 'task'}
 													{m['files.used_by_task']()} {usage.name}

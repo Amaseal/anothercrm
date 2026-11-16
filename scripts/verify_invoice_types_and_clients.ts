@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import { PgDialect } from 'drizzle-orm/pg-core';
+import { formatInvoiceNumber } from '../src/lib/invoice-number';
+import { invoiceExportFilter } from '../src/lib/server/invoice-export';
 import { getNewInvoiceClient } from '../src/lib/server/invoice-client';
 import { buildInvoiceDocDefinition, generateInvoicePdfBuffer } from '../src/lib/server/pdfmake';
 
@@ -46,7 +49,7 @@ for (const language of ['lv', 'en']) {
 		const company = { name: 'Test company' };
 		const definition = buildInvoiceDocDefinition(invoice, [], company);
 		const text = JSON.stringify(definition);
-		const proformaTitle = language === 'en' ? 'Proforma Invoice' : 'Proforma rēķins';
+		const proformaTitle = language === 'en' ? 'Proforma Invoice' : 'Priekšapmaksas rēķins';
 		const standardTitle = language === 'en' ? 'Commercial Invoice' : 'Rēķins/Pavadzīme';
 		assert.equal(text.includes(proformaTitle), documentType === 'proforma');
 		if (documentType !== 'proforma') assert.equal(text.includes(standardTitle), true);
@@ -56,4 +59,26 @@ for (const language of ['lv', 'en']) {
 		}
 	}
 }
-console.log('Invoice client validation and LV/EN invoice-type/PDF checks passed.');
+for (const documentType of ['invoice', 'proforma', 'delivery_note', 'invoice_delivery']) {
+	assert.equal(
+		formatInvoiceNumber('02012026', 7, 'K', documentType),
+		documentType === 'proforma' ? '02012026-7KA' : '02012026-7K'
+	);
+}
+assert.equal(formatInvoiceNumber('02012026', 8, '', 'proforma'), '02012026-8A');
+assert.equal(formatInvoiceNumber('02012026', 9, 'A', 'proforma'), '02012026-9AA');
+assert.equal(invoiceExportFilter('all'), undefined);
+const dialect = new PgDialect();
+for (const [type, operator] of [
+	['invoice', '<>'],
+	['proforma', '=']
+]) {
+	const filter = invoiceExportFilter(type);
+	assert.ok(filter);
+	const query = dialect.sqlToQuery(filter);
+	assert.equal(query.sql, `"invoices"."document_type" ${operator} $1`);
+	assert.deepEqual(query.params, ['proforma']);
+}
+assert.throws(() => invoiceExportFilter('invalid'), /Invalid invoice export type/);
+assert.throws(() => invoiceExportFilter(''), /Invalid invoice export type/);
+console.log('Invoice client, numbering, export filter, and LV/EN invoice-type/PDF checks passed.');

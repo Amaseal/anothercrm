@@ -19,7 +19,7 @@ export const actions: Actions = {
 		if (!locals.user || locals.user.type !== 'admin') error(403);
 		try {
 			await db.delete(client).where(eq(client.id, Number(params.id)));
-		} catch (error) {
+		} catch {
 			return fail(400, { message: m['components.delete_modal.error']({ item: client.id }) });
 		}
 		redirect(303, '/klienti');

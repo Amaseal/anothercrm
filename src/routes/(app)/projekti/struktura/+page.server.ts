@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { tabGroup, tab, userTabPreference } from '@/server/db/schema';
-import { eq, and, or, isNull } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Fetch user preferences if user is logged in
@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		: [];
 
 	// Helper to merge preferences into tabs
-	const enhanceTabs = (tabs: any[]) => {
+	const enhanceTabs = (tabs: (typeof rawTabGroups)[number]['tabs']) => {
 		return tabs.map((t) => {
 			const pref = preferences.find((p) => p.tabId === t.id);
 			return {
@@ -104,7 +104,7 @@ export const actions: Actions = {
 			// Update the tab's groupId
 			await db.update(tab).set({ groupId: newGroupIdNum }).where(eq(tab.id, tabIdNum));
 			return { success: true };
-		} catch (error) {
+		} catch {
 			return { success: false, message: 'Database error' };
 		}
 	},

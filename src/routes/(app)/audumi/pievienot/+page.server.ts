@@ -10,7 +10,7 @@ export const load = async () => {};
 
 export const actions: Actions = {
 	default: async ({ request }) => {
-		let form = await request.formData();
+		const form = await request.formData();
 		const title = form.get('title') as string;
 		const article = form.get('article') as string;
 		const manufacturer = form.get('manufacturer') as string;
@@ -51,7 +51,7 @@ export const actions: Actions = {
 					console.error('Failed to create file record for material image:', e);
 				}
 			}
-		} catch (error) {
+		} catch {
 			return fail(500, { message: m['materials.errors.something_went_wrong']() });
 		}
 

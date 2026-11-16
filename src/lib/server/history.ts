@@ -3,8 +3,8 @@ import { taskHistory } from '$lib/server/db/schema';
 
 export type HistoryChange = {
 	field: string;
-	from?: any;
-	to?: any;
+	from?: unknown;
+	to?: unknown;
 	type?: string;
 };
 

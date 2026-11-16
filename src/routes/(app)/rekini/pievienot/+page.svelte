@@ -120,13 +120,12 @@
 
 		// Check for exact match in products (by default title or translated title)
 		const match = products.find(
-			(p: any) =>
-				p.title === val ||
-				p.translations?.find((t: any) => t.language === language && t.title === val)
+			(p) =>
+				p.title === val || p.translations?.find((t) => t.language === language && t.title === val)
 		);
 		if (match) {
 			const clientPriceEntry = selectedClientId
-				? match.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)
+				? match.clientPrices?.find((cp) => cp.clientId.toString() === selectedClientId)
 				: null;
 			items[index].price = clientPriceEntry ? clientPriceEntry.price : match.price;
 			items[index].isAutoFilled = true;
@@ -155,10 +154,10 @@
 			const snapshot = untrack(() => items);
 			items = snapshot.map((item) => {
 				if (item.isAutoFilled) {
-					const match = products.find((p: any) => p.title === item.description);
+					const match = products.find((p) => p.title === item.description);
 					if (match) {
 						const clientPriceEntry = match.clientPrices?.find(
-							(cp: any) => cp.clientId === selectedClientDetails!.id
+							(cp) => cp.clientId === selectedClientDetails!.id
 						);
 						item.price = clientPriceEntry ? clientPriceEntry.price : match.price;
 					}
@@ -187,7 +186,7 @@
 				}
 
 				if (data.prefillTask!.taskProducts && data.prefillTask!.taskProducts.length > 0) {
-					items = data.prefillTask!.taskProducts.map((tp: any) => ({
+					items = data.prefillTask!.taskProducts.map((tp) => ({
 						description: tp.product.title,
 						unit: 'gab.',
 						quantity: tp.count || 1,
@@ -224,9 +223,9 @@
 				if (src.language) language = src.language;
 				isPrinted = src.isElectronic === false;
 				if (src.items && src.items.length > 0) {
-					items = src.items.map((i: any) => ({
+					items = src.items.map((i) => ({
 						description: i.description,
-						unit: i.unit,
+						unit: i.unit ?? 'gab.',
 						quantity: i.quantity,
 						price: i.price,
 						discountType: i.discountType ?? 'percent',
@@ -254,27 +253,27 @@
 	function getFilteredProducts(search: string) {
 		if (!search) return products;
 		const norm = normalizeText(search);
-		return products.filter((p: any) => normalizeText(getProductTitle(p, language)).includes(norm));
+		return products.filter((p) => normalizeText(getProductTitle(p, language)).includes(norm));
 	}
 
-	function selectProduct(index: number, product: any) {
+	function selectProduct(index: number, product: (typeof products)[number]) {
 		items[index].description = getProductTitle(product, language);
 		const clientPriceEntry = selectedClientId
-			? product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)
+			? product.clientPrices?.find((cp) => cp.clientId.toString() === selectedClientId)
 			: null;
 		items[index].price = clientPriceEntry ? clientPriceEntry.price : product.price;
 		items[index].isAutoFilled = true;
 		pickerOpen[index] = false;
 	}
 
-	function getProductTitle(product: any, lang: string): string {
-		const translation = product.translations?.find((t: any) => t.language === lang);
+	function getProductTitle(product: (typeof products)[number], lang: string): string {
+		const translation = product.translations?.find((t) => t.language === lang);
 		return translation?.title || product.title;
 	}
 
-	function findProductByAnyTitle(title: string): any {
+	function findProductByAnyTitle(title: string) {
 		return products.find(
-			(p: any) => p.title === title || p.translations?.some((t: any) => t.title === title)
+			(p) => p.title === title || p.translations?.some((t) => t.title === title)
 		);
 	}
 
@@ -470,7 +469,7 @@
 											<Command.List>
 												<Command.Empty>{m['clients.empty']()}</Command.Empty>
 												<Command.Group>
-													{#each clients as client}
+													{#each clients as client (client.id)}
 														<Command.Item
 															value={client.name}
 															onSelect={() => {
@@ -716,7 +715,7 @@
 						</tr>
 					</thead>
 					<tbody class="text-sm">
-						{#each items as item, i}
+						{#each items as item, i (i)}
 							<tr class="group hover:bg-slate-50">
 								<td class="border border-black px-2 py-1 text-center">{i + 1}</td>
 								<td class="relative border border-black px-0 py-0">
@@ -741,7 +740,7 @@
 													{@const title = getProductTitle(product, language)}
 													{@const clientPrice = selectedClientId
 														? product.clientPrices?.find(
-																(cp: any) => cp.clientId.toString() === selectedClientId
+																(cp) => cp.clientId.toString() === selectedClientId
 															)?.price
 														: null}
 													<li>

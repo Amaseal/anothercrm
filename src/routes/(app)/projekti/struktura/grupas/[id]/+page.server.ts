@@ -2,7 +2,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { eq, sql } from 'drizzle-orm';
 import { tabGroup, tabGroupTranslation } from '$lib/server/db/schema';
-import { client } from '$lib/server/db/schema';
+
 import * as m from '$lib/paraglide/messages';
 import { fail, redirect } from '@sveltejs/kit';
 import { locales } from '@/paraglide/runtime.js';
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 export const actions: Actions = {
 	default: async ({ request, params }) => {
-		let formData = await request.formData();
+		const formData = await request.formData();
 		if (!locales.every((locale) => formData.get(`title-${locale}`))) {
 			return fail(400, {
 				message: m['groups.errors.required']()
@@ -44,7 +44,7 @@ export const actions: Actions = {
 					color: (formData.get('color') as string) || '#ffffff'
 				})
 				.where(eq(tabGroup.id, groupId));
-		} catch (error) {
+		} catch {
 			return fail(500, {
 				message: m['groups.errors.something_went_wrong']()
 			});

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
@@ -8,12 +10,7 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Copy from '@lucide/svelte/icons/copy';
 	import MoneyInput from '$lib/components/ui/input/money-input.svelte';
-	import type {
-		Product,
-		ProductTranslation,
-		ClientProductPrice,
-		Client
-	} from '$lib/server/db/schema';
+	import type { ProductTranslation, ClientProductPrice } from '$lib/server/db/schema';
 	import { enhance } from '$app/forms';
 	import { Label } from '@/components/ui/label';
 	import * as m from '$lib/paraglide/messages';
@@ -65,12 +62,14 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/produkti"
+					href={resolve('/produkti')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
 				>
 				<a
-					href="/produkti/pievienot?kopet={data.item.id}"
+					href={resolve(
+						...([`/produkti/pievienot?kopet=${data.item.id}`] as Parameters<typeof resolve>)
+					)}
 					class="absolute top-7 right-12 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					title={m['products.copy_product']()}><Copy size="18" /></a
 				>
@@ -82,7 +81,7 @@
 			<Card.Content class="p-6 pb-2">
 				<form method="POST" use:enhance>
 					<div class="flex gap-4">
-						{#each locales as locale}
+						{#each locales as locale (locale)}
 							<div class="flex-1">
 								<Label>{m['products.name']()} ({getLanguageName(locale)})</Label>
 								<Input

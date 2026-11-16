@@ -48,11 +48,6 @@
 			toast.error(form.message);
 		}
 	});
-
-	let selectedClientName = $derived(
-		data.clients.find((c) => c.id.toString() === selectedClientId)?.name ||
-			m['projects.client_label']()
-	);
 </script>
 
 <div class="container mx-auto space-y-8 py-10">

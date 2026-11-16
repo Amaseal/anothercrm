@@ -1,6 +1,6 @@
 import type { Actions, PageServerLoad } from '../$types';
 import { db } from '$lib/server/db';
-import { tab, tabGroup, tabTranslation } from '@/server/db/schema';
+import { tab, tabTranslation } from '@/server/db/schema';
 import { eq } from 'drizzle-orm/sql/expressions/conditions';
 import { locales } from '@/paraglide/runtime.js';
 import { sql } from 'drizzle-orm';
@@ -76,7 +76,7 @@ export const actions: Actions = {
 			await db.insert(tabTranslation).values(translations);
 
 			// Redirect on success
-		} catch (error) {
+		} catch {
 			return {
 				success: false,
 				message: 'Something went wrong while adding the tab.'

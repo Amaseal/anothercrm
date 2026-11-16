@@ -1,37 +1,28 @@
 <script lang="ts">
 	import * as Card from '$lib/components/ui/card/index.js';
-	import { toCurrency } from '$lib/utilities';
 
-	import type { Task } from '$lib/server/db/schema';
-	import { Button } from './ui/button';
-	import Plus from '@lucide/svelte/icons/plus';
-	import GripVertical from '@lucide/svelte/icons/grip-vertical';
+	import type { ProjectBoardColumn, ProjectBoardTask } from '$lib/server/queries/projekti';
+
 	import ProductCard from './product-card.svelte';
 
-	import { dndzone, dragHandleZone, dragHandle, type DndEvent } from 'svelte-dnd-action';
+	import { dragHandleZone, dragHandle, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
-	import { tweened } from 'svelte/motion';
-	import { cubicOut } from 'svelte/easing';
-	import { locales, getLocale } from '@/paraglide/runtime.js';
+
 	import { invalidateAll } from '$app/navigation';
 	import { m } from '@/paraglide/messages';
 
-	let { tab, data } = $props();
+	let { tab }: { tab: ProjectBoardColumn; data?: unknown } = $props();
 
-	let items = $state(tab?.tasks || []);
+	let items = $derived(tab.tasks);
 
-	$effect(() => {
-		items = tab?.tasks || [];
-	});
-
-	function handleDndConsider(e: CustomEvent<DndEvent<any>>) {
-		items = e.detail.items as Task[];
+	function handleDndConsider(e: CustomEvent<DndEvent<ProjectBoardTask>>) {
+		items = e.detail.items;
 	}
 
-	async function handleDndFinalize(e: CustomEvent<DndEvent<any>>) {
-		items = e.detail.items as Task[];
+	async function handleDndFinalize(e: CustomEvent<DndEvent<ProjectBoardTask>>) {
+		items = e.detail.items;
 
-		const movedTask = items.find((t: { tabId: any }) => t.tabId !== tab.id);
+		const movedTask = items.find((t) => t.tabId !== tab.id);
 
 		if (movedTask) {
 			try {

@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { client, task, invoice, taskProduct, product } from '$lib/server/db/schema';
+import { client, task, invoice } from '$lib/server/db/schema';
 import type { LayoutServerLoad } from './$types';
 import { and, desc, asc, sql, count, or, eq, inArray } from 'drizzle-orm';
 import { handleListParams } from '$lib/server/paramState';
@@ -18,7 +18,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	const offset = page * pageSize;
 
 	// Build the filter conditions
-	let filterConditions = [];
+	const filterConditions = [];
 
 	if (search) {
 		const searchTerm = `%${search}%`;

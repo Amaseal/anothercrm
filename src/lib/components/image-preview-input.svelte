@@ -1,10 +1,9 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
 	import Image from '@lucide/svelte/icons/image';
-	import Upload from '@lucide/svelte/icons/upload';
+
 	import X from '@lucide/svelte/icons/x';
 	import * as m from '$lib/paraglide/messages';
-	import { browser } from '$app/environment';
+
 	import { cn } from '$lib/utils';
 	import { Label } from '$lib/components/ui/label';
 
@@ -14,16 +13,15 @@
 		label = '',
 		class: className,
 		preview = null,
-		readonly = false,
-		...restProps
-	} = $props<{
+		readonly = false
+	}: {
 		name?: string;
 		id?: string;
 		label?: string;
 		class?: string;
 		preview?: string | null;
 		readonly?: boolean;
-	}>();
+	} = $props();
 
 	let fileInputElement: HTMLInputElement;
 
@@ -54,7 +52,7 @@
 		return `/${trimmed}`;
 	}
 
-	let previewUrl = $state<string | null>(normalizePreviewUrl(preview));
+	let previewUrl = $derived(normalizePreviewUrl(preview));
 	let dragOver = $state(false);
 
 	function revokePreviewUrl(url: string | null) {
@@ -116,10 +114,6 @@
 	}
 
 	$effect(() => {
-		previewUrl = normalizePreviewUrl(preview);
-	});
-
-	$effect(() => {
 		return () => {
 			revokePreviewUrl(previewUrl);
 		};
@@ -141,8 +135,6 @@
 		<Label for={id}>{label}</Label>
 	{/if}
 
-	<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-	<!-- svelte-ignore a11y_role_has_required_aria_props -->
 	<div
 		class={cn(
 			'relative flex aspect-video cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',

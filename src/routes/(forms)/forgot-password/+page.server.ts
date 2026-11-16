@@ -1,10 +1,10 @@
-import { fail, redirect, type Cookies, type RequestEvent } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { and, eq } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
 import { sendPasswordResetEmail } from '$lib/server/mailUtils';
 import { db } from '$lib/server/db';
-import * as auth from '$lib/server/auth';
+
 import * as m from '$lib/paraglide/messages';
 import { user } from '$lib/server/db/schema';
 import crypto from 'node:crypto';
@@ -17,7 +17,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions = {
 	default: async (event) => {
-		let form = await event.request.formData();
+		const form = await event.request.formData();
 
 		const email = form.get('email') as string;
 
@@ -51,7 +51,7 @@ export const actions = {
 				existingUser.email,
 				`${event.url.origin}/reset-password?token=${token}`
 			);
-		} catch (error) {
+		} catch {
 			return fail(500, { message: m['reset.errors.something_went_wrong']() });
 		}
 

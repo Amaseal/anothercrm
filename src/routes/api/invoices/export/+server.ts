@@ -1,10 +1,10 @@
 import { db } from '$lib/server/db';
-import { invoice, companySettings } from '$lib/server/db/schema';
+import { invoice } from '$lib/server/db/schema';
 import { and, gte, lte } from 'drizzle-orm';
 import type { RequestHandler } from './$types';
 import JSZip from 'jszip';
 import { generateInvoicePdfBuffer } from '$lib/server/pdfmake';
-import { numberToWordsEN, numberToWordsLV } from '@/numberToWords';
+import { invoiceExportFilter } from '$lib/server/invoice-export';
 
 export const GET: RequestHandler = async ({ url, locals }) => {
 	if (!locals.user || locals.user.type !== 'admin') {
@@ -20,9 +20,16 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		});
 	}
 
-	// Fetch all invoices in date range with client + items in one query
+	let typeFilter;
+	try {
+		typeFilter = invoiceExportFilter(url.searchParams.get('type') ?? 'all');
+	} catch {
+		return new Response(JSON.stringify({ error: 'Invalid invoice export type' }), { status: 400 });
+	}
+
+	// Fetch matching invoices in date range with client + items in one query
 	const invoices = await db.query.invoice.findMany({
-		where: and(gte(invoice.issueDate, from), lte(invoice.issueDate, to)),
+		where: and(gte(invoice.issueDate, from), lte(invoice.issueDate, to), typeFilter),
 		with: {
 			client: true,
 			items: true
@@ -30,9 +37,12 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 	});
 
 	if (invoices.length === 0) {
-		return new Response(JSON.stringify({ error: 'No invoices found in this date range' }), {
-			status: 404
-		});
+		return new Response(
+			JSON.stringify({ error: 'No matching invoices found in this date range' }),
+			{
+				status: 404
+			}
+		);
 	}
 
 	const company = await db.query.companySettings.findFirst();
@@ -44,7 +54,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		// createPdf returns an OutputDocumentServer with getBuffer()
 		const pdfBuffer: Buffer = await generateInvoicePdfBuffer(inv, inv.items, company);
 
-		const safeName = inv.invoiceNumber.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+		const safeName = inv.invoiceNumber.replace(/[^a-zA-Z0-9_.-]/g, '_');
 		zip.file(`${safeName}.pdf`, pdfBuffer);
 	}
 

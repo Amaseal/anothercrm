@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { material, tab, tabGroup } from '$lib/server/db/schema';
+import { tab, tabGroup } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';

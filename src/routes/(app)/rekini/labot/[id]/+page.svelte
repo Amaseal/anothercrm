@@ -34,7 +34,7 @@
 	// Initialize items from invoice data
 	let items = $state(
 		invoice.items.length > 0
-			? invoice.items.map((i: any) => ({
+			? invoice.items.map((i) => ({
 					description: i.description,
 					unit: i.unit,
 					quantity: i.quantity,
@@ -42,9 +42,8 @@
 					discountType: i.discountType ?? 'percent',
 					discountValue: i.discountValue ?? 0,
 					isAutoFilled: products.some(
-						(p: any) =>
-							p.title === i.description ||
-							p.translations?.some((t: any) => t.title === i.description)
+						(p) =>
+							p.title === i.description || p.translations?.some((t) => t.title === i.description)
 					)
 				}))
 			: [
@@ -133,7 +132,7 @@
 		const match = findProductByAnyTitle(val);
 		if (match) {
 			const clientPriceEntry = selectedClientId
-				? match.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)
+				? match.clientPrices?.find((cp) => cp.clientId.toString() === selectedClientId)
 				: null;
 			items[index].price = clientPriceEntry ? clientPriceEntry.price : match.price;
 			items[index].isAutoFilled = true;
@@ -181,27 +180,27 @@
 			.trim();
 	}
 
-	function getProductTitle(product: any, lang: string): string {
-		const translation = product.translations?.find((t: any) => t.language === lang);
+	function getProductTitle(product: (typeof products)[number], lang: string): string {
+		const translation = product.translations?.find((t) => t.language === lang);
 		return translation?.title || product.title;
 	}
 
-	function findProductByAnyTitle(title: string): any {
+	function findProductByAnyTitle(title: string) {
 		return products.find(
-			(p: any) => p.title === title || p.translations?.some((t: any) => t.title === title)
+			(p) => p.title === title || p.translations?.some((t) => t.title === title)
 		);
 	}
 
 	function getFilteredProducts(search: string) {
 		if (!search) return products;
 		const norm = normalizeText(search);
-		return products.filter((p: any) => normalizeText(getProductTitle(p, language)).includes(norm));
+		return products.filter((p) => normalizeText(getProductTitle(p, language)).includes(norm));
 	}
 
-	function selectProduct(index: number, product: any) {
+	function selectProduct(index: number, product: (typeof products)[number]) {
 		items[index].description = getProductTitle(product, language);
 		const clientPriceEntry = selectedClientId
-			? product.clientPrices?.find((cp: any) => cp.clientId.toString() === selectedClientId)
+			? product.clientPrices?.find((cp) => cp.clientId.toString() === selectedClientId)
 			: null;
 		items[index].price = clientPriceEntry ? clientPriceEntry.price : product.price;
 		items[index].isAutoFilled = true;
@@ -431,7 +430,7 @@
 											<Command.List>
 												<Command.Empty>{m['clients.empty']()}</Command.Empty>
 												<Command.Group>
-													{#each clients as client}
+													{#each clients as client (client.id)}
 														<Command.Item
 															value={client.name}
 															onSelect={() => {
@@ -673,7 +672,7 @@
 						</tr>
 					</thead>
 					<tbody class="text-sm">
-						{#each items as item, i}
+						{#each items as item, i (i)}
 							<tr class="group hover:bg-slate-50">
 								<td class="border border-black px-2 py-1 text-center">{i + 1}</td>
 								<td class="relative border border-black px-0 py-0">
@@ -698,7 +697,7 @@
 													{@const title = getProductTitle(product, language)}
 													{@const clientPrice = selectedClientId
 														? product.clientPrices?.find(
-																(cp: any) => cp.clientId.toString() === selectedClientId
+																(cp) => cp.clientId.toString() === selectedClientId
 															)?.price
 														: null}
 													<li>

@@ -2,10 +2,6 @@
 import { db } from '$lib/server/db';
 import {
 	task,
-	client,
-	user,
-	material,
-	product,
 	taskMaterial,
 	taskProduct,
 	file,
@@ -14,10 +10,11 @@ import {
 	taskAssignee
 } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
-import { writeFile, mkdir, unlink } from 'fs/promises';
+import type { HistoryChange } from '$lib/server/history';
+import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import type { Actions, PageServerLoad } from './$types';
-import { eq, and, inArray, desc } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 import { assertTaskAccess } from '$lib/server/task-access';
 import {
 	productionFileIds,
@@ -99,7 +96,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 					try {
 						const changes = JSON.parse(h.changeData);
 						if (Array.isArray(changes)) {
-							const filteredChanges = changes.filter((c: any) => c.field !== 'seamstress');
+							const filteredChanges = changes.filter((c) => c.field !== 'seamstress');
 
 							// If no changes remain after filtering, and it was structured data, hide the entry
 							if (filteredChanges.length === 0) {
@@ -108,7 +105,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 							h.changeData = JSON.stringify(filteredChanges);
 						}
-					} catch (e) {
+					} catch {
 						// ignore parse errors
 					}
 				}
@@ -158,7 +155,7 @@ export const actions: Actions = {
 		const assignedToUserIds = assignedToUserIdsStr
 			? assignedToUserIdsStr.split(',').filter((id) => id.trim() !== '')
 			: [];
-		const createdById = formData.get('createdById') as string;
+
 		const endDate = formData.get('endDate') as string;
 		// const seamstress = formData.get('seamstress') as string; // User removed seamstress in pievienot? code shows it line 63.
 		const seamstress = formData.get('seamstress') as string;
@@ -332,7 +329,7 @@ export const actions: Actions = {
 					// In DB: downloadUrl. FileUpload: path.
 					// Assuming consistency.
 
-					const submittedPaths = new Set(submittedFiles.map((f: any) => f.path));
+					const submittedPaths = new Set(submittedFiles.map((f) => f.path));
 
 					// 2. Identify files to delete (in DB but not in submission)
 					const idsToDelete = currentDbFiles
@@ -350,8 +347,8 @@ export const actions: Actions = {
 					const currentPaths = new Set(currentDbFiles.map((f) => f.downloadUrl));
 
 					const filesToInsert = submittedFiles
-						.filter((f: any) => !currentPaths.has(f.path))
-						.map((f: any) => ({
+						.filter((f) => !currentPaths.has(f.path))
+						.map((f) => ({
 							filename: f.name,
 							downloadUrl: f.path,
 							size: f.size || 0,
@@ -366,7 +363,7 @@ export const actions: Actions = {
 			}
 
 			// Record History
-			const changes: any[] = [];
+			const changes: HistoryChange[] = [];
 
 			if (oldTask.title !== title) changes.push({ field: 'title', from: oldTask.title, to: title });
 			if (oldTask.description !== description)
@@ -375,7 +372,7 @@ export const actions: Actions = {
 				changes.push({ field: 'client', from: oldTask.clientId, to: clientId });
 
 			const oldAssignees = (oldTask.assignees || [])
-				.map((a: any) => a.userId)
+				.map((a) => a.userId)
 				.sort()
 				.join(',');
 			const newAssignees = [...assignedToUserIds].sort().join(',');

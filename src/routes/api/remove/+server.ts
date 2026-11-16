@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		return new Response(JSON.stringify({ success: true }), { status: 200 });
 	} catch (e) {
 		// If file does not exist, treat as success (idempotent delete)
-		if (typeof e === 'object' && e !== null && 'code' in e && (e as any).code === 'ENOENT') {
+		if (typeof e === 'object' && e !== null && 'code' in e && e.code === 'ENOENT') {
 			return new Response(
 				JSON.stringify({ success: true, info: 'File not found, nothing to delete' }),
 				{ status: 200 }

@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '../src/lib/server/db/schema';
-import { eq, sql, inArray } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as xlsx from 'xlsx';
@@ -32,7 +32,7 @@ const db = drizzle(client, { schema });
 const EXPORTS_DIR = path.resolve('exports');
 
 // Helper to read CSV with explicit UTF-8
-function readCsv(filename: string): any[] {
+function readCsv(filename: string): Record<string, string>[] {
 	const filePath = path.join(EXPORTS_DIR, filename);
 	if (!fs.existsSync(filePath)) {
 		console.warn(`File not found: ${filePath}`);
@@ -43,10 +43,10 @@ function readCsv(filename: string): any[] {
 	// Parse string
 	const workbook = xlsx.read(fileContent, { type: 'string' });
 	const sheetName = workbook.SheetNames[0];
-	return xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+	return xlsx.utils.sheet_to_json<Record<string, string>>(workbook.Sheets[sheetName]);
 }
 
-function safeDate(dateStr: any): Date {
+function safeDate(dateStr: unknown): Date {
 	if (!dateStr) return new Date();
 
 	let sanitized = String(dateStr).trim();
@@ -65,7 +65,7 @@ function safeDate(dateStr: any): Date {
 	return d;
 }
 
-function safeDateOrNull(dateStr: any): Date | null {
+function safeDateOrNull(dateStr: unknown): Date | null {
 	if (!dateStr) return null;
 	let sanitized = String(dateStr).trim();
 	if (sanitized === '') return null;
@@ -267,7 +267,7 @@ async function main() {
 	for (const c of clients) {
 		try {
 			let email = c.email;
-			let phone = c.phone;
+			const phone = c.phone;
 			if (!email && !phone) {
 				email = `missing_contact_${c.id}@legacy-import.local`;
 				console.warn(

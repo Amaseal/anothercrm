@@ -1,18 +1,9 @@
 // Copied from labot server file, removed actions
 import { db } from '$lib/server/db';
-import {
-	task,
-	material,
-	product,
-	taskMaterial,
-	taskProduct,
-	file,
-	invoice,
-	userClient
-} from '$lib/server/db/schema';
-import { fail, redirect } from '@sveltejs/kit';
+import { task, invoice } from '$lib/server/db/schema';
+import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
-import { eq, and, inArray, desc } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { assertTaskAccess } from '$lib/server/task-access';
 import { productionFileIds } from '$lib/server/production-projects';
 
@@ -48,6 +39,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				}
 			},
 			files: true,
+			assignees: { with: { user: true } },
 			history: {
 				with: {
 					user: { columns: { name: true } }
@@ -84,7 +76,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 					try {
 						const changes = JSON.parse(h.changeData);
 						if (Array.isArray(changes)) {
-							const filteredChanges = changes.filter((c: any) => c.field !== 'seamstress');
+							const filteredChanges = changes.filter((c) => c.field !== 'seamstress');
 
 							// If no changes remain after filtering, and it was structured data, hide the entry
 							if (filteredChanges.length === 0) {
@@ -93,7 +85,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 							h.changeData = JSON.stringify(filteredChanges);
 						}
-					} catch (e) {
+					} catch {
 						// ignore parse errors
 					}
 				}

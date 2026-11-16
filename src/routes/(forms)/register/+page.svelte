@@ -6,13 +6,13 @@
 	import { Label } from '@/components/ui/label';
 	import * as m from '$lib/paraglide/messages';
 	import { Separator } from '@/components/ui/separator';
-	import Favicon from '@/components/favicon/favicon.svelte';
+
 	import { setLocale } from '$lib/paraglide/runtime';
 	import background from '$lib/assets/background.svg';
 
 	import type { PageProps } from './$types';
 
-	let { data, form }: PageProps = $props();
+	let { form }: PageProps = $props();
 </script>
 
 <svelte:head>

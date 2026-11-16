@@ -31,7 +31,7 @@ export const actions: Actions = {
 		}
 		try {
 			const payload = {
-				name: name || undefined,
+				name,
 				type: type === 'BTC' || type === 'BTB' ? (type as 'BTC' | 'BTB') : undefined,
 				registrationNumber: reg_number || null,
 				vatNumber: vat_number || null,
@@ -44,8 +44,8 @@ export const actions: Actions = {
 				description: description || null,
 				sportType: sport_type || null
 			};
-			await db.insert(client).values(payload as any);
-		} catch (error) {
+			await db.insert(client).values(payload);
+		} catch {
 			return fail(500, { message: m['clients.errors.something_went_wrong']() });
 		}
 		redirect(303, '/klienti');

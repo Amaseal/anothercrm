@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import type { RequestHandler } from './$types';
-import { like, asc, sql } from 'drizzle-orm';
+import { asc } from 'drizzle-orm';
 import { client } from '$lib/server/db/schema';
 import { normalizeLatvianText } from '$lib/utilities';
 

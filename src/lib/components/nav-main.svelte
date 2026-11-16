@@ -1,7 +1,12 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
+	import type { Component } from 'svelte';
+	import type { IconProps } from '@lucide/svelte';
 	import { page } from '$app/stores';
-	let { items }: { items: { title: string; url: string; icon?: any }[] } = $props();
+	let { items }: { items: { title: string; url: string; icon?: Component<IconProps> }[] } =
+		$props();
 </script>
 
 <Sidebar.Group class="mt-8">
@@ -12,7 +17,7 @@
 					<Sidebar.MenuButton tooltipContent={item.title}>
 						{#snippet child({ props })}
 							<a
-								href={item.url}
+								href={resolve(...([item.url] as Parameters<typeof resolve>))}
 								{...props}
 								class="{$page.url.pathname === item.url
 									? 'bg-accent font-bold text-accent-foreground'

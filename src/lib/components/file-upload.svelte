@@ -27,13 +27,13 @@
 		label = '',
 		readonly = false,
 		zipFilename = 'files'
-	} = $props<{
+	}: {
 		files?: FileData[];
 		uploading?: boolean;
 		label?: string;
 		readonly?: boolean;
 		zipFilename?: string;
-	}>();
+	} = $props();
 
 	const canOpenDocuments = $derived(!!$user && $user.type !== 'client');
 	let isZipping = $state(false);

@@ -10,11 +10,15 @@ The migration was generated and inspected, **not applied to the configured datab
 
 Files use the existing `uploads` volume, under the private `uploads/production/` directory with random stored names. File records continue to own filenames, paths, sizes and timestamps; garment rows are not stored in the database. Ordinary uploads, even named `production.xlsx`, do not create a production-project reference.
 
+For a Docker/Coolify deployment, mount persistent storage at **`/app/uploads`**, including its `production/` subdirectory. `docker-compose.yml` already declares this mount; Dockerfile-only deployments must configure it in the hosting platform. All app instances sharing a database must see the same upload storage. A container replacement without that mount can leave saved database references pointing to files that are no longer present.
+
 Back up **the entire uploads volume, including `production/` and `.previous` copies, together with matching database metadata**. Restore them as a consistent set. Creation removes its new file on transaction failure; a process crash before commit can leave an unreferenced private file, which needs reconciliation during restore/maintenance. No orphan collector or general history UI was added.
 
 ## Task field
 
 Active-task view/edit and completed-task detail pages show a separate **Production table** section to staff. It has no upload/add-files/drop-zone controls and does not submit an attachment list. Referenced production files are excluded from the ordinary task attachment list and attachment synchronization.
+
+A missing/unavailable workbook does not block the rest of the list. Its card keeps the saved filename/size, reports that the file is unavailable and disables Preview/Edit/Download. Restore its original bytes under the stored path from the uploads backup, then Refresh; no metadata is deleted or workbook silently regenerated. The API marks these entries with `revision: null` (size is the stored metadata size); available files keep their actual size and SHA-256 revision. Other read/database errors still fail the request.
 
 Saved files use compact attachment cards with **Preview**, **Edit** and **Download**. Preview opens a bounded, scrollable modal with Edit fixed in the footer; generation opens this modal automatically. Preview uses the normalized server workbook reader, not the office suite or a second database copy. It shows garment count, warnings and a paged read-only preview (100 rows per page, with all rows available). Parsed proposals and saved workbooks reuse the same table. The office suite is only opened by Edit, in a new tab to preserve unsaved task fields.
 

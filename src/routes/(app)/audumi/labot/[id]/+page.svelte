@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -10,7 +12,7 @@
 	import * as m from '$lib/paraglide/messages';
 	import type { Material } from '@/server/db/schema';
 	import FormError from '$lib/components/form-error.svelte';
-	let { data, form }: { data: { item: Material }; form: any } = $props();
+	let { data, form }: { data: { item: Material }; form: { message?: string } | null } = $props();
 </script>
 
 <svelte:head>
@@ -22,7 +24,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full max-w-md gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/audumi"
+					href={resolve('/audumi')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
 				>

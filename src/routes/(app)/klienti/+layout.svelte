@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { base, resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+
 	import * as Table from '$lib/components/ui/table/index.js';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -10,6 +12,7 @@
 	import Plus from '@lucide/svelte/icons/plus';
 	import type { Client } from '$lib/server/db/schema.js';
 	import { page } from '$app/state';
+	import { SvelteSet } from 'svelte/reactivity';
 	import Pencil from '@lucide/svelte/icons/pencil';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { Separator } from '$lib/components/ui/separator';
@@ -36,20 +39,17 @@
 				sortDirection: string;
 			};
 		};
-		children?: () => any;
+		children?: import('svelte').Snippet;
 	} = $props();
 
 	// Initialize state from server data
-	let currentPage = $state(data.pagination.page);
-	let pageSize = $state(data.pagination.pageSize);
+
 	let sortColumn = $state(data.pagination.sortColumn as keyof Client | null);
 	let sortDirection = $state(data.pagination.sortDirection as 'asc' | 'desc');
 	let searchTerm = $state(data.pagination.search);
 
 	// Keep local state in sync with server data
 	$effect(() => {
-		currentPage = data.pagination.page;
-		pageSize = data.pagination.pageSize;
 		sortColumn = data.pagination.sortColumn as keyof Client | null;
 		sortDirection = data.pagination.sortDirection as 'asc' | 'desc';
 		searchTerm = data.pagination.search;
@@ -66,7 +66,9 @@
 	}, 1200);
 
 	// Update URL and navigate to the new page
-	function updateUrlAndNavigate(params: Record<string, any>) {
+	function updateUrlAndNavigate(
+		params: Record<string, string | number | boolean | null | undefined>
+	) {
 		const url = new URL(page.url);
 
 		Object.entries(params).forEach(([key, value]) => {
@@ -81,7 +83,14 @@
 			url.searchParams.set('clear', 'true');
 		}
 
-		goto(url.toString(), { replaceState: true });
+		goto(
+			resolve(
+				...([`${url.pathname.slice(base.length)}${url.search}${url.hash}`] as Parameters<
+					typeof resolve
+				>)
+			),
+			{ replaceState: true }
+		);
 	}
 
 	// Handle sorting
@@ -110,7 +119,7 @@
 	}
 
 	function toggleSelect(id: number) {
-		const next = new Set(selectedIds);
+		const next = new SvelteSet(selectedIds);
 		if (next.has(id)) {
 			next.delete(id);
 		} else {
@@ -121,7 +130,7 @@
 
 	function goToMerge() {
 		const ids = [...selectedIds].join(',');
-		goto(`/klienti/saplust?ids=${ids}`);
+		goto(resolve(...([`/klienti/saplust?ids=${ids}`] as Parameters<typeof resolve>)));
 	}
 </script>
 
@@ -250,7 +259,9 @@
 							class="cursor-pointer hover:bg-muted/50 {mergeMode && selectedIds.has(item.id)
 								? 'bg-primary/5'
 								: ''}"
-							onclick={mergeMode ? () => toggleSelect(item.id) : () => goto(`/klienti/${item.id}`)}
+							onclick={mergeMode
+								? () => toggleSelect(item.id)
+								: () => goto(resolve(...([`/klienti/${item.id}`] as Parameters<typeof resolve>)))}
 						>
 							{#if mergeMode}
 								<Table.Cell class="text-center">

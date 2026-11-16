@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { base, resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+
 	import * as Table from '$lib/components/ui/table/index.js';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
@@ -38,20 +40,17 @@
 				sortDirection: string;
 			};
 		};
-		children?: () => any;
+		children?: import('svelte').Snippet;
 	} = $props();
 
 	// Initialize state from server data
-	let currentPage = $state(data.pagination.page);
-	let pageSize = $state(data.pagination.pageSize);
+
 	let sortColumn = $state(data.pagination.sortColumn);
 	let sortDirection = $state(data.pagination.sortDirection as 'asc' | 'desc');
 	let searchTerm = $state(data.pagination.search);
 
 	// Keep local state in sync with server data
 	$effect(() => {
-		currentPage = data.pagination.page;
-		pageSize = data.pagination.pageSize;
 		sortColumn = data.pagination.sortColumn;
 		sortDirection = data.pagination.sortDirection as 'asc' | 'desc';
 		searchTerm = data.pagination.search;
@@ -68,7 +67,9 @@
 	}, 1200);
 
 	// Update URL and navigate to the new page
-	function updateUrlAndNavigate(params: Record<string, any>) {
+	function updateUrlAndNavigate(
+		params: Record<string, string | number | boolean | null | undefined>
+	) {
 		const url = new URL(page.url);
 
 		// Update the provided parameters
@@ -85,7 +86,14 @@
 		}
 
 		// Navigate to the new URL
-		goto(url.toString(), { replaceState: true });
+		goto(
+			resolve(
+				...([`${url.pathname.slice(base.length)}${url.search}${url.hash}`] as Parameters<
+					typeof resolve
+				>)
+			),
+			{ replaceState: true }
+		);
 	}
 
 	function clearSearch() {

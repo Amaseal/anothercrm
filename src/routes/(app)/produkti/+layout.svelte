@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { base, resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+
 	import * as Table from '$lib/components/ui/table/index.js';
 	import * as Tooltip from '$lib/components/ui/tooltip/index.js';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
@@ -46,7 +48,7 @@
 				sortDirection: string;
 			};
 		};
-		children?: () => any;
+		children?: import('svelte').Snippet;
 	} = $props();
 
 	let sortColumn = $state(data.pagination.sortColumn as keyof Product | null);
@@ -68,7 +70,9 @@
 		updateUrlAndNavigate({ search: value, page: 0 });
 	}, 1200);
 
-	function updateUrlAndNavigate(params: Record<string, any>) {
+	function updateUrlAndNavigate(
+		params: Record<string, string | number | boolean | null | undefined>
+	) {
 		const url = new URL(page.url);
 
 		// Update the provided parameters
@@ -84,7 +88,14 @@
 			url.searchParams.set('clear', 'true');
 		}
 
-		goto(url.toString(), { replaceState: true });
+		goto(
+			resolve(
+				...([`${url.pathname.slice(base.length)}${url.search}${url.hash}`] as Parameters<
+					typeof resolve
+				>)
+			),
+			{ replaceState: true }
+		);
 	}
 
 	function clearSearch() {
@@ -281,7 +292,7 @@
 														<div class="mb-1 border-b px-1 pb-1 font-semibold">
 															{m['products.client_specific_prices']()}
 														</div>
-														{#each item.clientPrices as cp}
+														{#each item.clientPrices as cp, priceIndex (priceIndex)}
 															<div
 																class="flex justify-between gap-4 rounded px-1 py-0.5 text-sm transition-colors hover:bg-muted/50"
 															>

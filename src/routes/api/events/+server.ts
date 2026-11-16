@@ -21,7 +21,11 @@ export const GET: RequestHandler = async ({ locals }) => {
 	}
 
 	let onTaskEvent:
-		| ((data: { type: string; task: any; assigneeUserIds: string[] }) => void)
+		| ((data: {
+				type: string;
+				task: Parameters<typeof taskEvents.emitTaskUpdate>[0];
+				assigneeUserIds: string[];
+		  }) => void)
 		| undefined;
 
 	const readable = new ReadableStream({
@@ -29,7 +33,11 @@ export const GET: RequestHandler = async ({ locals }) => {
 			// Send initial connection message
 			controller.enqueue(`data: ${JSON.stringify({ type: 'connected' })}\n\n`);
 
-			onTaskEvent = (data: { type: string; task: any; assigneeUserIds: string[] }) => {
+			onTaskEvent = (data: {
+				type: string;
+				task: Parameters<typeof taskEvents.emitTaskUpdate>[0];
+				assigneeUserIds: string[];
+			}) => {
 				const { task, assigneeUserIds } = data; // Filtering Logic
 				// Admin: Sees everything
 				// Client visibility rules (mirrors getProjectBoardData):
@@ -43,7 +51,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 					const isAssignedToMe = assigneeUserIds.includes(user.id);
 					const createdByMe = task?.createdById === user.id;
 					const isMyClientTask =
-						linkedClientIds.length > 0 && linkedClientIds.includes(task?.clientId);
+						typeof task?.clientId === 'number' && linkedClientIds.includes(task.clientId);
 
 					// C1: creator always sees their task
 					if (createdByMe) shouldSend = true;
@@ -60,7 +68,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 					try {
 						controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
-					} catch (e) {
+					} catch {
 						// Check if it's a closed controller error
 					}
 				}

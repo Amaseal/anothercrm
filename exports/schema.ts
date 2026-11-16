@@ -1,6 +1,6 @@
 import { sqliteTable as table } from 'drizzle-orm/sqlite-core';
 import * as t from 'drizzle-orm/sqlite-core';
-import { relations, sql } from 'drizzle-orm';
+import { relations } from 'drizzle-orm';
 import { type InferSelectModel } from 'drizzle-orm';
 
 export type User = InferSelectModel<typeof user>;
@@ -266,7 +266,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
 }));
 
 // Relations for Tab
-export const tabRelations = relations(tab, ({ many, one }) => ({
+export const tabRelations = relations(tab, ({ many }) => ({
 	tasks: many(task)
 }));
 

@@ -3,6 +3,7 @@ import { invoice, invoiceItems } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { formatInvoiceNumber } from '$lib/invoice-number';
 
 export const POST: RequestHandler = async ({ params, locals }) => {
 	if (!locals.user || locals.user.type !== 'admin') {
@@ -36,7 +37,12 @@ export const POST: RequestHandler = async ({ params, locals }) => {
 	while (attempts < maxAttempts) {
 		try {
 			const count = await db.$count(invoice);
-			const invoiceNumber = `${dateStr}-${count + 1 + attempts}${userInitial}`;
+			const invoiceNumber = formatInvoiceNumber(
+				dateStr,
+				count + 1 + attempts,
+				userInitial,
+				original.documentType
+			);
 
 			await db.transaction(async (tx) => {
 				const [newInvoice] = await tx
@@ -63,7 +69,7 @@ export const POST: RequestHandler = async ({ params, locals }) => {
 
 				if (original.items && original.items.length > 0) {
 					await tx.insert(invoiceItems).values(
-						original.items.map((item: any) => ({
+						original.items.map((item) => ({
 							invoiceId: newInvoiceId!,
 							description: item.description,
 							unit: item.unit,
@@ -78,8 +84,8 @@ export const POST: RequestHandler = async ({ params, locals }) => {
 			});
 
 			break;
-		} catch (error: any) {
-			if (error.code === '23505') {
+		} catch (error: unknown) {
+			if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
 				attempts++;
 				continue;
 			}

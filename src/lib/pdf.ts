@@ -1,6 +1,7 @@
 import pdfMake from 'pdfmake/build/pdfmake';
+import type { StyleDictionary, TableCell, TDocumentDefinitions } from 'pdfmake/interfaces';
 import pdfFonts from 'pdfmake/build/vfs_fonts';
-import { toCurrency } from '$lib/utilities';
+
 import { getInvoiceSignatureBlock } from '$lib/invoice-signatures';
 
 // Initialize virtual file system for fonts
@@ -55,7 +56,7 @@ type InvoiceData = {
 const labels = {
 	lv: {
 		invoice: 'Rēķins/Pavadzīme',
-		proforma: 'Proforma rēķins',
+		proforma: 'Priekšapmaksas rēķins',
 		date: 'Datums',
 		invoiceNr: 'Rēķina nr.',
 		dueDate: 'Apmaksas termiņš',
@@ -122,7 +123,7 @@ export const generatePdf = (data: InvoiceData) => {
 	const l = labels[data.language || 'lv'];
 
 	// Define styles
-	const styles = {
+	const styles: StyleDictionary = {
 		header: {
 			fontSize: 22,
 			bold: true,
@@ -154,7 +155,7 @@ export const generatePdf = (data: InvoiceData) => {
 		}
 	};
 
-	const docDefinition = {
+	const docDefinition: TDocumentDefinitions = {
 		pageSize: 'A4',
 		pageMargins: [40, 40, 40, 60],
 		content: [
@@ -237,7 +238,11 @@ export const generatePdf = (data: InvoiceData) => {
 						[
 							{
 								stack: [
-									{ text: l.payer, bold: true, margin: [0, 0, 0, 5] },
+									{
+										text: l.payer,
+										bold: true,
+										margin: [0, 0, 0, 5] as [number, number, number, number]
+									},
 									{ text: data.client.name, bold: true, fontSize: 11 },
 									data.client.registrationNumber
 										? `${l.regNo}: ${data.client.registrationNumber}`
@@ -250,22 +255,20 @@ export const generatePdf = (data: InvoiceData) => {
 								].filter(Boolean),
 								fillColor: '#f8fafc',
 								border: [true, true, true, true],
-								borderStyle: 'dashed',
-								borderColor: '#cbd5e1',
 								margin: [5, 5, 5, 5]
 							}
 						]
 					]
 				},
 				layout: {
-					hLineWidth: (i: number) => 1,
-					vLineWidth: (i: number) => 1,
-					hLineColor: (i: number) => '#cbd5e1',
-					vLineColor: (i: number) => '#cbd5e1',
-					hLineStyle: (i: number) => {
+					hLineWidth: () => 1,
+					vLineWidth: () => 1,
+					hLineColor: () => '#cbd5e1',
+					vLineColor: () => '#cbd5e1',
+					hLineStyle: () => {
 						return { dash: { length: 4 } };
 					},
-					vLineStyle: (i: number) => {
+					vLineStyle: () => {
 						return { dash: { length: 4 } };
 					}
 				},
@@ -274,7 +277,14 @@ export const generatePdf = (data: InvoiceData) => {
 
 			// Notes
 			...(data.notes
-				? [{ text: data.notes, margin: [0, 0, 0, 10], italics: true, fontSize: 9 }]
+				? [
+						{
+							text: data.notes,
+							margin: [0, 0, 0, 10] as [number, number, number, number],
+							italics: true,
+							fontSize: 9
+						}
+					]
 				: []),
 
 			// Items Table
@@ -291,7 +301,7 @@ export const generatePdf = (data: InvoiceData) => {
 							{ text: l.price, style: 'tableHeader', alignment: 'right' },
 							{ text: l.amount, style: 'tableHeader', alignment: 'right' }
 						],
-						...data.items.map((item, i) => [
+						...data.items.map((item, i): TableCell[] => [
 							{ text: (i + 1).toString(), alignment: 'center', fontSize: 9 },
 							{ text: item.description, fontSize: 9 },
 							{ text: item.unit || '-', alignment: 'center', fontSize: 9 },
@@ -356,5 +366,5 @@ export const generatePdf = (data: InvoiceData) => {
 		}
 	};
 
-	return pdfMake.createPdf(docDefinition as any);
+	return pdfMake.createPdf(docDefinition);
 };

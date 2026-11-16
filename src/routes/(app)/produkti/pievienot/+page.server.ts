@@ -1,11 +1,5 @@
 import { db } from '$lib/server/db';
-import {
-	product,
-	productTranslation,
-	clientProductPrice,
-	client,
-	user
-} from '$lib/server/db/schema';
+import { product, productTranslation, clientProductPrice, user } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions } from './$types';
 import * as m from '$lib/paraglide/messages';
@@ -130,7 +124,7 @@ export const actions: Actions = {
 					await tx.insert(clientProductPrice).values(clientPriceInserts);
 				}
 			});
-		} catch (error) {
+		} catch {
 			return fail(500, { message: m['products.errors.creation_failed']() });
 		}
 

@@ -11,7 +11,7 @@
 
 	import type { PageProps } from './$types';
 
-	let { data, form }: PageProps = $props();
+	let { form }: PageProps = $props();
 </script>
 
 <svelte:head>

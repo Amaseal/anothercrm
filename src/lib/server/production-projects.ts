@@ -1,4 +1,4 @@
-import { error } from '@sveltejs/kit';
+import { error, isHttpError } from '@sveltejs/kit';
 import { and, eq, notInArray } from 'drizzle-orm';
 import { mkdir, open, rm, readFile } from 'node:fs/promises';
 import { randomUUID, createHash } from 'node:crypto';
@@ -56,14 +56,28 @@ export async function listProductionProjects(locals: App.Locals, taskId: number)
 	});
 	const results = [];
 	for (const project of projects) {
-		const document = await loadDocument(String(project.fileId));
-		results.push({
-			id: project.id,
-			fileId: project.fileId,
-			filename: document.filename,
-			size: document.size,
-			revision: document.revision
-		});
+		try {
+			const document = await loadDocument(String(project.fileId));
+			results.push({
+				id: project.id,
+				fileId: project.fileId,
+				filename: document.filename,
+				size: document.size,
+				revision: document.revision
+			});
+		} catch (cause) {
+			if (!isHttpError(cause, 404)) throw cause;
+			const record = await db.query.file.findFirst({ where: eq(file.id, project.fileId) });
+			if (!record || record.taskId !== taskId) throw cause;
+			// Keep unavailable files visible for recovery without blocking intact workbooks.
+			results.push({
+				id: project.id,
+				fileId: project.fileId,
+				filename: record.filename,
+				size: record.size,
+				revision: null
+			});
+		}
 	}
 	return results;
 }

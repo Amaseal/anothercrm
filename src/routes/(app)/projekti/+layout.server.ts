@@ -20,7 +20,6 @@ export const load: LayoutServerLoad = async ({ locals, url, cookies, depends }) 
 	const search = activeParams.get('search') || undefined;
 
 	const data = await getProjectBoardData(
-		// @ts-ignore
 		user as { id: string; type: 'admin' | 'client' },
 		locale,
 		showAll,

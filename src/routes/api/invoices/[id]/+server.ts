@@ -1,5 +1,5 @@
 import { db } from '$lib/server/db';
-import { invoice, invoiceItems, companySettings } from '$lib/server/db/schema';
+import { invoice, invoiceItems } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
@@ -32,7 +32,7 @@ export const GET: RequestHandler = async ({ params }) => {
 	const pdfBuffer: Buffer = await generateInvoicePdfBuffer(inv, items, company);
 	const pdfArrayBuffer = pdfBuffer.buffer.slice(0) as ArrayBuffer;
 
-	const safeName = inv.invoiceNumber.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+	const safeName = inv.invoiceNumber.replace(/[^a-zA-Z0-9_.-]/g, '_');
 
 	return new Response(pdfArrayBuffer, {
 		headers: {

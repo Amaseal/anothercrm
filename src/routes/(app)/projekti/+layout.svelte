@@ -1,8 +1,10 @@
 <script lang="ts">
+	import { base, resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+
 	import { debounce } from '$lib/utilities';
-	import { goto, beforeNavigate, afterNavigate, invalidateAll, invalidate } from '$app/navigation';
+	import { goto, beforeNavigate, afterNavigate, invalidate } from '$app/navigation';
 	import { Separator } from '$lib/components/ui/separator/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import { page } from '$app/state';
@@ -34,7 +36,9 @@
 		updateUrlAndNavigate({ search: '' });
 	}
 
-	function updateUrlAndNavigate(params: Record<string, any>) {
+	function updateUrlAndNavigate(
+		params: Record<string, string | number | boolean | null | undefined>
+	) {
 		const url = new URL(page.url);
 
 		// Update the provided parameters
@@ -50,7 +54,14 @@
 			url.searchParams.set('clear', 'true');
 		}
 
-		goto(url.toString(), { replaceState: true });
+		goto(
+			resolve(
+				...([`${url.pathname.slice(base.length)}${url.search}${url.hash}`] as Parameters<
+					typeof resolve
+				>)
+			),
+			{ replaceState: true }
+		);
 	}
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';

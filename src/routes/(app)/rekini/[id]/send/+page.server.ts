@@ -82,7 +82,7 @@ export const actions: Actions = {
 
 		const pdfBuffer: Buffer = await generateInvoicePdfBuffer(item, item.items || [], company);
 		const attachment = {
-			filename: `Invoice_${item.invoiceNumber.replace(/[^a-zA-Z0-9_\-\.]/g, '_')}.pdf`,
+			filename: `Invoice_${item.invoiceNumber.replace(/[^a-zA-Z0-9_.-]/g, '_')}.pdf`,
 			content: pdfBuffer,
 			contentType: 'application/pdf'
 		};

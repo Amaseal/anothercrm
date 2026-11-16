@@ -4,15 +4,11 @@
 	import * as m from '$lib/paraglide/messages';
 	import { browser } from '$app/environment';
 
-	let { initialImagePath = null, ...restProps } = $props();
-	let imagePath = $state(initialImagePath);
+	let { initialImagePath = null }: { initialImagePath?: string | null } = $props();
+	let imagePath = $derived(initialImagePath);
 	let isUploading = $state(false);
-	let uploadProgress = $state(0);
-	let fileInputElement: HTMLInputElement;
 
-	$effect(() => {
-		imagePath = initialImagePath;
-	});
+	let fileInputElement: HTMLInputElement;
 
 	async function handleInputChange(event: Event) {
 		if (!browser) return;
@@ -30,7 +26,7 @@
 		uploadData.append('file', file);
 
 		isUploading = true;
-		uploadProgress = 0;
+
 		try {
 			const res = await fetch('/api/upload', {
 				method: 'POST',
@@ -39,11 +35,11 @@
 			const data = await res.json();
 			if (data.success && data.path) {
 				imagePath = data.path;
-
-				uploadProgress = 100;
 			} else {
+				console.error('Image upload failed', data);
 			}
-		} catch (e) {
+		} catch (error) {
+			console.error('Image upload failed', error);
 		} finally {
 			isUploading = false;
 		}
@@ -58,7 +54,9 @@
 					headers: { 'Content-Type': 'application/json' },
 					body: JSON.stringify({ path: imagePath })
 				});
-			} catch (e) {}
+			} catch (error) {
+				console.error('Image removal failed', error);
+			}
 		}
 		imagePath = null;
 		if (fileInputElement) fileInputElement.value = '';

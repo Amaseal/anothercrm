@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from '../src/lib/server/db/schema';
-import { ilike, or } from 'drizzle-orm';
+import { ilike } from 'drizzle-orm';
 import * as fs from 'fs';
 import * as path from 'path';
 

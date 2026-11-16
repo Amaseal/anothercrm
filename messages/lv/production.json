@@ -31,6 +31,7 @@
 		"refresh": "Atjaunot",
 		"loading": "Ielādē saglabātās darbgrāmatas…",
 		"load_failed": "Neizdevās ielādēt saglabāto ražošanas darbgrāmatu. Mēģiniet atjaunot sarakstu.",
+		"file_unavailable": "Šīs darbgrāmatas fails šajā serverī nav pieejams. Atjaunojiet to no augšupielāžu rezerves kopijas un atjaunojiet sarakstu.",
 		"preview": "Priekšskatījums",
 		"modal_description": "Priekšskatījums tikai lasīšanai. Labojumiem izmantojiet Labot.",
 		"edit": "Labot",

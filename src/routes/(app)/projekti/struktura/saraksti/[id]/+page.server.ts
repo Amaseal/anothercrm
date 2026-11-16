@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { material, tab, tabGroup, type Tab } from '$lib/server/db/schema';
+import { tab } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -8,7 +8,7 @@ import { locales } from '@/paraglide/runtime.js';
 import { sql } from 'drizzle-orm';
 import * as m from '$lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ url, params }) => {
+export const load: PageServerLoad = async ({ params }) => {
 	const item = await db.query.tab.findFirst({
 		where: eq(tab.id, Number(params.id)),
 		with: { translations: true, owner: true }
@@ -68,7 +68,7 @@ export const actions: Actions = {
 			}
 
 			// Step 2: Create the tab with next sort order
-			const [newTab] = await db
+			await db
 				.update(tab)
 
 				.set({
@@ -78,7 +78,7 @@ export const actions: Actions = {
 				.where(eq(tab.id, tabId));
 
 			// Redirect on success
-		} catch (error) {
+		} catch {
 			return {
 				success: false,
 				message: 'Something went wrong while adding the tab.'

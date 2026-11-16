@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { enhance } from '$app/forms';
 	import { goto } from '$app/navigation';
 	import { Button } from '$lib/components/ui/button';
@@ -85,8 +87,12 @@
 								await update({ reset: false });
 								if (result.type === 'success' && result.data?.id) {
 									createOpen = false;
-									// eslint-disable-next-line svelte/no-navigation-without-resolve
-									await goto(editorUrl(result.data.id as number));
+
+									await goto(
+										resolve(
+											...([editorUrl(result.data.id as number)] as Parameters<typeof resolve>)
+										)
+									);
 								} else if (result.type === 'failure') {
 									createError = String(result.data?.message ?? m['documents.create_required']());
 								}
@@ -150,8 +156,8 @@
 					await update();
 					if (result.type === 'success' && result.data?.id) {
 						formElement.reset();
-						// eslint-disable-next-line svelte/no-navigation-without-resolve
-						goto(editorUrl(result.data.id as number));
+
+						goto(resolve(...([editorUrl(result.data.id as number)] as Parameters<typeof resolve>)));
 					}
 				};
 			}}
@@ -185,7 +191,10 @@
 						<Table.Row>
 							<Table.Cell class="font-medium">
 								<!-- eslint-disable svelte/no-navigation-without-resolve -->
-								<a href={editorUrl(document.id)} class="hover:underline">{document.filename}</a>
+								<a
+									href={resolve(...([editorUrl(document.id)] as Parameters<typeof resolve>))}
+									class="hover:underline">{document.filename}</a
+								>
 								<!-- eslint-enable svelte/no-navigation-without-resolve -->
 							</Table.Cell>
 							<Table.Cell class="hidden md:table-cell">

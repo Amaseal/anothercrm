@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 	import { Textarea } from '$lib/components/ui/textarea/index.js';
@@ -14,7 +16,7 @@
 
 	import { SPORT_TYPES } from '$lib/constants';
 
-	let { data, form } = $props();
+	let { form } = $props();
 
 	const types: { value: ClientType; label: string }[] = [
 		{ value: 'BTC', label: 'B2C' },
@@ -38,7 +40,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full max-w-md gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/klienti"
+					href={resolve('/klienti')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
 				>
@@ -110,7 +112,7 @@
 							{sportType || m['clients.sport_type_placeholder']()}
 						</Select.Trigger>
 						<Select.Content class="max-h-[300px] overflow-y-auto">
-							{#each SPORT_TYPES as type}
+							{#each SPORT_TYPES as type (type)}
 								<Select.Item value={type} label={type} />
 							{/each}
 						</Select.Content>

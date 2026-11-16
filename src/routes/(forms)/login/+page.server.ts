@@ -1,4 +1,4 @@
-import { fail, redirect, type Cookies, type RequestEvent } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { eq } from 'drizzle-orm';
 import * as table from '$lib/server/db/schema';
@@ -15,8 +15,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 
 export const actions = {
 	default: async (event) => {
-		const { cookies } = event;
-		let form = await event.request.formData();
+		const form = await event.request.formData();
 
 		const email = form.get('email') as string;
 		const password = form.get('password') as string;

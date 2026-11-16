@@ -38,6 +38,14 @@ try {
 	const save = await server.ssrLoadModule(
 		'/src/routes/api/tasks/[id]/production-parse/save/+server.ts'
 	);
+	const listing = await server.ssrLoadModule(
+		'/src/routes/api/tasks/[id]/production-projects/+server.ts'
+	);
+	const detail = await server.ssrLoadModule(
+		'/src/routes/api/tasks/[id]/production-projects/[project]/+server.ts'
+	);
+	const savedFiles = new Map();
+	const savedProjects = new Map();
 	const prefix = `parsing-selfcheck-${randomUUID()}`;
 	const csvPath = `uploads/${prefix}.csv`;
 	const imagePath = `uploads/${prefix}.png`;
@@ -63,6 +71,7 @@ try {
 		dialect.sqlToQuery(where).params[0] === 45 ? task : undefined;
 	db.query.file.findFirst = async ({ where }) => {
 		const query = dialect.sqlToQuery(where);
+		if (!query.sql.includes('"task_id"')) return savedFiles.get(query.params[0]);
 		assert.ok(query.sql.includes('"task_id"') && query.sql.includes('production_projects'));
 		return query.params[0] === 91 && query.params[1] === 45
 			? { id: 91, taskId: 45, filename: 'customer.csv', downloadUrl: `/${csvPath}` }
@@ -72,9 +81,24 @@ try {
 		{ id: 91, filename: 'customer.csv' },
 		{ id: 92, filename: 'design.cdr' }
 	];
-	const products = [{ id: 10, name: 'Krekls' }, { id: 20, name: 'Šorti' }];
+	const products = [
+		{ id: 10, name: 'Krekls' },
+		{ id: 20, name: 'Šorti' }
+	];
 	let catalog = products;
 	db.query.productionProduct.findMany = async () => catalog;
+	db.query.productionProject.findMany = async ({ where }) =>
+		[...savedProjects.values()].filter(
+			(project) => project.taskId === dialect.sqlToQuery(where).params[0]
+		);
+	db.query.productionProject.findFirst = async ({ where }) => {
+		const { sql, params } = dialect.sqlToQuery(where);
+		return [...savedProjects.values()].find((project) =>
+			sql.includes('"file_id"')
+				? project.fileId === params[0]
+				: project.taskId === params[0] && project.id === params[1]
+		);
+	};
 	let inserted = 0;
 	let nextFileId = 100;
 	let nextProjectId = 200;
@@ -89,9 +113,13 @@ try {
 						if (getTableName(table) === 'files') {
 							generatedPath = `uploads/${value.downloadUrl.slice('/uploads/'.length)}`;
 							paths.push(generatedPath);
-							return [{ ...value, id: nextFileId++ }];
+							const record = { ...value, id: nextFileId++ };
+							savedFiles.set(record.id, record);
+							return [record];
 						}
-						return [{ ...value, id: nextProjectId++ }];
+						const project = { ...value, id: nextProjectId++ };
+						savedProjects.set(project.id, project);
+						return [project];
 					}
 				})
 			})
@@ -136,7 +164,7 @@ try {
 		[{ user: null }, 401],
 		[{ user: { id: 'owner', type: 'client' } }, 403]
 	])
-		for (const handler of [route.GET, route.POST, preview.POST, save.POST])
+		for (const handler of [route.GET, route.POST, preview.POST, save.POST, listing.GET, detail.GET])
 			await assert.rejects(() => handler(event({}, locals)), { status });
 	const context = await (await route.GET(event())).json();
 	assert.equal(context.attachments.length, 1);
@@ -376,6 +404,18 @@ try {
 	assert.equal(result.fileId, 100);
 	assert.equal(result.filename, 'production.xlsx');
 	assert.deepEqual(result.workbook.orders, workbook.orders);
+	const openEvent = (project) => ({
+		...event(),
+		params: { id: '45', project: String(project.id) },
+		url: new URL('http://localhost/api/test')
+	});
+	const reloaded = await (await listing.GET(event())).json();
+	assert.equal(reloaded.projects[0].revision, result.revision);
+	assert.deepEqual(
+		(await (await detail.GET(openEvent(result))).json()).workbook,
+		result.workbook,
+		'A saved AI-generated draft must reopen from disk without the original preview state'
+	);
 	assert.equal(workbook.setup.Draft, 'true');
 	assert.equal(workbook.setup.DefaultProduct, '', 'Do not guess a production product');
 	assert.equal(workbook.setup.TaskReference, '45');
@@ -391,11 +431,15 @@ try {
 	assert.ok(workbook.warnings.some((warning) => warning.includes('unresolved')));
 	const formulaDraft = XLSX.read(Buffer.from(firstBytes));
 	formulaDraft.Sheets.Orders.C2.f = '7';
-	await assert.rejects(() => readProductionWorkbook(XLSX.write(formulaDraft, { type: 'buffer', bookType: 'xlsx' })));
+	await assert.rejects(() =>
+		readProductionWorkbook(XLSX.write(formulaDraft, { type: 'buffer', bookType: 'xlsx' }))
+	);
 	const badMarker = XLSX.read(Buffer.from(firstBytes));
 	const markerRows = XLSX.utils.sheet_to_json(badMarker.Sheets.Setup, { header: 1 });
 	badMarker.Sheets.Setup[`B${markerRows.findIndex((row) => row[0] === 'Draft') + 1}`].v = 'yes';
-	await assert.rejects(() => readProductionWorkbook(XLSX.write(badMarker, { type: 'buffer', bookType: 'xlsx' })));
+	await assert.rejects(() =>
+		readProductionWorkbook(XLSX.write(badMarker, { type: 'buffer', bookType: 'xlsx' }))
+	);
 	const strict = XLSX.read(Buffer.from(firstBytes));
 	const setupRows = XLSX.utils.sheet_to_json(strict.Sheets.Setup, { header: 1 });
 	strict.Sheets.Setup[`B${setupRows.findIndex((row) => row[0] === 'Draft') + 1}`].v = 'false';
@@ -404,7 +448,11 @@ try {
 	);
 	catalog = [];
 	const withoutCatalog = await save.POST(saveEvent({ orders: local.orders }));
-	assert.equal(withoutCatalog.status, 201, 'Generating a list must not require production-library setup');
+	assert.equal(
+		withoutCatalog.status,
+		201,
+		'Generating a list must not require production-library setup'
+	);
 	assert.equal((await withoutCatalog.json()).workbook.setup.DefaultProduct, '');
 	catalog = products;
 	const ready = await save.POST(
@@ -427,9 +475,46 @@ try {
 	assert.equal(secondResult.workbook.setup['Product.crm-production:20'], 'Šorti');
 	assert.equal(secondResult.workbook.setup.DefaultProduct, 'crm-production:10');
 	assert.equal(inserted, 6);
+	// A missing older workbook must not hide the intact, newly generated workbooks on reload.
+	await rm(firstPath);
+	const partialResponse = await listing.GET(event());
+	assert.equal(partialResponse.status, 200);
+	const partial = (await partialResponse.json()).projects;
+	assert.equal(partial.length, 3);
+	assert.deepEqual(
+		partial.find((project) => project.id === result.id),
+		{
+			id: result.id,
+			fileId: result.fileId,
+			filename: result.filename,
+			size: firstBytes.length,
+			revision: null
+		}
+	);
+	assert.equal(
+		partial.find((project) => project.id === secondResult.id).revision,
+		secondResult.revision
+	);
+	assert.deepEqual(
+		(await (await detail.GET(openEvent(secondResult))).json()).workbook,
+		secondResult.workbook
+	);
+	await assert.rejects(() => detail.GET(openEvent(result)), { status: 404 });
+	await writeFile(firstPath, firstBytes);
+	const restored = (await (await listing.GET(event())).json()).projects;
+	assert.equal(restored.find((project) => project.id === result.id).revision, result.revision);
+	const lookup = db.query.file.findFirst;
+	try {
+		db.query.file.findFirst = async () => {
+			throw new Error('simulated read failure');
+		};
+		await assert.rejects(() => listing.GET(event()), /simulated read failure/);
+	} finally {
+		db.query.file.findFirst = lookup;
+	}
 	assert.equal(await readFile(csvPath, 'utf8'), text);
 	console.log(
-		'Production parsing checks passed: no paid preview/local calls, task-scoped sources, explicit consent, exact source revisions, cancellation, strict provider output, protected secrets, automatic draft saving, editable incomplete rows and non-destructive regeneration.'
+		'Production parsing checks passed: no paid preview/local calls, task-scoped sources, explicit consent, exact source revisions, cancellation, strict provider output, protected secrets, automatic draft saving, saved-draft reload, missing-file isolation/recovery, editable incomplete rows and non-destructive regeneration.'
 	);
 } finally {
 	globalThis.fetch = originalFetch;

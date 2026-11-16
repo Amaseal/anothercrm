@@ -1,12 +1,14 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card/index.js';
-	import type { TabGroupTranslation, TabGroup } from '$lib/server/db/schema.js';
+	import type { TabGroupTranslation } from '$lib/server/db/schema.js';
 	import X from '@lucide/svelte/icons/x';
 	import * as m from '$lib/paraglide/messages';
 	import FormError from '$lib/components/form-error.svelte';
-	import { locales, getLocale } from '@/paraglide/runtime.js';
+	import { getLocale } from '@/paraglide/runtime.js';
 	let { data, form } = $props();
 
 	const getTranslation = (translations: TabGroupTranslation[]) => {
@@ -28,7 +30,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full max-w-md gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/projekti/struktura"
+					href={resolve('/projekti/struktura')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
 				>

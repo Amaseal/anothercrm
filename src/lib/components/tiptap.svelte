@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, onDestroy } from 'svelte';
+	import { onMount } from 'svelte';
 	import type { Readable } from 'svelte/store';
 	import { createEditor, Editor, EditorContent } from 'svelte-tiptap';
 	import type { Editor as CoreEditor } from '@tiptap/core';
@@ -27,7 +27,7 @@
 	import TableIcon from '@lucide/svelte/icons/table';
 	import Trash2 from '@lucide/svelte/icons/trash-2';
 	import Plus from '@lucide/svelte/icons/plus';
-	import Minus from '@lucide/svelte/icons/minus';
+
 	import Columns2 from '@lucide/svelte/icons/columns-2';
 	import Rows2 from '@lucide/svelte/icons/rows-2';
 	import { X } from '@lucide/svelte';
@@ -36,9 +36,9 @@
 		value = $bindable(''),
 		editable = true,
 		class: className
-	} = $props<{ value?: string; editable?: boolean; class?: string }>();
+	}: { value?: string; editable?: boolean; class?: string } = $props();
 	let editor = $state() as Readable<Editor | null>;
-	let isInternalUpdate = false;
+
 	let skipNextUpdate = false;
 	let fileInput = $state<HTMLInputElement>();
 
@@ -71,7 +71,6 @@
 			const url = await uploadImage(file);
 			const editorInstance = $editor;
 			if (url && editorInstance) {
-				// @ts-ignore - Extension commands overlap
 				editorInstance.chain().focus().setImage({ src: url }).run();
 			}
 		}
@@ -79,32 +78,26 @@
 	}
 
 	function addTable() {
-		// @ts-ignore
 		$editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
 	}
 
 	function addColumn() {
-		// @ts-ignore
 		$editor?.chain().focus().addColumnAfter().run();
 	}
 
 	function deleteColumn() {
-		// @ts-ignore
 		$editor?.chain().focus().deleteColumn().run();
 	}
 
 	function addRow() {
-		// @ts-ignore
 		$editor?.chain().focus().addRowAfter().run();
 	}
 
 	function deleteRow() {
-		// @ts-ignore
 		$editor?.chain().focus().deleteRow().run();
 	}
 
 	function deleteTable() {
-		// @ts-ignore
 		$editor?.chain().focus().deleteTable().run();
 	}
 
@@ -130,7 +123,7 @@
 					skipNextUpdate = false;
 					return;
 				}
-				isInternalUpdate = true;
+
 				value = editor.getHTML();
 			},
 			editorProps: {
@@ -269,7 +262,7 @@
 				</Popover.Trigger>
 				<Popover.Content class="w-40 p-2">
 					<div class="grid grid-cols-5 gap-1">
-						{#each ['#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#94a3b8'] as color}
+						{#each ['#000000', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#94a3b8'] as color (color)}
 							<button
 								class="h-6 w-6 rounded-full border border-muted ring-offset-background transition-all hover:scale-110 focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:outline-none"
 								style="background-color: {color}"

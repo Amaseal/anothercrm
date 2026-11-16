@@ -1,12 +1,5 @@
 import { eq } from 'drizzle-orm';
-import {
-	task,
-	taskMaterial,
-	taskProduct,
-	file,
-	invoice,
-	taskAssignee
-} from '$lib/server/db/schema';
+import { task, taskMaterial, taskProduct, invoice, taskAssignee } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
@@ -120,7 +113,7 @@ export const actions: Actions = {
 
 				// Emit delete event
 				taskEvents.emitTaskUpdate(
-					{ id: taskId, tabId: item.tabId } as any,
+					{ id: taskId, tabId: item.tabId },
 					'delete',
 					assignees.map((a) => a.userId)
 				);

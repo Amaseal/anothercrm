@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
 	import { Input } from '$lib/components/ui/input';
 
@@ -62,7 +64,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full  gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/produkti"
+					href={resolve('/produkti')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 					><X /></a
 				>
@@ -74,7 +76,7 @@
 			<Card.Content class="p-6 pb-2">
 				<form method="POST" use:enhance>
 					<div class="flex gap-4">
-						{#each locales as locale}
+						{#each locales as locale (locale)}
 							<div class="flex-1">
 								<Label>{m['products.name']()} ({getLanguageName(locale)})</Label>
 								<Input

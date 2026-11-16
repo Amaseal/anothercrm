@@ -26,10 +26,10 @@ export function handleListParams(
 	}
 
 	if (currentSearch) {
-		let paramsToSave = new URLSearchParams(currentSearch);
+		const paramsToSave = new URLSearchParams(currentSearch);
 		excludeParams.forEach((param) => paramsToSave.delete(param));
 
-		let searchString = paramsToSave.toString() ? `?${paramsToSave.toString()}` : '';
+		const searchString = paramsToSave.toString() ? `?${paramsToSave.toString()}` : '';
 
 		// If there are search params in the URL, save them to the cookie
 		cookies.set(cookieName, searchString, {
@@ -44,7 +44,7 @@ export function handleListParams(
 		let savedSearch = cookies.get(cookieName);
 
 		if (savedSearch) {
-			let savedParams = new URLSearchParams(savedSearch);
+			const savedParams = new URLSearchParams(savedSearch);
 			let hasExcluded = false;
 			excludeParams.forEach((param) => {
 				if (savedParams.has(param)) {

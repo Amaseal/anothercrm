@@ -15,9 +15,9 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, params, cookies, locals }) => {
+	default: async ({ request, params, locals }) => {
 		if (!locals.user || locals.user.type !== 'admin') error(403);
-		let form = await request.formData();
+		const form = await request.formData();
 		const title = form.get('title') as string;
 		const article = form.get('article') as string;
 		const manufacturer = form.get('manufacturer') as string;
@@ -51,7 +51,7 @@ export const actions: Actions = {
 				.update(material)
 				.set(updateData)
 				.where(eq(material.id, Number(params.id)));
-		} catch (error) {
+		} catch {
 			return fail(500, { message: m['materials.errors.update_failed']() });
 		}
 		redirect(303, '/audumi');

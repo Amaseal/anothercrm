@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { writeFile } from 'fs/promises';
 import { join } from 'path';
 import type { RequestHandler } from './$types';
-import { env } from '$env/dynamic/private';
+
 import { db } from '$lib/server/db';
 import { file } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
@@ -51,7 +51,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		const filename = makeTaskFileFilename(uploadedFile.name);
 
 		// Get upload directory and ensure it exists
-		const uploadDir = await ensureUploadDir();
+		await ensureUploadDir();
 		const filePath = getUploadPath(filename);
 
 		// Write file to disk
@@ -242,7 +242,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 						isFile: stat.isFile()
 					}
 				});
-			} catch (statError) {
+			} catch {
 				return json(
 					{
 						success: false,

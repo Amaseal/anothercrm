@@ -1,5 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { cn } from '$lib/utils';
+	import type { Action } from 'svelte/action';
+	import { SvelteDate } from 'svelte/reactivity';
 	import {
 		Clock,
 		Hourglass,
@@ -17,10 +21,10 @@
 	import * as m from '$lib/paraglide/messages.js';
 
 	import { Button } from '$lib/components/ui/button';
-	import { Badge } from '$lib/components/ui/badge';
+
 	import * as Tooltip from '$lib/components/ui/tooltip';
 	import { Card } from './ui/card';
-	import { isClient, user } from '$lib/stores/user';
+	import { isClient } from '$lib/stores/user';
 	import { copyToClipboard } from '$lib/utilities';
 	import { isAdmin } from '$lib/stores/user';
 
@@ -31,13 +35,13 @@
 		task,
 		class: className,
 		dragHandleAction
-	} = $props<{
+	}: {
 		task: {
-			id: string;
+			id: number;
 			title: string;
 			price: number | null;
 			endDate: string | null;
-			createdAt: Date | string;
+			createdAt?: Date | string;
 			client?: { name: string } | null;
 			assignees?: { user: { name: string } }[] | null;
 			createdById?: string | null;
@@ -46,15 +50,15 @@
 			taskProducts?: { count: number | null }[] | null;
 		};
 		class?: string;
-		dragHandleAction?: any;
-	}>();
+		dragHandleAction?: Action<HTMLElement>;
+	} = $props();
 
 	const formatCurrency = (cents: number | null) => {
 		if (cents === null || cents === undefined) return '€0.00';
 		return currencyFormatter.format(cents / 100);
 	};
 
-	const formatDate = (date: Date | string | null) => {
+	const formatDate = (date: Date | string | null | undefined) => {
 		if (!date) return '';
 		return dateFormatter.format(new Date(date));
 	};
@@ -87,15 +91,14 @@
 
 	const getDeadlineStatus = (endDate: string | null) => {
 		if (!endDate) return 'normal';
-		const end = new Date(endDate).getTime();
 
 		// Reset time part efficiently?
 		// Actually, let's just compare dates.
-		const now = new Date();
+		const now = new SvelteDate();
 		now.setHours(0, 0, 0, 0);
 		const midnightNow = now.getTime();
 
-		const endDateObj = new Date(endDate);
+		const endDateObj = new SvelteDate(endDate);
 		endDateObj.setHours(0, 0, 0, 0);
 		const midnightEnd = endDateObj.getTime();
 
@@ -136,11 +139,15 @@
 					<Tooltip.Root>
 						<Tooltip.Trigger class="text-left">
 							{#if $isClient}
-								<a href={`/projekti/skatit/${task.id}`}>
+								<a
+									href={resolve(...([`/projekti/skatit/${task.id}`] as Parameters<typeof resolve>))}
+								>
 									<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
 								</a>
 							{:else}
-								<a href={`/projekti/labot/${task.id}`}>
+								<a
+									href={resolve(...([`/projekti/labot/${task.id}`] as Parameters<typeof resolve>))}
+								>
 									<h3 class="text-md truncate leading-tight font-semibold">{task.title}</h3>
 								</a>
 							{/if}
@@ -249,12 +256,12 @@
 						<Tooltip.Trigger class="truncate text-left">
 							<span
 								>{m['product_card.assignee']()}: {task.assignees
-									.map((a: { user: { name: any } }) => a.user.name)
+									.map((a) => a.user.name)
 									.join(', ')}</span
 							>
 						</Tooltip.Trigger>
 						<Tooltip.Content>
-							<p>{task.assignees.map((a: { user: { name: any } }) => a.user.name).join(', ')}</p>
+							<p>{task.assignees.map((a) => a.user.name).join(', ')}</p>
 						</Tooltip.Content>
 					</Tooltip.Root>
 				</Tooltip.Provider>

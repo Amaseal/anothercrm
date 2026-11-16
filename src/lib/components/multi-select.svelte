@@ -12,13 +12,13 @@
 		value = $bindable([]),
 		placeholder = 'Select items...',
 		disabled = false
-	} = $props<{
+	}: {
 		options?: { value: string | number; label: string }[];
 		groups?: { label: string; options: { value: string | number; label: string }[] }[];
 		value: (string | number)[];
 		placeholder?: string;
 		disabled?: boolean;
-	}>();
+	} = $props();
 	// Flatten all options for label lookup (covers both grouped and ungrouped)
 	const allOptions = $derived(
 		groups.length > 0
@@ -32,7 +32,7 @@
 
 	function toggleSelection(optionValue: string | number) {
 		if (value.includes(optionValue)) {
-			value = value.filter((v: any) => v !== optionValue);
+			value = value.filter((v) => v !== optionValue);
 		} else {
 			value = [...value, optionValue];
 		}
@@ -58,8 +58,8 @@
 							{m['projects.selected_count']({ count: value.length })}
 						</Badge>
 					{:else}
-						{#each value as v}
-							{@const option = allOptions.find((o: any) => o.value === v)}
+						{#each value as v (v)}
+							{@const option = allOptions.find((o) => o.value === v)}
 							{#if option}
 								<Badge variant="secondary" class="rounded-sm px-1 font-normal">
 									{option.label}
@@ -78,9 +78,9 @@
 			<Command.List class="max-h-[300px] overflow-y-auto">
 				<Command.Empty>{m['projects.no_item_found']()}</Command.Empty>
 				{#if groups.length > 0}
-					{#each groups as group}
+					{#each groups as group, groupIndex (groupIndex)}
 						<Command.Group heading={group.label}>
-							{#each group.options as option}
+							{#each group.options as option (option.value)}
 								<Command.Item value={option.label} onSelect={() => toggleSelection(option.value)}>
 									<Check
 										class={cn(
@@ -95,7 +95,7 @@
 					{/each}
 				{:else}
 					<Command.Group>
-						{#each options as option}
+						{#each options as option (option.value)}
 							<Command.Item value={option.label} onSelect={() => toggleSelection(option.value)}>
 								<Check
 									class={cn(

@@ -75,7 +75,7 @@ export const actions: Actions = {
 				.update(passwordResetToken)
 				.set({ used: true })
 				.where(eq(passwordResetToken.token, token));
-		} catch (err) {
+		} catch {
 			return fail(500, { message: 'Error updating password' });
 		}
 

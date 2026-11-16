@@ -2,22 +2,41 @@ import { db } from '$lib/server/db';
 import {
 	task,
 	userTabPreference,
-	tabGroup,
-	tab,
 	user,
-	client,
 	userClient,
-	taskAssignee
+	taskAssignee,
+	type Task,
+	type TabTranslation
 } from '$lib/server/db/schema';
 import { eq, or, and, inArray, desc, asc, count, sql, exists } from 'drizzle-orm';
 import { ilikeNormalize } from '$lib/server/dbUtils';
+export type ProjectBoardTask = Pick<
+	Task,
+	| 'id'
+	| 'title'
+	| 'price'
+	| 'endDate'
+	| 'created_at'
+	| 'tabId'
+	| 'clientId'
+	| 'createdById'
+	| 'isDone'
+> & {
+	client: { name: string } | null;
+	creator: { name: string; type: 'admin' | 'client' } | null;
+	assignees: { userId: string; user: { name: string } }[];
+	taskProducts: { count: number | null }[];
+	createdAt?: Date;
+	isMoved?: boolean;
+};
+
 export interface ProjectBoardColumn {
 	id: number;
 	name: string;
 	color: string;
-	tasks: any[];
+	tasks: ProjectBoardTask[];
 	isPersonal?: boolean;
-	translations?: any[];
+	translations?: TabTranslation[];
 }
 
 export async function getProjectBoardData(
@@ -149,12 +168,6 @@ export async function getProjectBoardData(
 					// Client-created tasks that have no assignees yet (any admin can see these)
 					const clientCreatedUnassigned = and(creatorIsClient(t), sql`NOT ${hasAnyAssignee}`);
 
-					const baseConditions = [
-						eq(t.createdById, currentUser.id), // A1: created by me
-						isAssignedToMe, // A2 & A4: assigned to me
-						clientCreatedUnassigned // A3: client-created, no assignees
-					];
-
 					const conditions = [
 						or(eq(t.createdById, currentUser.id), isAssignedToMe, clientCreatedUnassigned),
 						eq(t.isDone, false)
@@ -217,7 +230,7 @@ export async function getProjectBoardData(
 	// 3. Structure & Mapping
 
 	const columns: ProjectBoardColumn[] = [];
-	const tasksMap = new Map<number, any[]>(); // tabId (or groupId for clients) -> tasks
+	const tasksMap = new Map<number, ProjectBoardTask[]>(); // tabId (or groupId for clients) -> tasks
 
 	// Find Default Tab (First shared tab in first group)
 	let defaultTabId = 0;
@@ -228,7 +241,7 @@ export async function getProjectBoardData(
 		}
 	}
 
-	const isClientCreated = (t: any) => t.creator?.type === 'client';
+	const isClientCreated = (t: ProjectBoardTask) => t.creator?.type === 'client';
 
 	// Helper: Map Tab ID to Group ID
 	const tabToGroupMap = new Map<number, number>();
@@ -274,7 +287,7 @@ export async function getProjectBoardData(
 				// Default Admin Logic
 				const clientOptions = isClientCreated(t);
 				const isUnassigned = !t.assignees || t.assignees.length === 0;
-				const isAssignedToMe = t.assignees?.some((a: any) => a.userId === currentUser.id);
+				const isAssignedToMe = t.assignees?.some((a) => a.userId === currentUser.id);
 				const isHidden = hiddenTabIds.has(t.tabId); // Check original tab ID for hidden preference
 
 				// If it was remaps to default, we should check if default is hidden?

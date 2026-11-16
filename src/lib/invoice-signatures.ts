@@ -1,4 +1,5 @@
 import * as m from './paraglide/messages.js';
+import type { Content, ContentColumns } from 'pdfmake/interfaces';
 
 export function getInvoiceSignatures(language: string, companyName: string, today = new Date()) {
 	const options = { locale: language === 'en' ? ('en' as const) : ('lv' as const) };
@@ -23,7 +24,7 @@ export function getInvoiceSignatures(language: string, companyName: string, toda
 	];
 }
 
-export function getInvoiceSignatureBlock(language: string, companyName: string) {
+export function getInvoiceSignatureBlock(language: string, companyName: string): ContentColumns {
 	return {
 		unbreakable: true,
 		columnGap: 40,
@@ -32,7 +33,7 @@ export function getInvoiceSignatureBlock(language: string, companyName: string) 
 			width: '*',
 			stack: [
 				{ text: column.title, bold: true, fontSize: 10, margin: [0, 0, 0, 8] },
-				...column.fields.flatMap((field) => [
+				...column.fields.flatMap<Content>((field) => [
 					{ text: field.value || ' ', fontSize: 10, margin: [0, 8, 0, 2] },
 					{ canvas: [{ type: 'line', x1: 0, y1: 0, x2: 200, y2: 0, lineWidth: 0.5 }] },
 					{ text: field.label, fontSize: 8, margin: [0, 2, 0, 4] }

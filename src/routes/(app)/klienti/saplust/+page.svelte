@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { enhance } from '$app/forms';
 	import { Button } from '$lib/components/ui/button';
 	import * as Card from '$lib/components/ui/card/index.js';
@@ -9,7 +11,6 @@
 	import Merge from '@lucide/svelte/icons/git-merge';
 	import UserCheck from '@lucide/svelte/icons/user-check';
 	import * as m from '$lib/paraglide/messages';
-	import { goto } from '$app/navigation';
 
 	let {
 		data,
@@ -38,7 +39,7 @@
 		<Card.Root class="custom-scroll relative max-h-[90vh] w-full gap-2 overflow-y-auto">
 			<Card.Header>
 				<a
-					href="/klienti"
+					href={resolve('/klienti')}
 					class="absolute top-7 right-5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<X />

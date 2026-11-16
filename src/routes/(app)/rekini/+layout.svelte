@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { base, resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+
 	import { Label } from '$lib/components/ui/label/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
-	import ChevronUp from '@lucide/svelte/icons/chevron-up';
+
 	import ChevronDown from '@lucide/svelte/icons/chevron-down';
 	import { debounce, toCurrency } from '$lib/utilities';
 	import { goto } from '$app/navigation';
@@ -24,6 +26,7 @@
 	import { toast } from 'svelte-sonner';
 	import { invalidateAll } from '$app/navigation';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
+	import * as Select from '$lib/components/ui/select/index.js';
 	import { Calendar } from '$lib/components/ui/calendar';
 	import { CalendarIcon } from '@lucide/svelte';
 	import * as Popover from '$lib/components/ui/popover/index.js';
@@ -41,6 +44,12 @@
 	let exportFromValue = $state<DateValue | undefined>(undefined);
 	let exportToValue = $state<DateValue | undefined>(undefined);
 	let exporting = $state(false);
+	let exportType = $state('all');
+	const exportTypes = $derived([
+		{ value: 'invoice', label: m['invoices.export_invoices']() },
+		{ value: 'all', label: m['invoices.export_all']() },
+		{ value: 'proforma', label: m['invoices.export_proformas']() }
+	]);
 	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
 
 	async function handleExport() {
@@ -59,7 +68,7 @@
 		exportDialogOpen = false;
 
 		try {
-			const res = await fetch(`/api/invoices/export?from=${from}&to=${to}`);
+			const res = await fetch(`/api/invoices/export?from=${from}&to=${to}&type=${exportType}`);
 
 			if (!res.ok) {
 				const data = await res.json().catch(() => ({}));
@@ -104,9 +113,15 @@
 			const data = await res.json();
 
 			if (res.ok) {
-				const successCount = data.results.filter((r: any) => r.status === 'success').length;
-				const errorCount = data.results.filter((r: any) => r.status === 'error').length;
-				const skippedCount = data.results.filter((r: any) => r.status === 'skipped').length;
+				const successCount = data.results.filter(
+					(r: { status: string }) => r.status === 'success'
+				).length;
+				const errorCount = data.results.filter(
+					(r: { status: string }) => r.status === 'error'
+				).length;
+				const skippedCount = data.results.filter(
+					(r: { status: string }) => r.status === 'skipped'
+				).length;
 
 				if (successCount > 0) toast.success(`Successfully imported ${successCount} invoices.`);
 				if (skippedCount > 0) toast.info(`Skipped ${skippedCount} invoices (already exist).`);
@@ -153,24 +168,21 @@
 				sortDirection: string;
 			};
 		};
-		children?: () => any;
+		children?: import('svelte').Snippet;
 	} = $props();
 
-	function handleDownload(invoice: any) {
+	function handleDownload(invoice: Pick<InvoiceWithRelations, 'id'>) {
 		window.open(`/api/invoices/${invoice.id}?v=${Date.now()}`, '_blank');
 	}
 
 	// Initialize state from server data
-	let currentPage = $state(data.pagination.page);
-	let pageSize = $state(data.pagination.pageSize);
+
 	let sortColumn = $state(data.pagination.sortColumn);
 	let sortDirection = $state(data.pagination.sortDirection as 'asc' | 'desc');
 	let searchTerm = $state(data.pagination.search);
 
 	// Keep local state in sync with server data
 	$effect(() => {
-		currentPage = data.pagination.page;
-		pageSize = data.pagination.pageSize;
 		sortColumn = data.pagination.sortColumn;
 		sortDirection = data.pagination.sortDirection as 'asc' | 'desc';
 		searchTerm = data.pagination.search;
@@ -187,7 +199,9 @@
 	}, 1200);
 
 	// Update URL and navigate to the new page
-	function updateUrlAndNavigate(params: Record<string, any>) {
+	function updateUrlAndNavigate(
+		params: Record<string, string | number | boolean | null | undefined>
+	) {
 		const url = new URL(page.url);
 
 		// Update the provided parameters
@@ -204,7 +218,14 @@
 		}
 
 		// Navigate to the new URL
-		goto(url.toString(), { replaceState: true });
+		goto(
+			resolve(
+				...([`${url.pathname.slice(base.length)}${url.search}${url.hash}`] as Parameters<
+					typeof resolve
+				>)
+			),
+			{ replaceState: true }
+		);
 	}
 
 	function clearSearch() {
@@ -294,12 +315,22 @@
 				<Dialog.Content class="sm:max-w-sm">
 					<Dialog.Header>
 						<Dialog.Title>Export invoices as PDF</Dialog.Title>
-						<Dialog.Description
-							>Select a date range. All invoices with an issue date in this range will be exported
-							as a ZIP of PDFs.</Dialog.Description
-						>
+						<Dialog.Description>{m['invoices.export_description']()}</Dialog.Description>
 					</Dialog.Header>
 					<div class="grid gap-4 py-4">
+						<div class="grid gap-2">
+							<Label for="export-type">{m['invoices.type']()}</Label>
+							<Select.Root type="single" bind:value={exportType}>
+								<Select.Trigger id="export-type" class="w-full">
+									{exportTypes.find((type) => type.value === exportType)?.label}
+								</Select.Trigger>
+								<Select.Content>
+									{#each exportTypes as type (type.value)}
+										<Select.Item value={type.value} label={type.label}>{type.label}</Select.Item>
+									{/each}
+								</Select.Content>
+							</Select.Root>
+						</div>
 						<div class="grid grid-cols-4 items-center gap-4">
 							<Label for="export-from" class="text-right">From</Label>
 							<Popover.Root>

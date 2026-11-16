@@ -3,7 +3,6 @@ import { invoice, client } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
 import { error, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import * as m from '$lib/paraglide/messages';
 
 export const load: PageServerLoad = async ({ params }) => {
 	const item = await db.query.invoice.findFirst({

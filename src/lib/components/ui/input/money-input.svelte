@@ -14,7 +14,7 @@
 
 	let rawValue = $state('');
 	let inputValue = $state('');
-	let inputRef: any;
+	let inputRef = $state<HTMLInputElement>();
 
 	// Get currency symbol from locale/currency
 	function getCurrencySymbol(locale: string, currency: string) {
@@ -29,23 +29,6 @@
 	}
 
 	const currencySymbol = getCurrencySymbol(locale, currency);
-
-	function formatNumber(val: number) {
-		return val === null || isNaN(val)
-			? ''
-			: new Intl.NumberFormat(locale, {
-					minimumFractionDigits: 2,
-					maximumFractionDigits: 2
-				}).format(val);
-	}
-
-	function parseValue(str: string): number {
-		// Remove all non-numeric except comma, dot, and minus
-		let cleaned = str.replace(/[^\d,.-]/g, '');
-		cleaned = cleaned.replace(',', '.');
-		const num = parseFloat(cleaned);
-		return isNaN(num) ? 0 : num;
-	}
 
 	function formatDisplay(raw: string): string {
 		if (raw.length === 0) return '';
@@ -91,7 +74,7 @@
 <div class="relative w-full">
 	<input type="hidden" {name} bind:value={rawValue} />
 	<Input
-		bind:this={inputRef}
+		bind:ref={inputRef}
 		class={`pr-2 pl-8 ${className}`}
 		{id}
 		{placeholder}

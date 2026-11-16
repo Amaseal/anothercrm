@@ -77,7 +77,7 @@ export const actions: Actions = {
 		let items: InvoiceItemInput[] = [];
 		try {
 			items = itemsRaw ? JSON.parse(itemsRaw as string) : [];
-		} catch (e) {
+		} catch {
 			return fail(400, { message: 'Invalid items data' });
 		}
 

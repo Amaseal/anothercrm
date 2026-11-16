@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { base, resolve } from '$app/paths';
+
 	import * as Card from '$lib/components/ui/card/index.js';
 	import * as Sidebar from '$lib/components/ui/sidebar/index.js';
 	import * as Table from '$lib/components/ui/table/index.js';
@@ -6,14 +8,9 @@
 	import { Separator } from '$lib/components/ui/separator';
 	import { Badge } from '$lib/components/ui/badge';
 	import { Button } from '$lib/components/ui/button';
-	import Users from '@lucide/svelte/icons/users';
-	import UserCheck from '@lucide/svelte/icons/user-check';
-	import TrendingUp from '@lucide/svelte/icons/trending-up';
+
 	import DollarSign from '@lucide/svelte/icons/dollar-sign';
-	import Clock from '@lucide/svelte/icons/clock';
-	import AlertTriangle from '@lucide/svelte/icons/alert-triangle';
-	import Folder from '@lucide/svelte/icons/folder';
-	import Zap from '@lucide/svelte/icons/zap';
+
 	import ListTodo from '@lucide/svelte/icons/list-todo';
 	import { scaleLinear, scaleBand } from 'd3-scale';
 	import * as DropdownMenu from '$lib/components/ui/dropdown-menu/index.js';
@@ -23,15 +20,11 @@
 	import * as Select from '$lib/components/ui/select/index.js';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { page } from '$app/state';
+	import { SvelteDate } from 'svelte/reactivity';
 
 	let { data } = $props();
 	// Chart configuration
-	const chartConfig = {
-		profit: {
-			label: 'Peļņa',
-			color: '#db2777'
-		}
-	};
+
 	// Toggle between showing profit (revenue - costs) or raw revenue
 	// Driven by URL param + cookie on the server, reflected here as derived state
 	const profitMode = $derived(data.profitMode);
@@ -81,7 +74,7 @@
 	function isOverdue(dateStr: string | null) {
 		if (!dateStr) return false;
 		const date = new Date(dateStr);
-		const today = new Date();
+		const today = new SvelteDate();
 		today.setHours(0, 0, 0, 0);
 		return date < today;
 	}
@@ -95,13 +88,6 @@
 	}
 
 	// Check if date is tomorrow
-	function isTomorrow(dateStr: string | null) {
-		if (!dateStr) return false;
-		const date = new Date(dateStr);
-		const tomorrow = new Date();
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		return date.toDateString() === tomorrow.toDateString();
-	}
 
 	function getInitials(name: string) {
 		return name
@@ -165,26 +151,42 @@
 	const currentTabId = $derived(data.selectedTabTasks.id.toString());
 	const lang = getLocale();
 
-	function getGroupTranslation(group: { translations: any[]; id: number | string }) {
-		const trans = group.translations.find((t: any) => t.language === lang);
+	function getGroupTranslation(group: {
+		translations: { language: string; name: string }[];
+		id: number | string;
+	}) {
+		const trans = group.translations.find((t) => t.language === lang);
 		return trans ? trans.name : group.id.toString();
 	}
 
-	function getTabTranslation(tab: { translations: any[]; id: number | string }) {
-		const trans = tab.translations.find((t: any) => t.language === lang);
+	function getTabTranslation(tab: {
+		translations: { language: string; name: string }[];
+		id: number | string;
+	}) {
+		const trans = tab.translations.find((t) => t.language === lang);
 		return trans ? trans.name : tab.id.toString();
 	}
 
 	function setProfitMode(mode: 'profit' | 'revenue') {
 		const u = new URL(page.url);
 		u.searchParams.set('profitMode', mode);
-		goto(u.toString(), { keepFocus: true, noScroll: true });
+		goto(
+			resolve(
+				...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<typeof resolve>)
+			),
+			{ keepFocus: true, noScroll: true }
+		);
 	}
 
 	function setRevenueSource(source: 'tasks' | 'invoices' | 'both') {
 		const u = new URL(page.url);
 		u.searchParams.set('revenueSource', source);
-		goto(u.toString(), { keepFocus: true, noScroll: true });
+		goto(
+			resolve(
+				...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<typeof resolve>)
+			),
+			{ keepFocus: true, noScroll: true }
+		);
 	}
 
 	const revenueSourceLabel = $derived(
@@ -320,7 +322,7 @@
 					<DropdownMenu.Content align="end" class="max-h-[300px] w-56 overflow-y-auto">
 						<DropdownMenu.Label>Grupas (rindas)</DropdownMenu.Label>
 						<DropdownMenu.Separator />
-						{#each data.tabGroupsStats as group}
+						{#each data.tabGroupsStats as group (group.id)}
 							{#if group.id !== 41 && group.id !== 62}
 								<DropdownMenu.CheckboxItem
 									checked={!data.hiddenTabGroups.includes(group.id)}
@@ -349,7 +351,7 @@
 					</Table.Row>
 				</Table.Header>
 				<Table.Body>
-					{#each data.urgentTasks as task}
+					{#each data.urgentTasks as task (task.id)}
 						<Table.Row>
 							<Table.Cell class="pl-6 font-medium">
 								<div class="flex flex-col">
@@ -451,7 +453,7 @@
 									viewBox="0 0 100 100"
 									preserveAspectRatio="none"
 								>
-									{#each yScale.ticks(5) as tick}
+									{#each yScale.ticks(5) as tick (tick)}
 										<line
 											x1="0"
 											x2="100"
@@ -467,7 +469,7 @@
 
 								<!-- HTML Bars & Tooltips -->
 								<div class="absolute inset-0">
-									{#each chartData as d}
+									{#each chartData as d, entryIndex0 (entryIndex0)}
 										{@const barValue = profitMode === 'profit' ? d.profit : d.revenue}
 										<div
 											class="group absolute bottom-0 rounded-t-sm bg-primary transition-opacity hover:opacity-80"
@@ -507,7 +509,7 @@
 
 							<!-- X Axis Labels (HTML) -->
 							<div class="relative mt-2 h-6 w-full select-none">
-								{#each chartData as d}
+								{#each chartData as d, entryIndex1 (entryIndex1)}
 									<div
 										class="absolute -translate-x-1/2 text-center text-[10px] whitespace-nowrap text-muted-foreground"
 										style="left: {(xScale(d.month) ?? 0) + xScale.bandwidth() / 2}%; width: auto;"
@@ -556,7 +558,7 @@
 									preserveAspectRatio="none"
 								>
 									<!-- Grid lines -->
-									{#each yScale.ticks(5) as tick}
+									{#each yScale.ticks(5) as tick (tick)}
 										<line
 											x1="0"
 											x2="100"
@@ -572,7 +574,7 @@
 
 								<!-- HTML Bars & Tooltips -->
 								<div class="absolute inset-0">
-									{#each chartData as d}
+									{#each chartData as d, entryIndex2 (entryIndex2)}
 										<div
 											class="group absolute bottom-0 rounded-t-sm bg-primary transition-opacity hover:opacity-80"
 											style="
@@ -601,7 +603,7 @@
 
 							<!-- X Axis Labels (HTML) -->
 							<div class="relative mt-2 h-6 w-full select-none">
-								{#each chartData as d}
+								{#each chartData as d, entryIndex3 (entryIndex3)}
 									<div
 										class="absolute -translate-x-1/2 text-center text-[10px] whitespace-nowrap text-muted-foreground"
 										style="left: {(xScale(d.month) ?? 0) + xScale.bandwidth() / 2}%; width: auto;"
@@ -643,7 +645,14 @@
 							onclick={() => {
 								const u = new URL(page.url);
 								u.searchParams.set('managersRange', 'month');
-								goto(u.toString(), { keepFocus: true, noScroll: true });
+								goto(
+									resolve(
+										...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<
+											typeof resolve
+										>)
+									),
+									{ keepFocus: true, noScroll: true }
+								);
 							}}>Mēnesis</Button
 						>
 						<Button
@@ -653,7 +662,14 @@
 							onclick={() => {
 								const u = new URL(page.url);
 								u.searchParams.set('managersRange', 'month-all');
-								goto(u.toString(), { keepFocus: true, noScroll: true });
+								goto(
+									resolve(
+										...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<
+											typeof resolve
+										>)
+									),
+									{ keepFocus: true, noScroll: true }
+								);
 							}}>Mēnesis (visi)</Button
 						>
 						<Button
@@ -663,14 +679,21 @@
 							onclick={() => {
 								const u = new URL(page.url);
 								u.searchParams.set('managersRange', 'alltime');
-								goto(u.toString(), { keepFocus: true, noScroll: true });
+								goto(
+									resolve(
+										...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<
+											typeof resolve
+										>)
+									),
+									{ keepFocus: true, noScroll: true }
+								);
 							}}>Visu laiku</Button
 						>
 					</div>
 				</Card.Header>
 				<Card.Content>
 					<div class="space-y-4">
-						{#each data.topManagers as manager, index}
+						{#each data.topManagers as manager, index (index)}
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-3">
 									<div
@@ -714,7 +737,14 @@
 							onclick={() => {
 								const u = new URL(page.url);
 								u.searchParams.set('assigneesRange', 'month');
-								goto(u.toString(), { keepFocus: true, noScroll: true });
+								goto(
+									resolve(
+										...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<
+											typeof resolve
+										>)
+									),
+									{ keepFocus: true, noScroll: true }
+								);
 							}}>Mēnesis</Button
 						>
 						<Button
@@ -724,7 +754,14 @@
 							onclick={() => {
 								const u = new URL(page.url);
 								u.searchParams.set('assigneesRange', 'month-all');
-								goto(u.toString(), { keepFocus: true, noScroll: true });
+								goto(
+									resolve(
+										...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<
+											typeof resolve
+										>)
+									),
+									{ keepFocus: true, noScroll: true }
+								);
 							}}>Mēnesis (visi)</Button
 						>
 						<Button
@@ -734,14 +771,21 @@
 							onclick={() => {
 								const u = new URL(page.url);
 								u.searchParams.set('assigneesRange', 'alltime');
-								goto(u.toString(), { keepFocus: true, noScroll: true });
+								goto(
+									resolve(
+										...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<
+											typeof resolve
+										>)
+									),
+									{ keepFocus: true, noScroll: true }
+								);
 							}}>Visu laiku</Button
 						>
 					</div>
 				</Card.Header>
 				<Card.Content>
 					<div class="space-y-4">
-						{#each data.topResponsiblePersons as person, index}
+						{#each data.topResponsiblePersons as person, index (index)}
 							<div class="flex items-center justify-between">
 								<div class="flex items-center gap-3">
 									<Avatar.Root class="h-9 w-9">
@@ -779,10 +823,17 @@
 							onchange={(e) => {
 								const u = new URL(page.url);
 								u.searchParams.set('clientsLimit', (e.target as HTMLSelectElement).value);
-								goto(u.toString(), { keepFocus: true, noScroll: true });
+								goto(
+									resolve(
+										...([`${u.pathname.slice(base.length)}${u.search}${u.hash}`] as Parameters<
+											typeof resolve
+										>)
+									),
+									{ keepFocus: true, noScroll: true }
+								);
 							}}
 						>
-							{#each [5, 10, 20, 30, 50] as n}
+							{#each [5, 10, 20, 30, 50] as n (n)}
 								<option value={n}>{n}</option>
 							{/each}
 						</select>
@@ -791,7 +842,7 @@
 				<Card.Content class="min-h-0 flex-1 p-0 pb-4">
 					<div class="custom-scroll h-full overflow-y-auto px-6">
 						<div class="space-y-1">
-							{#each data.bestClients as client, index}
+							{#each data.bestClients as client, index (client.id)}
 								<div class="flex items-center justify-between py-1.5">
 									<div class="flex items-center gap-3">
 										<div
@@ -846,7 +897,7 @@
 						</div>
 						<!-- Legend -->
 						<div class="flex flex-col gap-4">
-							{#each data.tabGroupsStats as group}
+							{#each data.tabGroupsStats as group (group.id)}
 								{#if group.taskCount > 0}
 									<div class="flex items-center justify-between gap-4">
 										<div class="flex items-center gap-2">
@@ -884,7 +935,14 @@
 							onValueChange={(val) => {
 								const url = new URL(page.url);
 								url.searchParams.set('tabId', val.toString());
-								goto(url.toString(), { keepFocus: true, noScroll: true });
+								goto(
+									resolve(
+										...([
+											`${url.pathname.slice(base.length)}${url.search}${url.hash}`
+										] as Parameters<typeof resolve>)
+									),
+									{ keepFocus: true, noScroll: true }
+								);
 							}}
 						>
 							<Select.Trigger class="w-[220px]">
@@ -895,7 +953,7 @@
 									: m.dashboard_no_tab_selected()}
 							</Select.Trigger>
 							<Select.Content class="max-h-[300px]">
-								{#each data.allTabsForSelect as st}
+								{#each data.allTabsForSelect as st (st.id)}
 									<Select.Item value={st.id.toString()} label={getTabTranslation(st)}
 										>{getTabTranslation(st)}</Select.Item
 									>
@@ -924,12 +982,14 @@
 								</Table.Row>
 							</Table.Header>
 							<Table.Body>
-								{#each data.selectedTabTasks.tasks as task}
+								{#each data.selectedTabTasks.tasks as task (task.id)}
 									<Table.Row>
 										<Table.Cell class="font-medium">
 											<div class="flex flex-col">
 												<a
-													href={`/projekti/labot/${task.id}`}
+													href={resolve(
+														...([`/projekti/labot/${task.id}`] as Parameters<typeof resolve>)
+													)}
 													class="transition-colors hover:text-primary hover:underline"
 													>{task.title}</a
 												>

@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
-import { invoice, client, task, userClient } from '$lib/server/db/schema';
+import { invoice, client, userClient } from '$lib/server/db/schema';
 import type { LayoutServerLoad } from './$types';
 import { and, desc, asc, sql, count, or, eq, inArray } from 'drizzle-orm';
 import { handleListParams } from '$lib/server/paramState';
@@ -21,7 +21,7 @@ export const load: LayoutServerLoad = async ({ url, locals, cookies }) => {
 
 	// Build the filter conditions
 	// We'll collect conditions for the WHERE clause
-	let baseConditions = [];
+	const baseConditions = [];
 
 	// Client-specific filtering
 	if (locals.user.type === 'client') {

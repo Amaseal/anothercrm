@@ -8,7 +8,7 @@ import * as m from '$lib/paraglide/messages';
 
 export const actions: Actions = {
 	default: async ({ request }) => {
-		let formData = await request.formData();
+		const formData = await request.formData();
 		if (!locales.every((locale) => formData.get(`title-${locale}`))) {
 			return fail(400, {
 				message: m['groups.errors.required']()
@@ -42,7 +42,7 @@ export const actions: Actions = {
 			await db.insert(tabGroupTranslation).values(translations);
 
 			// Redirect on success
-		} catch (error) {
+		} catch {
 			return fail(500, {
 				message: m['groups.errors.something_went_wrong']()
 			});

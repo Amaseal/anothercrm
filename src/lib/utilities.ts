@@ -15,13 +15,13 @@ export function formatDate(dateString: number | Date | string | null | undefined
 	return formattedDate;
 }
 
-export function debounce<T extends (...args: any[]) => any>(
-	func: T,
+export function debounce<Args extends unknown[]>(
+	func: (...args: Args) => unknown,
 	wait: number
-): ((...args: Parameters<T>) => void) & { cancel: () => void } {
+): ((...args: Args) => void) & { cancel: () => void } {
 	let timeout: ReturnType<typeof setTimeout> | null = null;
 
-	const debounced = function (...args: Parameters<T>): void {
+	const debounced = function (...args: Args): void {
 		const later = () => {
 			timeout = null;
 			func(...args);

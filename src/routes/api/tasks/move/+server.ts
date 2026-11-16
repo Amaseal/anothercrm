@@ -60,10 +60,13 @@ export const POST = async ({ request, locals }) => {
 
 		if (oldGroupId && newGroupId && oldGroupId !== newGroupId) {
 			// Helper to get name
-			const getName = (g: any, lang: string = 'lv') => {
+			const getName = (
+				g: { translations: { language: string; name: string }[] },
+				lang: string = 'lv'
+			) => {
 				const t =
-					g.translations.find((t: any) => t.language === lang) ||
-					g.translations.find((t: any) => t.language === 'lv') ||
+					g.translations.find((t) => t.language === lang) ||
+					g.translations.find((t) => t.language === 'lv') ||
 					g.translations[0];
 				return t ? t.name : 'Unknown Group';
 			};

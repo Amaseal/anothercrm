@@ -20,7 +20,7 @@ export const actions: Actions = {
 		}
 		try {
 			await db.delete(product).where(eq(product.id, Number(params.id)));
-		} catch (error) {
+		} catch {
 			return fail(400, { message: m['components.delete_modal.error']({ item: params.id }) });
 		}
 		redirect(303, '/produkti');

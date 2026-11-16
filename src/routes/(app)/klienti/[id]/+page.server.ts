@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
-import { client, task, taskProduct, product, invoice, invoiceItems } from '$lib/server/db/schema';
-import { eq, sql, isNull } from 'drizzle-orm';
+import { client, task, taskProduct, product, invoice } from '$lib/server/db/schema';
+import { eq, sql } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 

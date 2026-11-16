@@ -7,7 +7,11 @@ class TaskEmitter extends EventEmitter {
 		this.setMaxListeners(100); // Allow many connections
 	}
 
-	emitTaskUpdate(task: any, type: 'create' | 'update' | 'delete', assigneeUserIds: string[] = []) {
+	emitTaskUpdate(
+		task: (Pick<Task, 'id' | 'tabId'> & Partial<Task>) | undefined,
+		type: 'create' | 'update' | 'delete',
+		assigneeUserIds: string[] = []
+	) {
 		this.emit('task', { type, task, assigneeUserIds });
 	}
 }

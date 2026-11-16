@@ -68,16 +68,28 @@ export const POST: RequestHandler = async ({ locals }) => {
 		const conversations = result.ocs?.data || [];
 
 		// Format conversations for the frontend
-		const formattedConversations = conversations.map((conv: any) => ({
-			token: conv.token,
-			name: conv.displayName || conv.name,
-			description: conv.description || '',
-			type: conv.type, // 1=one-to-one, 2=group, 3=public, 4=changelog
-			participantCount: conv.participantCount || 0,
-			hasPassword: !!conv.hasPassword,
-			canStartCall: conv.canStartCall,
-			avatarUrl: conv.avatar ? `${baseUrl}${conv.avatar}` : null
-		}));
+		const formattedConversations = conversations.map(
+			(conv: {
+				token: string;
+				displayName?: string;
+				name: string;
+				description?: string;
+				type: number;
+				participantCount?: number;
+				hasPassword?: boolean;
+				canStartCall?: boolean;
+				avatar?: string;
+			}) => ({
+				token: conv.token,
+				name: conv.displayName || conv.name,
+				description: conv.description || '',
+				type: conv.type, // 1=one-to-one, 2=group, 3=public, 4=changelog
+				participantCount: conv.participantCount || 0,
+				hasPassword: !!conv.hasPassword,
+				canStartCall: conv.canStartCall,
+				avatarUrl: conv.avatar ? `${baseUrl}${conv.avatar}` : null
+			})
+		);
 
 		return json({
 			success: true,

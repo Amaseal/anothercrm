@@ -1,7 +1,7 @@
 <script lang="ts">
 	import * as m from '$lib/paraglide/messages';
+	import Tiptap from './tiptap.svelte';
 	import { DateFormatter, type DateValue, getLocalTimeZone } from '@internationalized/date';
-	import { cn } from '$lib/utils';
 
 	// Define the shape of data we expect.
 	// This needs to be flexible enough to handle both "draft" state (from Add page) and "saved" state (from Edit page)
@@ -19,19 +19,19 @@
 		description,
 		previewUrl,
 		totalPrice
-	} = $props<{
+	}: {
 		title: string;
 		clientName: string;
 		dateValue: DateValue | undefined;
-		managerName: string;
+		managerName?: string;
 		assigneeName?: string;
 		seamstress: string;
 		materials: string[];
-		products: { name: string; count: number; price: number }[];
+		products: { name: string; count: number | null; price: number }[];
 		description: string;
 		previewUrl?: string;
 		totalPrice: number;
-	}>();
+	} = $props();
 
 	const df = new DateFormatter('lv-LV', { dateStyle: 'long' });
 
@@ -98,9 +98,10 @@
 				<h3 class="mb-2 border-b text-lg font-bold text-gray-700">
 					{m['projects.description_label']()}
 				</h3>
-				<div class="prose max-w-none text-sm leading-relaxed">
-					<!-- Render HTML from Tiptap -->
-					{@html description}
+				<div
+					class="prose max-w-none text-sm leading-relaxed [&_.custom-scroll]:max-h-none [&_.custom-scroll]:overflow-visible [&>div]:h-auto [&>div]:overflow-visible [&>div]:bg-transparent"
+				>
+					<Tiptap value={description} editable={false} class="p-0 text-sm text-black" />
 				</div>
 			</div>
 
@@ -143,7 +144,7 @@
 						<span class="block font-bold text-gray-700">{m['projects.materials_label']()}</span>
 						{#if materials.length > 0}
 							<ul class="list-inside list-disc">
-								{#each materials as material}
+								{#each materials as material, entryIndex0 (entryIndex0)}
 									<li>{material}</li>
 								{/each}
 							</ul>
@@ -166,7 +167,7 @@
 							</tr>
 						</thead>
 						<tbody>
-							{#each products as product}
+							{#each products as product, entryIndex1 (entryIndex1)}
 								<tr class="border-b border-gray-100 last:border-0">
 									<td class="py-1.5">{product.name}</td>
 									<td class="py-1.5 text-center">{product.count}</td>

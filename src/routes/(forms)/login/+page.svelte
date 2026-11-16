@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { enhance } from '$app/forms';
 	import * as Card from '@/components/ui/card';
 	import { Input } from '@/components/ui/input';
@@ -11,7 +13,7 @@
 
 	import type { PageProps } from './$types';
 
-	let { data, form }: PageProps = $props();
+	let { form }: PageProps = $props();
 </script>
 
 <svelte:head>
@@ -45,7 +47,7 @@
 				{/if}
 				<div class="mt-4 flex items-center justify-between">
 					<Button type="submit">{m['login.value']()}</Button>
-					<p><a href="/forgot-password">{m['login.forgot_password']()}</a></p>
+					<p><a href={resolve('/forgot-password')}>{m['login.forgot_password']()}</a></p>
 				</div>
 			</form>
 		</Card.Content>

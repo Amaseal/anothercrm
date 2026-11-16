@@ -1,23 +1,17 @@
 import { db } from '$lib/server/db';
 import { assertOrdinaryStoragePath } from '$lib/server/production-projects';
 import {
-	client,
-	tab,
 	task,
-	user,
-	material,
-	product,
 	taskMaterial,
 	taskProduct,
 	file,
 	userClient,
-	clientProductPrice,
 	taskAssignee
 } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
-import { writeFile, mkdir } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import { join } from 'path';
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import {
 	ensureUploadsDir,
@@ -179,7 +173,7 @@ export const actions: Actions = {
 		}
 
 		// Files (Not supported by storage yet, logging for now)
-		const files = formData.getAll('files');
+
 		const preview = formData.get('preview') as File | null;
 		let previewUrl: string | null = null;
 
@@ -279,7 +273,7 @@ export const actions: Actions = {
 								join('uploads', String(entry.path).replace(/^\/uploads\//, ''))
 							);
 						await db.insert(file).values(
-							uploadedFiles.map((f: any) => ({
+							uploadedFiles.map((f) => ({
 								filename: f.name,
 								downloadUrl: f.path,
 								size: f.size || 0,

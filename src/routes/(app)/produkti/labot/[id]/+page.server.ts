@@ -1,16 +1,10 @@
 import { db } from '$lib/server/db';
 import { fail, redirect } from '@sveltejs/kit';
 
-import {
-	product,
-	client,
-	productTranslation,
-	clientProductPrice,
-	user
-} from '$lib/server/db/schema';
+import { product, productTranslation, clientProductPrice, user } from '$lib/server/db/schema';
 
 import { eq } from 'drizzle-orm';
-import type { Product } from '$lib/server/db/schema';
+
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '@/paraglide/messages';
 import { locales } from '@/paraglide/runtime';
@@ -136,7 +130,7 @@ export const actions: Actions = {
 					await tx.insert(clientProductPrice).values(clientPriceInserts);
 				}
 			});
-		} catch (error) {
+		} catch {
 			return fail(500, { message: m['products.errors.update_failed']() });
 		}
 

@@ -55,7 +55,7 @@ export const actions: Actions = {
 					assignees.map((a) => a.userId)
 				);
 			}
-		} catch (error) {
+		} catch {
 			return fail(400, { message: m['components.delete_modal.error']({ item: id.toString() }) });
 		}
 		redirect(303, '/pabeigtie');

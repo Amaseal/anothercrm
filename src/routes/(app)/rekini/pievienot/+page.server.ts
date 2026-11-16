@@ -4,6 +4,7 @@ import { eq, desc } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 import { getNewInvoiceClient } from '$lib/server/invoice-client';
+import { formatInvoiceNumber } from '$lib/invoice-number';
 
 interface InvoiceItemInput {
 	description: string;
@@ -123,7 +124,7 @@ export const actions: Actions = {
 		let items: InvoiceItemInput[] = [];
 		try {
 			items = itemsRaw ? JSON.parse(itemsRaw as string) : [];
-		} catch (e) {
+		} catch {
 			return fail(400, { message: 'Invalid items data' });
 		}
 
@@ -194,7 +195,12 @@ export const actions: Actions = {
 						clientId = createdClient.id;
 					}
 					const count = await tx.$count(invoice);
-					const invoiceNumber = `${dateStr}-${count + 1 + attempts}${userInitial}`;
+					const invoiceNumber = formatInvoiceNumber(
+						dateStr,
+						count + 1 + attempts,
+						userInitial,
+						documentType
+					);
 
 					const [newInvoice] = await tx
 						.insert(invoice)

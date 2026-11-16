@@ -10,7 +10,7 @@
 	const labels = {
 		lv: {
 			invoice: 'Rēķins/Pavadzīme',
-			proforma: 'Proforma rēķins',
+			proforma: 'Priekšapmaksas rēķins',
 			date: 'Datums',
 			invoiceNr: 'Rēķina nr.',
 			dueDate: 'Apmaksas termiņš',
@@ -74,15 +74,15 @@
 
 	const formatMoney = (cents: number) => (cents / 100).toFixed(2);
 
-	function itemLineTotal(item: any): number {
+	function itemLineTotal(item: (typeof invoice.items)[number]): number {
 		const raw = item.quantity * item.price;
 		if (!item.discountValue) return raw;
 		if (item.discountType === 'fixed') return Math.max(0, raw - item.discountValue);
 		return Math.round(raw * (1 - item.discountValue / 100));
 	}
 
-	const hasDiscount = invoice.items.some((item: any) => (item.discountValue ?? 0) > 0);
-	const subtotal = invoice.items.reduce((acc: number, item: any) => acc + itemLineTotal(item), 0);
+	const hasDiscount = invoice.items.some((item) => (item.discountValue ?? 0) > 0);
+	const subtotal = invoice.items.reduce((acc: number, item) => acc + itemLineTotal(item), 0);
 	const taxAmount = Math.round(subtotal * ((invoice.taxRate ?? 21) / 100));
 	const total = subtotal + taxAmount;
 
@@ -311,7 +311,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each invoice.items as item, i}
+			{#each invoice.items as item, i (item.id)}
 				<tr>
 					<td style="border: 1px solid #000; padding: 3px 6px; text-align: center;">{i + 1}</td>
 					<td style="border: 1px solid #000; padding: 3px 6px;">{item.description}</td>

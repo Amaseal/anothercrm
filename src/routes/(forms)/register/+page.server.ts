@@ -7,9 +7,8 @@ import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 import { eq, and } from 'drizzle-orm';
 import * as m from '$lib/paraglide/messages';
-import { locales } from '@/paraglide/runtime.js';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ url }) => {
 	const userCount = await db.select().from(table.user).limit(1);
 
 	if (userCount.length === 0) {
@@ -68,7 +67,7 @@ export const actions = {
 			}
 		}
 
-		let form = await event.request.formData();
+		const form = await event.request.formData();
 
 		const email = form.get('email') as string;
 		const password = form.get('password') as string;
@@ -111,7 +110,7 @@ export const actions = {
 			const sessionToken = auth.generateSessionToken();
 			const session = await auth.createSession(sessionToken, userId);
 			auth.setSessionTokenCookie(event, sessionToken, session.expiresAt);
-		} catch (e) {
+		} catch {
 			return fail(500, { message: m['register.errors.something_went_wrong']() });
 		}
 		return redirect(302, '/');

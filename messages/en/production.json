@@ -31,6 +31,7 @@
 		"refresh": "Refresh",
 		"loading": "Loading saved workbooks…",
 		"load_failed": "Could not load the saved production workbook. Refresh to try again.",
+		"file_unavailable": "This workbook file is unavailable on this server. Restore it from the uploads backup, then refresh the list.",
 		"preview": "Preview",
 		"modal_description": "Read-only preview. Use Edit to make corrections.",
 		"edit": "Edit",

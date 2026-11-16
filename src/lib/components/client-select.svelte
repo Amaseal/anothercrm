@@ -17,7 +17,7 @@
 	interface Client {
 		id: number | string;
 		name: string;
-		[key: string]: any;
+		[key: string]: unknown;
 	}
 
 	let {
@@ -48,21 +48,11 @@
 	let description = $state('');
 	let error = $state('');
 
-	let triggerRef = $state<HTMLElement | null>(null);
-	let triggerWidth = $state(0);
-
 	let selectedLabel = $derived(
 		clients.find((c) => c.id.toString() === value)?.name || m['projects.client_label']()
 	);
 
 	let selectedClient = $derived(clients.find((c) => c.id.toString() === value));
-
-	// Sync width when opening
-	$effect(() => {
-		if (open && triggerRef) {
-			triggerWidth = triggerRef.offsetWidth;
-		}
-	});
 
 	// Reset form when dialog opens/closes
 	$effect(() => {
@@ -166,7 +156,7 @@
 						</Button>
 					</Command.Empty>
 					<Command.Group>
-						{#each clients as client}
+						{#each clients as client (client.id)}
 							<Command.Item
 								value={`${client.name} ${client.email || ''} ${client.phone || ''}`}
 								onSelect={() => {
@@ -323,7 +313,7 @@
 								{sportType || m['clients.sport_type_placeholder']()}
 							</Select.Trigger>
 							<Select.Content class="max-h-[300px] overflow-y-auto">
-								{#each SPORT_TYPES as type}
+								{#each SPORT_TYPES as type (type)}
 									<Select.Item value={type} label={type} />
 								{/each}
 							</Select.Content>

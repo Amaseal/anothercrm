@@ -35,13 +35,13 @@
 		</Dialog.Header>
 
 		<div class="custom-scroll flex-1 overflow-y-auto py-2">
-			{#each changelog as entry}
+			{#each changelog as entry, entryIndex0 (entryIndex0)}
 				{@const content = entry.content[locale as 'lv' | 'en'] ?? entry.content.en}
 				{#if entry !== changelog[0]}
 					<p class="mt-4 mb-1 text-sm font-semibold text-muted-foreground">{entry.date}</p>
 				{/if}
 				<ul class="space-y-2">
-					{#each content.items as item}
+					{#each content.items as item, entryIndex1 (entryIndex1)}
 						<li class="flex items-start gap-2 text-sm">
 							<span class="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-primary"></span>
 							{item}

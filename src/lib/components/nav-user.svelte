@@ -1,5 +1,6 @@
 <script lang="ts">
-	import BadgeCheckIcon from '@lucide/svelte/icons/badge-check';
+	import { resolve } from '$app/paths';
+
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import LanguagesIcon from '@lucide/svelte/icons/languages';
@@ -111,7 +112,7 @@
 
 				<!-- Settings & Account -->
 				<DropdownMenu.Item>
-					<a href="/iestatijumi" class="flex items-center gap-2">
+					<a href={resolve('/iestatijumi')} class="flex items-center gap-2">
 						<SettingsIcon class="mr-2 h-4 w-4" />
 						<span>{m['components.user.settings']()}</span></a
 					>

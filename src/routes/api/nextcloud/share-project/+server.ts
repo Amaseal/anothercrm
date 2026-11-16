@@ -117,7 +117,7 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 				} else if (errorData.ocs?.meta?.statuscode === 400) {
 					errorMessage = 'Nepareizi dati vai saruna vairs nav aktīva';
 				}
-			} catch (e) {
+			} catch {
 				// If error parsing fails, use default message
 			}
 

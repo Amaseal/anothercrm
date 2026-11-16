@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { base, resolve } from '$app/paths';
+
 	import { Button } from '$lib/components/ui/button';
-	import { Input } from '$lib/components/ui/input';
+
 	import * as Table from '$lib/components/ui/table/index.js';
 	import * as Dialog from '$lib/components/ui/dialog/index.js';
 	import ChevronUp from '@lucide/svelte/icons/chevron-up';
@@ -35,30 +37,26 @@
 				sortDirection: string;
 			};
 		};
-		children?: () => any;
+		children?: import('svelte').Snippet;
 	} = $props();
 
 	// Initialize state from server data
-	let currentPage = $state(data.pagination.page);
-	let pageSize = $state(data.pagination.pageSize);
-	let pageSizeOptions = [5, 10, 25, 50, 100];
+
 	let sortColumn = $state(data.pagination.sortColumn as keyof Material | null);
 	let sortDirection = $state(data.pagination.sortDirection as 'asc' | 'desc');
 	let searchTerm = $state(data.pagination.search);
 
 	// Keep local state in sync with server data
 	$effect(() => {
-		currentPage = data.pagination.page;
-		pageSize = data.pagination.pageSize;
 		sortColumn = data.pagination.sortColumn as keyof Material | null;
 		sortDirection = data.pagination.sortDirection as 'asc' | 'desc';
 		searchTerm = data.pagination.search;
 	});
 
 	// Edit modal state
-	let editModalOpen = $state(false);
+
 	let currentItem: Material | null = $state(null);
-	let editedItem: Partial<Material> = $state({});
+
 	let imageModalOpen = $state(false);
 
 	const handleSearchInput = (event: Event) => {
@@ -72,61 +70,11 @@
 	}, 1200);
 
 	// For pagination display
-	function getVisiblePageNumbers() {
-		const { totalPages } = data.pagination;
-		const pages: number[] = [];
-		const maxVisiblePages = 5;
-
-		if (totalPages <= maxVisiblePages) {
-			// Show all pages if there are few
-			for (let i = 0; i < totalPages; i++) {
-				pages.push(i);
-			}
-		} else {
-			// Otherwise show a window of pages around current
-			const firstPage = 0;
-			const lastPage = totalPages - 1;
-
-			// Always include first page
-			pages.push(firstPage);
-
-			// Calculate range around current page
-			let rangeStart = Math.max(1, currentPage - 1);
-			let rangeEnd = Math.min(lastPage - 1, currentPage + 1);
-
-			// Adjust range to always show 3 pages in the middle if possible
-			if (currentPage <= 2) {
-				rangeEnd = Math.min(lastPage - 1, 3);
-			} else if (currentPage >= lastPage - 2) {
-				rangeStart = Math.max(1, lastPage - 3);
-			}
-
-			// Add ellipsis after first page if needed
-			if (rangeStart > 1) {
-				pages.push(-1); // -1 represents ellipsis
-			}
-
-			// Add pages in range
-			for (let i = rangeStart; i <= rangeEnd; i++) {
-				pages.push(i);
-			}
-
-			// Add ellipsis before last page if needed
-			if (rangeEnd < lastPage - 1) {
-				pages.push(-2); // -2 represents ellipsis
-			}
-
-			// Always include last page
-			if (lastPage > 0) {
-				pages.push(lastPage);
-			}
-		}
-
-		return pages;
-	}
 
 	// Update URL and navigate to the new page
-	function updateUrlAndNavigate(params: Record<string, any>) {
+	function updateUrlAndNavigate(
+		params: Record<string, string | number | boolean | null | undefined>
+	) {
 		const url = new URL(page.url);
 
 		// Update the provided parameters
@@ -143,7 +91,14 @@
 		}
 
 		// Navigate to the new URL
-		goto(url.toString(), { replaceState: true });
+		goto(
+			resolve(
+				...([`${url.pathname.slice(base.length)}${url.search}${url.hash}`] as Parameters<
+					typeof resolve
+				>)
+			),
+			{ replaceState: true }
+		);
 	}
 
 	// Handle sorting
@@ -177,8 +132,6 @@
 	function openEditModal(item: Material) {
 		currentItem = item;
 		// Create a deep copy of the item to avoid reference issues
-		editedItem = JSON.parse(JSON.stringify(item));
-		editModalOpen = true;
 	}
 
 	function openImageModal(item: Material) {

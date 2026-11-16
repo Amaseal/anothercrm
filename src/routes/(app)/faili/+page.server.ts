@@ -1,6 +1,6 @@
 import { db } from '$lib/server/db';
 import { file, material, companySettings, task } from '$lib/server/db/schema';
-import { eq, like, or, and, isNotNull } from 'drizzle-orm';
+import { eq, isNotNull } from 'drizzle-orm';
 import { readdir, stat, unlink } from 'fs/promises';
 import { join } from 'path';
 import type { Actions, PageServerLoad } from './$types';
@@ -52,7 +52,7 @@ export const load: PageServerLoad = async ({ url, cookies, locals }) => {
 	const companyLogos = new Set(company.map((c) => c.logo).filter(Boolean));
 	const taskPreviews = new Set(tasksWithPreview.map((t) => t.preview).filter(Boolean));
 	const taskMap = new Map(tasksWithFiles.map((t) => [t.id, t.title]));
-	const materialMap = new Map(); // Map image -> Material Title
+	const materialMap = new Map<string, string>(); // Map image -> Material Title
 	materials.forEach((m) => {
 		if (m.image) materialMap.set(m.image, m.title);
 	});
@@ -67,7 +67,19 @@ export const load: PageServerLoad = async ({ url, cookies, locals }) => {
 	}
 
 	// 3. Merge Logic
-	const allFilesMap = new Map<string, any>();
+	type ManagedFile = {
+		id: string | number;
+		filename: string;
+		url: string;
+		size: number;
+		created: Date;
+		source: string;
+		dbId: number | null;
+		taskId?: number | null;
+		usage: { type: string; id?: number; name?: string }[];
+		status?: string;
+	};
+	const allFilesMap = new Map<string, ManagedFile>();
 
 	// Process FS files first
 	for (const filename of fsFiles) {
@@ -76,7 +88,7 @@ export const load: PageServerLoad = async ({ url, cookies, locals }) => {
 		let stats;
 		try {
 			stats = await stat(filePath);
-		} catch (e) {
+		} catch {
 			continue;
 		}
 
@@ -167,14 +179,15 @@ export const load: PageServerLoad = async ({ url, cookies, locals }) => {
 		filteredFiles = allFiles.filter(
 			(f) =>
 				normalizeString(f.filename || '').includes(normalizedSearch) ||
-				f.usage.some((u: any) => normalizeString(u.name || '').includes(normalizedSearch))
+				f.usage.some((u) => normalizeString(u.name || '').includes(normalizedSearch))
 		);
 	}
 
 	// 6. Sort
 	filteredFiles.sort((a, b) => {
-		let valA = a[sortColumn];
-		let valB = b[sortColumn];
+		const key = sortColumn as 'filename' | 'source' | 'size' | 'created';
+		let valA: string | number | Date = a[key];
+		let valB: string | number | Date = b[key];
 
 		if (sortColumn === 'usage') {
 			valA = a.usage.length;
@@ -208,7 +221,7 @@ export const actions: Actions = {
 	delete: async ({ request, locals }) => {
 		assertDocumentStaff(locals);
 		const formData = await request.formData();
-		const id = formData.get('id') as string;
+
 		const filename = formData.get('filename') as string; // We might need this to delete from FS
 		const dbId = formData.get('dbId'); // ID in DB
 
@@ -226,8 +239,8 @@ export const actions: Actions = {
 			const filePath = join(uploadDir, filename);
 			try {
 				await unlink(filePath);
-			} catch (e: any) {
-				console.warn(`Failed to delete FS file ${filename}:`, e.message);
+			} catch (e) {
+				console.warn(`Failed to delete FS file ${filename}:`, e instanceof Error ? e.message : e);
 				// Continue if file is missing
 			}
 

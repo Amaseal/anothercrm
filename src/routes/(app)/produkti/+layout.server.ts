@@ -19,7 +19,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	const offset = page * pageSize;
 
 	// Build the filter conditions
-	let filterConditions = [];
+	const filterConditions = [];
 
 	if (search) {
 		filterConditions.push(
@@ -57,7 +57,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 			}
 		}
 	});
-	let products = productData.map((product) => {
+	const products = productData.map((product) => {
 		return {
 			id: product.id,
 			title: product.title,

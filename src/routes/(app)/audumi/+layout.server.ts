@@ -19,7 +19,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 	const offset = page * pageSize;
 
 	// Build the filter conditions
-	let filterConditions = [];
+	const filterConditions = [];
 
 	if (search) {
 		filterConditions.push(

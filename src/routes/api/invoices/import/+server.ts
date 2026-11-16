@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import { read } from 'xlsx';
 import { db } from '$lib/server/db';
 import { client, invoice, invoiceItems } from '$lib/server/db/schema';
-import { eq, ilike, or, sql } from 'drizzle-orm';
+import { eq, ilike, sql } from 'drizzle-orm';
 
 export const POST = async ({ request }) => {
 	try {
@@ -42,7 +42,7 @@ export const POST = async ({ request }) => {
 					// Start by trying to parse text
 					const txt = String(c.v).trim();
 					// Regex for DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY, DD_MM_YYYY, etc.
-					const parts = txt.match(/^(\d{1,2})[.\/, -_](\d{1,2})[.\/, -_](\d{4})$/);
+					const parts = txt.match(/^(\d{1,2})[./, -_](\d{1,2})[./, -_](\d{4})$/);
 					if (parts) {
 						date = new Date(`${parts[3]}-${parts[2]}-${parts[1]}`);
 					} else {

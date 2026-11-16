@@ -1,5 +1,8 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+
 	import { toCurrency } from '$lib/utilities';
+	import { SvelteSet } from 'svelte/reactivity';
 	import * as Table from '$lib/components/ui/table/index.js';
 	import { Badge } from '$lib/components/ui/badge/index.js';
 	import { Button } from '$lib/components/ui/button';
@@ -16,7 +19,7 @@
 	let expandedTasks = $state<Set<number>>(new Set());
 
 	function toggleExpand(id: number) {
-		const next = new Set(expandedTasks);
+		const next = new SvelteSet(expandedTasks);
 		if (next.has(id)) next.delete(id);
 		else next.add(id);
 		expandedTasks = next;
@@ -44,7 +47,7 @@
 		>
 			<Card.Header class="sticky top-0 z-10 border-b bg-card pb-4">
 				<a
-					href="/klienti"
+					href={resolve('/klienti')}
 					class="absolute top-0 right-5 text-muted-foreground transition-colors hover:text-foreground"
 				>
 					<X />
@@ -127,7 +130,9 @@
 														<AlertTriangle class="h-4 w-4 shrink-0 text-red-500" />
 													{/if}
 													<a
-														href="/projekti/{t.taskId}"
+														href={resolve(
+															...([`/projekti/${t.taskId}`] as Parameters<typeof resolve>)
+														)}
 														class="hover:underline"
 														onclick={(e) => e.stopPropagation()}>{t.taskTitle}</a
 													>
@@ -158,7 +163,12 @@
 											<Table.Cell class="text-center">
 												{#if t.invoiceId}
 													<Badge variant="outline" class="text-xs">
-														<a href="/rekini/{t.invoiceId}" onclick={(e) => e.stopPropagation()}>
+														<a
+															href={resolve(
+																...([`/rekini/${t.invoiceId}`] as Parameters<typeof resolve>)
+															)}
+															onclick={(e) => e.stopPropagation()}
+														>
 															{t.invoiceNumber}
 														</a>
 													</Badge>
@@ -255,7 +265,10 @@
 									{#each data.standaloneInvoices as inv (inv.id)}
 										<Table.Row class="hover:bg-muted/50">
 											<Table.Cell>
-												<a href="/rekini/{inv.id}" class="hover:underline">{inv.invoiceNumber}</a>
+												<a
+													href={resolve(...([`/rekini/${inv.id}`] as Parameters<typeof resolve>))}
+													class="hover:underline">{inv.invoiceNumber}</a
+												>
 											</Table.Cell>
 											<Table.Cell class="text-sm text-muted-foreground">{inv.issueDate}</Table.Cell>
 											<Table.Cell

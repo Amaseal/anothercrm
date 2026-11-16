@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { base, resolve } from '$app/paths';
+
 	import ChevronLeft from '@lucide/svelte/icons/chevron-left';
 	import ChevronRight from '@lucide/svelte/icons/chevron-right';
 	import ChevronsLeft from '@lucide/svelte/icons/chevrons-left';
@@ -31,8 +33,6 @@
 		currentPage = pagination.page;
 		pageSize = pagination.pageSize;
 	});
-
-	$inspect({ currentPage, pageSize });
 
 	function getVisiblePageNumbers() {
 		const { totalPages } = pagination;
@@ -109,7 +109,9 @@
 		});
 	}
 
-	function updateUrlAndNavigate(params: Record<string, any>) {
+	function updateUrlAndNavigate(
+		params: Record<string, string | number | boolean | null | undefined>
+	) {
 		const url = new URL(page.url);
 
 		// Update the provided parameters
@@ -126,7 +128,14 @@
 		}
 
 		// Navigate to the new URL
-		goto(url.toString(), { replaceState: true });
+		goto(
+			resolve(
+				...([`${url.pathname.slice(base.length)}${url.search}${url.hash}`] as Parameters<
+					typeof resolve
+				>)
+			),
+			{ replaceState: true }
+		);
 	}
 </script>
 
@@ -163,7 +172,7 @@
 					<ChevronLeft className="h-4 w-4" />
 				</Button>
 
-				{#each getVisiblePageNumbers() as pageNum}
+				{#each getVisiblePageNumbers() as pageNum (pageNum)}
 					{#if pageNum >= 0}
 						<Button
 							variant={pageNum === currentPage ? 'default' : 'outline'}
@@ -209,7 +218,7 @@
 				})}</Select.Trigger
 			>
 			<Select.Content class="w-[30px]">
-				{#each pageSizeOptions as option}
+				{#each pageSizeOptions as option (option)}
 					<Select.Item value={String(option)} label={String(option)}>{option}</Select.Item>
 				{/each}
 			</Select.Content>

@@ -8,14 +8,17 @@
 	import GripVertical from '@lucide/svelte/icons/grip-vertical';
 	import * as m from '$lib/paraglide/messages';
 	import { getLocale } from '@/paraglide/runtime.js';
-	import { dragHandle, dragHandleZone } from 'svelte-dnd-action';
+	import { dragHandle, dragHandleZone, type DndEvent } from 'svelte-dnd-action';
 	import { flip } from 'svelte/animate';
 	import Eye from '@lucide/svelte/icons/eye';
 	import EyeOff from '@lucide/svelte/icons/eye-off';
 	import FormError from '@/components/form-error.svelte';
 	import { invalidateAll } from '$app/navigation';
+	import { SvelteSet } from 'svelte/reactivity';
+	import type { PageData, ActionData } from './$types';
+	import type { TabTranslation } from '$lib/server/db/schema';
 
-	let { data, form } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	let groups = $state(data.tabGroups);
 	let expandedGroups = $state<Set<number>>(new Set());
@@ -30,27 +33,27 @@
 		// A simple re-init should work for visibility updates.
 
 		// We need to re-map to ensure the tabs array exists, similar to initialization
-		const newGroups = data.tabGroups.map((g: any) => ({
+		const newGroups = data.tabGroups.map((g) => ({
 			...g,
 			tabs: g.tabs || []
 		}));
 		groups = newGroups;
 
 		if (!initialized && groups.length > 0) {
-			expandedGroups = new Set(groups.map((g: any) => g.id));
+			expandedGroups = new Set(groups.map((g) => g.id));
 			initialized = true;
 		}
 	});
 
 	const flipDurationMs = 300;
 
-	const getTranslation = (translations: any[]) => {
+	const getTranslation = (translations: Pick<TabTranslation, 'language' | 'name'>[]) => {
 		const currentLocale = getLocale();
 		return translations.find((t) => t.language === currentLocale);
 	};
 
 	function toggleGroup(groupId: number) {
-		const newSet = new Set(expandedGroups);
+		const newSet = new SvelteSet(expandedGroups);
 		if (newSet.has(groupId)) {
 			newSet.delete(groupId);
 		} else {
@@ -68,7 +71,7 @@
 		groups = e.detail.items;
 
 		const formData = new FormData();
-		groups.forEach((group: any, index: number) => {
+		groups.forEach((group, index: number) => {
 			formData.append(`order[${group.id}]`, index.toString());
 		});
 
@@ -83,12 +86,14 @@
 	// Handle tab reordering within a group and across groups
 	function createTabHandlers(groupIndex: number, groupId: number) {
 		return {
-			handleDndConsider(e: CustomEvent) {
+			handleDndConsider(e: CustomEvent<DndEvent<PageData['tabGroups'][number]['tabs'][number]>>) {
 				// During consider, just update the items directly
 				// Being too immutable here can break the library's internal state
 				groups[groupIndex].tabs = e.detail.items;
 			},
-			async handleDndFinalize(e: CustomEvent) {
+			async handleDndFinalize(
+				e: CustomEvent<DndEvent<PageData['tabGroups'][number]['tabs'][number]>>
+			) {
 				const newTabs = e.detail.items;
 				const info = e.detail.info;
 
@@ -105,8 +110,8 @@
 				} else if (info.trigger === 'droppedIntoZone') {
 					// This zone is the TARGET - a tab was dragged IN from another zone
 					// The dragged tab should be in newTabs (added by consider phase)
-					const draggedTabId = info.id;
-					const draggedTab = newTabs.find((t: any) => t.id === draggedTabId);
+					const draggedTabId = Number(info.id);
+					const draggedTab = newTabs.find((t) => t.id === draggedTabId);
 
 					if (draggedTab) {
 						// Update groups: update the target group with new tabs (which has correct order)
@@ -114,9 +119,7 @@
 						const updatedGroups = [...groups];
 						updatedGroups[groupIndex] = {
 							...updatedGroups[groupIndex],
-							tabs: newTabs.map((t: any) =>
-								t.id === draggedTabId ? { ...t, groupId: groupId } : t
-							)
+							tabs: newTabs.map((t) => (t.id === draggedTabId ? { ...t, groupId: groupId } : t))
 						};
 
 						groups = updatedGroups;
@@ -133,7 +136,7 @@
 
 						// Update sort order for this group
 						const orderFormData = new FormData();
-						updatedGroups[groupIndex].tabs.forEach((tab: any, index: number) => {
+						updatedGroups[groupIndex].tabs.forEach((tab, index: number) => {
 							orderFormData.append(`order[${tab.id}]`, index.toString());
 						});
 
@@ -156,7 +159,7 @@
 					// Update sort order
 					if (newTabs.length > 0) {
 						const orderFormData = new FormData();
-						newTabs.forEach((tab: any, index: number) => {
+						newTabs.forEach((tab, index: number) => {
 							orderFormData.append(`order[${tab.id}]`, index.toString());
 						});
 
@@ -173,14 +176,10 @@
 	}
 	async function toggleVisibility(tabId: number, isVisible: boolean) {
 		// Optimistically update UI
-		if (data.personalTab && data.personalTab.id === tabId) {
-			data.personalTab.isVisible = isVisible;
-		} else {
-			groups = groups.map((g: any) => ({
-				...g,
-				tabs: g.tabs.map((t: any) => (t.id === tabId ? { ...t, isVisible } : t))
-			}));
-		}
+		groups = groups.map((g) => ({
+			...g,
+			tabs: g.tabs.map((t) => (t.id === tabId ? { ...t, isVisible } : t))
+		}));
 
 		const formData = new FormData();
 		formData.append('tabId', tabId.toString());
@@ -206,64 +205,6 @@
 		</div>
 
 		<div class="space-y-1">
-			<!-- Personal Tab (Fixed at Top) -->
-			{#if initialized && data.personalTab}
-				<div class="mb-2 rounded-md border bg-background p-2">
-					<div class="flex items-center gap-2">
-						<div
-							class="flex h-8 w-8 items-center justify-center rounded bg-muted/50 text-muted-foreground opacity-50"
-						>
-							<!-- Fixed icon placeholder -->
-							<div class="h-1 w-1 rounded-full bg-current"></div>
-						</div>
-
-						<div
-							class="h-4 w-4 rounded-full border-2"
-							style="background-color: {data.personalTab.color}"
-							title="Tab color: {data.personalTab.color}"
-						></div>
-
-						<span class="flex-1 font-medium">
-							{getTranslation(data.personalTab.translations)?.name || 'Personal Tab'}
-						</span>
-
-						<!-- Personal Badge -->
-						<span class="rounded bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">
-							{m['structure.personal']()}
-						</span>
-
-						{#if data.personalTab.sortOrder !== undefined}
-							<span class="text-xs text-muted-foreground" title="Sort Order">
-								#{data.personalTab.sortOrder}
-							</span>
-						{/if}
-
-						<div class="flex gap-2">
-							<Button
-								variant="ghost"
-								size="icon"
-								onclick={() => toggleVisibility(data.personalTab.id, !data.personalTab.isVisible)}
-								title={data.personalTab.isVisible ? 'Hide tab' : 'Show tab'}
-							>
-								{#if data.personalTab.isVisible}
-									<Eye class="h-4 w-4" />
-								{:else}
-									<EyeOff class="h-4 w-4" />
-								{/if}
-							</Button>
-
-							<Button
-								href="/projekti/struktura/saraksti/{data.personalTab.id}"
-								variant="ghost"
-								size="icon"
-							>
-								<Pencil class="h-4 w-4" />
-							</Button>
-						</div>
-					</div>
-				</div>
-			{/if}
-
 			<div
 				use:dragHandleZone={{
 					items: groups,

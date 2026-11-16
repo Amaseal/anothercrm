@@ -40,8 +40,8 @@ Exact headers A1:B1: `Key`, `Value`. Unique nonempty keys; values are text. Row 
 | SheetHeightMm                       | yes                    | Decimal millimetres; default 1000; 100–30000                                         |
 | GapMm                               | yes                    | Decimal millimetres; default 5; 0–100                                                |
 | PackingProfileResolutionMm          | yes                    | Decimal millimetres; default 2; 0.5–20                                               |
-| DefaultProduct                      | yes                    | Stable production reference; may be blank only with `Draft=true`                      |
-| Draft                               | no                     | Text `true` for generated proposals; absent/`false` uses strict validation             |
+| DefaultProduct                      | yes                    | Stable production reference; may be blank only with `Draft=true`                     |
+| Draft                               | no                     | Text `true` for generated proposals; absent/`false` uses strict validation           |
 | Product.<reference>                 | per referenced product | Display-name snapshot, never identity                                                |
 | TaskReference                       | no                     | Informational task reference; grants no access or reassignment                       |
 | ProjectTitleSnapshot                | no                     | Download-time context; current authorized CRM context takes precedence               |

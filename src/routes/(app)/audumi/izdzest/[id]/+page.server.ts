@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ params, fetch, cookies, locals }) => {
+	default: async ({ params, fetch, locals }) => {
 		if (!locals.user || locals.user.type !== 'admin') error(403);
 		try {
 			// Get the material to find the image path
@@ -35,13 +35,13 @@ export const actions: Actions = {
 							headers: { 'Content-Type': 'application/json' },
 							body: JSON.stringify({ path: imagePath })
 						});
-					} catch (e) {
+					} catch {
 						// Ignore error, API handles file not found gracefully
 					}
 				}
 			}
 			await db.delete(material).where(eq(material.id, Number(params.id)));
-		} catch (error) {
+		} catch {
 			return fail(400, { message: m['components.delete_modal.error']({ item: params.id }) });
 		}
 
