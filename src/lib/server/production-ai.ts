@@ -74,7 +74,7 @@ export async function discoverGeminiModels(key: string, signal: AbortSignal) {
 	);
 }
 
-async function responseJson(response: Response) {
+export async function responseJson(response: Response) {
 	const reader = response.body?.getReader();
 	if (!reader) error(502, 'Gemini returned an empty response.');
 	let size = 0;

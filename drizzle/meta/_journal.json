@@ -281,6 +281,13 @@
       "when": 1794478632592,
       "tag": "0039_calm_vargas",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1794824826768,
+      "tag": "0040_robust_ultimatum",
+      "breakpoints": true
     }
   ]
 }

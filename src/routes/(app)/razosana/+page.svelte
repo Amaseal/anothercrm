@@ -7,6 +7,7 @@
 	import * as Card from '$lib/components/ui/card';
 	import * as Table from '$lib/components/ui/table';
 	import FormError from '$lib/components/form-error.svelte';
+	import PrintToolsCredentials from '$lib/components/print-tools-credentials.svelte';
 	import * as m from '$lib/paraglide/messages';
 	import type { PageProps } from './$types';
 
@@ -26,6 +27,12 @@
 	{#if form?.message}
 		<div role="alert"><FormError error={form.message} /></div>
 	{/if}
+
+	<PrintToolsCredentials
+		url={data.printToolsUrl}
+		tokens={data.printToolsTokens}
+		createdToken={form && 'printToolsToken' in form ? (form.printToolsToken ?? '') : ''}
+	/>
 
 	<div class="grid items-start gap-6 md:grid-cols-[minmax(16rem,1fr)_2fr]">
 		<Card.Root>

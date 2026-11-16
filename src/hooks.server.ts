@@ -2,6 +2,13 @@ import { sequence } from '@sveltejs/kit/hooks';
 import * as auth from '$lib/server/auth';
 import type { Handle } from '@sveltejs/kit';
 import { paraglideMiddleware } from '$lib/paraglide/server';
+import { limitCrmRequest } from '$lib/server/request-size';
+
+const handleRequestSize: Handle = ({ event, resolve }) => {
+	if (!event.url.pathname.startsWith('/api/print-tools/'))
+		event.request = limitCrmRequest(event.request);
+	return resolve(event);
+};
 
 const handleParaglide: Handle = ({ event, resolve }) =>
 	paraglideMiddleware(event.request, ({ request, locale }) => {
@@ -34,4 +41,4 @@ const handleAuth: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle: Handle = sequence(handleParaglide, handleAuth);
+export const handle: Handle = sequence(handleRequestSize, handleParaglide, handleAuth);

@@ -40,7 +40,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY package.json ./
 
 # Allow document uploads plus multipart overhead (per-file validation is 25 MiB).
-ENV BODY_SIZE_LIMIT=27262976
+ENV BODY_SIZE_LIMIT=54525952
 
 EXPOSE 3000
 

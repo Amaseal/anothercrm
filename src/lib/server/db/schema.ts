@@ -261,6 +261,45 @@ export const productionSize = pgTable(
 	]
 );
 
+export const productionPart = pgTable(
+	'production_parts',
+	{
+		id: serial('id').primaryKey(),
+		productId: integer('product_id')
+			.notNull()
+			.references(() => productionProduct.id, { onDelete: 'cascade' }),
+		name: text('name').notNull(),
+		isBase: boolean('is_base').notNull().default(false)
+	},
+	(table) => [
+		unique().on(table.productId, table.name),
+		uniqueIndex('production_parts_one_base_idx')
+			.on(table.productId)
+			.where(sql`${table.isBase}`),
+		check('production_parts_name_valid', sql`length(btrim(${table.name})) between 1 and 120`)
+	]
+);
+
+export const productionCapture = pgTable('production_captures', {
+	id: serial('id').primaryKey(),
+	sizeId: integer('size_id')
+		.notNull()
+		.unique()
+		.references(() => productionSize.id, { onDelete: 'cascade' }),
+	payload: text('payload').notNull(),
+	capturedAt: timestamp('captured_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow()
+});
+
+export const printToolsToken = pgTable('print_tools_tokens', {
+	id: serial('id').primaryKey(),
+	userId: text('user_id')
+		.notNull()
+		.references(() => user.id, { onDelete: 'cascade' }),
+	tokenHash: text('token_hash').notNull().unique(),
+	createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+	expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull()
+});
+
 export const productionProductRelations = relations(productionProduct, ({ many }) => ({
 	sizes: many(productionSize)
 }));

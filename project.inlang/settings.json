@@ -11,6 +11,7 @@
 			"./messages/{locale}/components.json",
 			"./messages/{locale}/products.json",
 			"./messages/{locale}/production.json",
+			"./messages/{locale}/print_tools.json",
 			"./messages/{locale}/production_parsing.json",
 			"./messages/{locale}/clients.json",
 			"./messages/{locale}/materials.json",
