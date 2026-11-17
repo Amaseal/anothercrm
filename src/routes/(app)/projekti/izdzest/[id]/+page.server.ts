@@ -5,11 +5,10 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages';
 import { unlink } from 'fs/promises';
-import { join } from 'path';
 import { taskEvents } from '$lib/server/events';
 import { assertTaskAccess } from '$lib/server/task-access';
 import { assertTaskHasNoProductionProjects } from '$lib/server/production-projects';
-import { isProductionStoragePath } from '$lib/server/file-download';
+import { ordinaryTaskFilePaths } from '$lib/server/file-download';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	await assertTaskAccess(locals, Number(params.id));
@@ -45,50 +44,12 @@ export const actions: Actions = {
 					return fail(404, { message: 'Task not found' });
 				}
 
-				// 2. Delete linked files from disk
-				const deletionPromises = [];
-
-				// Task preview image
-				if (
-					item.preview &&
-					!isProductionStoragePath(join('uploads', item.preview.replace(/^\/uploads\//, '')))
-				) {
-					// preview is like /uploads/filename.ext
-					// We need to remove leading slash to make it relative to CWD if using 'uploads/'
-					// Or join(process.cwd(), item.preview) - but item.preview has leading slash likely.
-					// Based on pievienot implementation: `previewUrl = /uploads/${fileName}`
-					// And `const uploadDir = 'uploads'`, `writeFile(join(uploadDir, fileName))`
-					// So if we have `/uploads/foo.jpg`, we want `uploads/foo.jpg` (relative) or absolute path.
-					const relativePath = item.preview.startsWith('/')
-						? item.preview.substring(1)
-						: item.preview;
-					deletionPromises.push(
-						unlink(join(process.cwd(), relativePath)).catch((err) =>
-							console.error('Failed to delete preview:', err)
-						)
-					);
-				}
-
-				// Associated files
-				if (item.files && item.files.length > 0) {
-					for (const f of item.files) {
-						if (
-							f.downloadUrl &&
-							!isProductionStoragePath(join('uploads', f.downloadUrl.replace(/^\/uploads\//, '')))
-						) {
-							const relativePath = f.downloadUrl.startsWith('/')
-								? f.downloadUrl.substring(1)
-								: f.downloadUrl;
-							deletionPromises.push(
-								unlink(join(process.cwd(), relativePath)).catch((err) =>
-									console.error('Failed to delete file:', err)
-								)
-							);
-						}
-					}
-				}
-
-				await Promise.all(deletionPromises);
+				const paths = ordinaryTaskFilePaths(item);
+				await Promise.all(
+					paths.map((path) =>
+						unlink(path).catch((err) => console.error('Failed to delete task file:', err))
+					)
+				);
 
 				// Fetch assignees before deletion so the SSE event can filter correctly
 				const assignees = await tx.query.taskAssignee.findMany({

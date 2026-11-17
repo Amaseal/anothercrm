@@ -1,10 +1,12 @@
 import { json } from '@sveltejs/kit';
 import { read } from 'xlsx';
+import { assertStaff } from '$lib/server/auth';
 import { db } from '$lib/server/db';
 import { client, invoice, invoiceItems } from '$lib/server/db/schema';
 import { eq, ilike, sql } from 'drizzle-orm';
 
-export const POST = async ({ request }) => {
+export const POST = async ({ request, locals }) => {
+	assertStaff(locals);
 	try {
 		const formData = await request.formData();
 		const files = formData.getAll('files');

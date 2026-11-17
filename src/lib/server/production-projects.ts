@@ -7,7 +7,7 @@ import { db } from '$lib/server/db';
 import { file, productionProject, task } from '$lib/server/db/schema';
 import { assertProductionStaff } from '$lib/server/production';
 import { isProductionStoragePath } from '$lib/server/file-download';
-import { UPLOADS_DIR } from '$lib/server/upload-storage';
+import { UPLOADS_DIR, assertUploadStoragePath } from '$lib/server/upload-storage';
 import { loadDocument, saveDocument } from '$lib/server/documents';
 import { readProductionWorkbook } from '$lib/server/production-workbook';
 
@@ -16,6 +16,7 @@ export function ordinaryFileCondition() {
 }
 
 export function assertOrdinaryStoragePath(path: string) {
+	assertUploadStoragePath(path);
 	if (isProductionStoragePath(path))
 		error(409, 'Production workbooks must be managed through their task production project.');
 }

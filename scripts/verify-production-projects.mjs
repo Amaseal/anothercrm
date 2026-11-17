@@ -101,7 +101,7 @@ try {
 		return id === 45 ? task : id === 46 ? { ...task, id: 46 } : undefined;
 	};
 	db.query.taskAssignee.findFirst = async () => undefined;
-	db.query.userClient.findFirst = async () => undefined;
+	db.query.userClient.findMany = async () => [];
 	db.query.file.findFirst = async ({ where }) => {
 		assert.equal(
 			inTransaction,
@@ -222,15 +222,20 @@ try {
 			previous.POST
 		])
 			await assert.rejects(() => handler(event({}, locals)), { status });
-	await assertTaskAccess({ user: { id: 'owner', type: 'client' } }, 45);
+	await assert.rejects(() => assertTaskAccess({ user: { id: 'owner', type: 'client' } }, 45), {
+		status: 403
+	});
 	await assert.rejects(() => assertTaskAccess({ user: { id: 'stranger', type: 'client' } }, 45), {
 		status: 403
 	});
-	db.query.userClient.findFirst = async () => ({ clientId: 7 });
+	db.query.userClient.findMany = async () => [{ clientId: 7 }];
 	await assertTaskAccess({ user: { id: 'linked-client', type: 'client' } }, 45);
-	db.query.userClient.findFirst = async () => undefined;
+	db.query.userClient.findMany = async () => [];
 	db.query.taskAssignee.findFirst = async () => ({ userId: 'assigned-client' });
-	await assertTaskAccess({ user: { id: 'assigned-client', type: 'client' } }, 45);
+	await assert.rejects(
+		() => assertTaskAccess({ user: { id: 'assigned-client', type: 'client' } }, 45),
+		{ status: 403 }
+	);
 	db.query.taskAssignee.findFirst = async () => undefined;
 
 	const file = new File([fixture], 'production.xlsx');

@@ -2,9 +2,10 @@ import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { client } from '$lib/server/db/schema';
 import type { RequestHandler } from './$types';
+import { assertStaff } from '$lib/server/auth';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-	if (!locals.user) return json({ error: 'Unauthorized' }, { status: 401 });
+	assertStaff(locals);
 	try {
 		const data = await request.json();
 		const {

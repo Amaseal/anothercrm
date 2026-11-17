@@ -1,13 +1,12 @@
-import { json } from '@sveltejs/kit';
+import { json, isHttpError } from '@sveltejs/kit';
 import { writeFile } from 'fs/promises';
-import { join } from 'path';
 import type { RequestHandler } from './$types';
 
 import { db } from '$lib/server/db';
 import { file } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
-import { resolve } from 'node:path';
-import { isProductionStoragePath } from '$lib/server/file-download';
+import { assertTaskAccess } from '$lib/server/task-access';
+import { isProductionStoragePath, uploadUrlPath } from '$lib/server/file-download';
 import {
 	UPLOADS_DIR,
 	ensureUploadsDir,
@@ -48,6 +47,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			return json({ success: false, error: 'No file provided' }, { status: 400 });
 		}
 
+		if (taskId) await assertTaskAccess(locals, Number(taskId));
 		const filename = makeTaskFileFilename(uploadedFile.name);
 
 		// Get upload directory and ensure it exists
@@ -71,7 +71,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 					filename: uploadedFile.name, // Store original filename for display
 					downloadUrl: fileUrl,
 					size: uploadedFile.size,
-					taskId: parseInt(taskId, 10)
+					taskId: Number(taskId)
 				})
 				.returning();
 		} else {
@@ -95,6 +95,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			size: uploadedFile.size
 		});
 	} catch (error) {
+		if (isHttpError(error)) throw error;
 		console.error('Task file upload error:', error);
 		return json(
 			{
@@ -128,22 +129,14 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			}
 		}
 
+		if (!fileRecord && filePath) {
+			[fileRecord] = await db.select().from(file).where(eq(file.downloadUrl, filePath));
+		}
+		if (fileRecord?.taskId) await assertTaskAccess(locals, fileRecord.taskId);
+
 		// Extract filename from path
 		const downloadUrl = fileRecord?.downloadUrl || filePath;
-		if (isProductionStoragePath(resolve(UPLOADS_DIR, downloadUrl.replace(/^\/uploads\//, ''))))
-			return json(
-				{ success: false, error: 'Use the task production project to manage this workbook.' },
-				{ status: 409 }
-			);
-		const filename = downloadUrl.split('/').pop();
-
-		if (!filename) {
-			return json({ success: false, error: 'Invalid file path' }, { status: 400 });
-		}
-
-		// Get upload directory and delete file
-		const uploadDir = getUploadsDir();
-		const fullPath = join(uploadDir, filename);
+		const fullPath = uploadUrlPath(downloadUrl);
 
 		try {
 			const fs = await import('fs/promises');
@@ -165,6 +158,7 @@ export const DELETE: RequestHandler = async ({ request, locals }) => {
 			message: 'File deleted successfully'
 		});
 	} catch (error) {
+		if (isHttpError(error)) throw error;
 		console.error('Task file delete error:', error);
 		return json(
 			{
@@ -204,11 +198,9 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			[fileRecord] = await db.select().from(file).where(eq(file.downloadUrl, filePath));
 		}
 
+		if (fileRecord?.taskId) await assertTaskAccess(locals, fileRecord.taskId);
 		const sourcePath = fileRecord?.downloadUrl || filePath;
-		if (
-			sourcePath &&
-			isProductionStoragePath(resolve(UPLOADS_DIR, sourcePath.replace(/^\/uploads\//, '')))
-		)
+		if (sourcePath && isProductionStoragePath(uploadUrlPath(sourcePath, true)))
 			return json(
 				{ success: false, error: 'Use the authorized production-project endpoint.' },
 				{ status: 403 }
@@ -216,16 +208,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 
 		// If no record found, check if the physical file exists
 		if (!fileRecord && filePath) {
-			// Extract filename from path
-			const filename = filePath.split('/').pop();
-
-			if (!filename) {
-				return json({ success: false, error: 'Invalid file path' }, { status: 400 });
-			}
-
-			// Check if file exists
-			const uploadDir = getUploadsDir();
-			const fullPath = join(uploadDir, filename);
+			const fullPath = uploadUrlPath(filePath);
 
 			try {
 				const fs = await import('fs/promises');
@@ -269,6 +252,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 			}
 		});
 	} catch (error) {
+		if (isHttpError(error)) throw error;
 		console.error('Task file info error:', error);
 		return json(
 			{

@@ -1,4 +1,4 @@
-import type { RequestEvent } from '@sveltejs/kit';
+import { error, type RequestEvent } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { sha256 } from '@oslojs/crypto/sha2';
 import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
@@ -8,6 +8,13 @@ import * as table from '$lib/server/db/schema';
 const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export const sessionCookieName = 'auth-session';
+
+export const safeUserColumns = { id: true, name: true, email: true, type: true } as const;
+
+export function assertStaff(locals: App.Locals) {
+	if (!locals.user) error(401, 'Unauthorized');
+	if (locals.user.type === 'client') error(403, 'Forbidden');
+}
 
 export function generateSessionToken() {
 	const bytes = crypto.getRandomValues(new Uint8Array(18));

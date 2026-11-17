@@ -1,9 +1,10 @@
-import { json } from '@sveltejs/kit';
+import { json, isHttpError } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { task, settings } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 import { env } from '$env/dynamic/private';
+import { assertTaskAccess } from '$lib/server/task-access';
 
 export const POST: RequestHandler = async ({ request, locals, url }) => {
 	const sessionUser = locals.user;
@@ -31,9 +32,16 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 	}
 	try {
 		const { taskId, conversationToken, messageType = 'rich' } = await request.json();
-		if (!taskId || !conversationToken) {
+		if (
+			!Number.isInteger(taskId) ||
+			taskId < 1 ||
+			typeof conversationToken !== 'string' ||
+			!conversationToken
+		) {
 			return json({ error: 'Trūkst obligāto parametru' }, { status: 400 });
 		}
+
+		await assertTaskAccess(locals, taskId);
 
 		// Get the task with its client information
 		const taskData = await db.query.task.findFirst({
@@ -135,6 +143,7 @@ export const POST: RequestHandler = async ({ request, locals, url }) => {
 			data: result
 		});
 	} catch (error) {
+		if (isHttpError(error)) throw error;
 		console.error('Error sharing to Nextcloud Talk:', error);
 		return json(
 			{

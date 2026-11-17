@@ -4,8 +4,10 @@ import { db } from '$lib/server/db';
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages';
+import { assertStaff } from '$lib/server/auth';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	assertStaff(locals);
 	const item = await db.query.product.findFirst({
 		where: eq(product.id, Number(params.id))
 	});
@@ -15,9 +17,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 export const actions: Actions = {
 	default: async ({ params, locals }) => {
-		if (locals.user?.type === 'client') {
-			return fail(403, { message: 'Forbidden' });
-		}
+		assertStaff(locals);
 		try {
 			await db.delete(product).where(eq(product.id, Number(params.id)));
 		} catch {

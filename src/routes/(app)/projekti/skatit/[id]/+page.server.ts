@@ -4,16 +4,21 @@ import { task, invoice } from '$lib/server/db/schema';
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { eq } from 'drizzle-orm';
-import { assertTaskAccess } from '$lib/server/task-access';
+import { assertTaskAccess, getClientScope } from '$lib/server/task-access';
+import { safeUserColumns } from '$lib/server/auth';
 import { productionFileIds } from '$lib/server/production-projects';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const taskId = Number(params.id);
 	await assertTaskAccess(locals, taskId);
+	const clientScope = await getClientScope(locals);
 
 	// Fetch dropdown data in parallel with restricted columns
 	const [clients, users, materials, products] = await Promise.all([
-		db.query.client.findMany({ columns: { id: true, name: true, email: true, phone: true } }),
+		db.query.client.findMany({
+			where: (c, { inArray }) => (clientScope === null ? undefined : inArray(c.id, clientScope)),
+			columns: { id: true, name: true, email: true, phone: true }
+		}),
 		db.query.user.findMany({
 			where: (u, { eq }) => eq(u.type, 'admin'),
 			columns: { id: true, name: true, type: true }
@@ -21,7 +26,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		db.query.material.findMany({
 			columns: { id: true, title: true, article: true, image: true, remaining: true }
 		}),
-		db.query.product.findMany({ with: { translations: true, clientPrices: true } })
+		db.query.product.findMany({
+			with: {
+				translations: true,
+				clientPrices: {
+					where: (cp, { inArray }) =>
+						clientScope === null ? undefined : inArray(cp.clientId, clientScope)
+				}
+			}
+		})
 	]);
 
 	// Fetch the task to view
@@ -39,7 +52,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 				}
 			},
 			files: true,
-			assignees: { with: { user: true } },
+			assignees: { with: { user: { columns: safeUserColumns } } },
 			history: {
 				with: {
 					user: { columns: { name: true } }
@@ -56,19 +69,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const productionFiles = await productionFileIds(taskId);
 	item.files = item.files.filter((entry) => !productionFiles.has(entry.id));
 
-	let userClientId: number | null = null;
+	const userClientId = clientScope === null ? null : item.clientId;
 	if (locals.user && locals.user.type === 'client') {
-		const { userClient } = await import('$lib/server/db/schema');
-		const result = await db
-			.select({ clientId: userClient.clientId })
-			.from(userClient)
-			.where(eq(userClient.userId, locals.user.id))
-			.limit(1);
-
-		if (result.length > 0) {
-			userClientId = result[0].clientId;
-		}
-
 		// Filter history for clients: hide 'seamstress' changes
 		if (item.history) {
 			item.history = item.history.filter((h) => {

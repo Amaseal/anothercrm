@@ -1,10 +1,12 @@
 import { eq, sql } from 'drizzle-orm';
 import { invoice, client } from '$lib/server/db/schema';
 import { db } from '$lib/server/db';
-import { error, fail, redirect } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
+import { assertStaff } from '$lib/server/auth';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	assertStaff(locals);
 	const item = await db.query.invoice.findFirst({
 		where: eq(invoice.id, Number(params.id))
 	});
@@ -14,7 +16,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 export const actions: Actions = {
 	default: async ({ params, locals }) => {
-		if (!locals.user || locals.user.type !== 'admin') error(403);
+		assertStaff(locals);
 		try {
 			const invoiceId = Number(params.id);
 			const existingInvoice = await db.query.invoice.findFirst({

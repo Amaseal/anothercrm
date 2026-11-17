@@ -4,10 +4,15 @@ import { fail, redirect } from '@sveltejs/kit';
 import * as m from '$lib/paraglide/messages';
 import type { Actions } from './$types';
 
-export const load = async () => {};
+import { assertStaff } from '$lib/server/auth';
+
+export const load = async ({ locals }) => {
+	assertStaff(locals);
+};
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, locals }) => {
+		assertStaff(locals);
 		const formData = await request.formData();
 		const name = formData.get('name') as string;
 		const type = formData.get('type') as string;

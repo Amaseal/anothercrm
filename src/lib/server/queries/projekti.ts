@@ -8,8 +8,10 @@ import {
 	type Task,
 	type TabTranslation
 } from '$lib/server/db/schema';
-import { eq, or, and, inArray, desc, asc, count, sql, exists } from 'drizzle-orm';
+import { eq, or, and, desc, asc, count, sql, exists } from 'drizzle-orm';
 import { ilikeNormalize } from '$lib/server/dbUtils';
+import { safeUserColumns } from '$lib/server/auth';
+import { clientTaskCondition } from '$lib/server/task-access';
 export type ProjectBoardTask = Pick<
 	Task,
 	| 'id'
@@ -182,12 +184,6 @@ export async function getProjectBoardData(
 			});
 		}
 	} else {
-		// Client visibility rules:
-		// C1. Creator always sees their own task (regardless of assignees)
-		// C2. Assignee always sees tasks assigned to them
-		// C3. Client user sees all tasks where task.clientId matches their linked client entry (regardless of assignees)
-		// C6. Tasks created by other client users are never visible
-
 		// Run tabGroups and userClient links in parallel
 		const [_tabGroups, userClientLinks] = await Promise.all([
 			tabGroupsQuery,
@@ -203,19 +199,9 @@ export async function getProjectBoardData(
 		const linkedClientIds = userClientLinks.map((uc) => uc.clientId);
 
 		tasks = await db.query.task.findMany({
-			where: (t, { or, eq, and }) => {
-				const isAssignedToMe = exists(
-					db
-						.select({ one: sql`1` })
-						.from(taskAssignee)
-						.where(and(eq(taskAssignee.taskId, t.id), eq(taskAssignee.userId, currentUser.id)))
-				);
-
-				const myClientTask =
-					linkedClientIds.length > 0 ? inArray(t.clientId, linkedClientIds) : sql`false`;
-
+			where: (t, { eq, and }) => {
 				const conditions = [
-					or(eq(t.createdById, currentUser.id), isAssignedToMe, myClientTask),
+					clientTaskCondition(currentUser.id, linkedClientIds),
 					eq(t.isDone, false)
 				];
 				if (search) conditions.push(ilikeNormalize(t.title, search));
@@ -358,31 +344,13 @@ export async function getCompletedTasks(
 	const filterConditions = [];
 	filterConditions.push(eq(task.isDone, true));
 	if (currentUser.type === 'client') {
-		// Client visibility rules (mirrors getProjectBoardData client rules):
-		// C1. Creator always sees their own task
-		// C2. Assignee always sees tasks assigned to them
-		// C3. Task client matches linked client entry → always visible
-
 		const userClients = await db.query.userClient.findMany({
 			where: eq(userClient.userId, currentUser.id),
 			columns: { clientId: true }
 		});
 		const linkedClientIds = userClients.map((uc) => uc.clientId);
 
-		const isAssignedToMe = exists(
-			db
-				.select({ id: taskAssignee.taskId })
-				.from(taskAssignee)
-				.where(and(eq(taskAssignee.taskId, task.id), eq(taskAssignee.userId, currentUser.id)))
-		);
-
-		const clientConditions = [
-			eq(task.createdById, currentUser.id), // C1
-			isAssignedToMe, // C2
-			...(linkedClientIds.length > 0 ? [inArray(task.clientId, linkedClientIds)] : []) // C3
-		];
-
-		filterConditions.push(or(...clientConditions));
+		filterConditions.push(clientTaskCondition(currentUser.id, linkedClientIds));
 	}
 
 	if (search) {
@@ -419,8 +387,8 @@ export async function getCompletedTasks(
 		offset: offset,
 		with: {
 			client: true,
-			assignees: { with: { user: true } },
-			creator: true
+			assignees: { with: { user: { columns: safeUserColumns } } },
+			creator: { columns: safeUserColumns }
 		}
 	});
 

@@ -5,8 +5,10 @@ import { and, desc, asc, sql, count, or } from 'drizzle-orm';
 import type { LayoutServerLoad } from './$types';
 import { handleListParams } from '$lib/server/paramState';
 import { ilikeNormalize } from '$lib/server/dbUtils';
+import { getClientScope } from '$lib/server/task-access';
 
-export const load: LayoutServerLoad = async ({ url, cookies }) => {
+export const load: LayoutServerLoad = async ({ url, cookies, locals }) => {
+	const clientScope = await getClientScope(locals);
 	const activeParams = handleListParams(url, cookies, '/produkti', 'produkti_filters');
 
 	const page = parseInt(activeParams.get('page') || '0');
@@ -51,6 +53,8 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 		with: {
 			translations: true,
 			clientPrices: {
+				where: (cp, { inArray }) =>
+					clientScope === null ? undefined : inArray(cp.clientId, clientScope),
 				with: {
 					client: true
 				}

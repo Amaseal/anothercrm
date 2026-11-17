@@ -12,7 +12,10 @@ import { eq, inArray } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages';
 
-export const load: PageServerLoad = async ({ url }) => {
+import { assertStaff } from '$lib/server/auth';
+
+export const load: PageServerLoad = async ({ url, locals }) => {
+	assertStaff(locals);
 	const ids = url.searchParams.get('ids');
 	if (!ids) return { clients: [], userLinkedClientIds: [] };
 
@@ -38,7 +41,8 @@ export const load: PageServerLoad = async ({ url }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request }) => {
+	default: async ({ request, locals }) => {
+		assertStaff(locals);
 		const formData = await request.formData();
 		const primaryIdRaw = formData.get('primaryId') as string;
 		const clientIdsRaw = formData.get('clientIds') as string;

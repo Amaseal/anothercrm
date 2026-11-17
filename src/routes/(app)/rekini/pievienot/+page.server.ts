@@ -5,6 +5,7 @@ import type { Actions, PageServerLoad } from './$types';
 import { fail, redirect } from '@sveltejs/kit';
 import { getNewInvoiceClient } from '$lib/server/invoice-client';
 import { formatInvoiceNumber } from '$lib/invoice-number';
+import { assertStaff } from '$lib/server/auth';
 
 interface InvoiceItemInput {
 	description: string;
@@ -16,7 +17,8 @@ interface InvoiceItemInput {
 	section?: string;
 }
 
-export const load: PageServerLoad = async ({ url }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
+	assertStaff(locals);
 	const taskId = url.searchParams.get('taskId');
 	const duplicateId = url.searchParams.get('duplicateId');
 
@@ -71,6 +73,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
+		assertStaff(locals);
 		const formData = await request.formData();
 
 		// --- 1. Client Handling ---

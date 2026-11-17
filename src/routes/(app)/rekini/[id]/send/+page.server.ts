@@ -6,8 +6,10 @@ import { fail, redirect } from '@sveltejs/kit';
 import { sendEmail } from '$lib/server/mailUtils';
 import * as m from '$lib/paraglide/messages';
 import { generateInvoicePdfBuffer } from '$lib/server/pdfmake';
+import { assertStaff } from '$lib/server/auth';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	assertStaff(locals);
 	const item = await db.query.invoice.findFirst({
 		where: eq(invoice.id, Number(params.id)),
 		with: {
@@ -31,7 +33,8 @@ function parseEmails(raw: FormDataEntryValue | null): string[] {
 }
 
 export const actions: Actions = {
-	default: async ({ params, url, request }) => {
+	default: async ({ params, url, request, locals }) => {
+		assertStaff(locals);
 		const id = Number(params.id);
 
 		const formData = await request.formData();

@@ -5,6 +5,8 @@ import { eq } from 'drizzle-orm';
 import { taskEvents } from '$lib/server/events';
 import { recordHistory } from '$lib/server/history';
 import { sendEmail } from '$lib/server/mailUtils';
+import { safeUserColumns } from '$lib/server/auth';
+import { assertTaskAccess } from '$lib/server/task-access';
 
 export const POST = async ({ request, locals }) => {
 	if (!locals.user) {
@@ -13,9 +15,16 @@ export const POST = async ({ request, locals }) => {
 
 	const { taskId, targetTabId } = await request.json();
 
-	if (!taskId || !targetTabId) {
+	if (
+		!Number.isInteger(taskId) ||
+		taskId < 1 ||
+		!Number.isInteger(targetTabId) ||
+		targetTabId < 1
+	) {
 		return json({ error: 'Missing required fields' }, { status: 400 });
 	}
+
+	await assertTaskAccess(locals, taskId);
 
 	try {
 		// 1. Fetch current task to know where it is coming from
@@ -31,7 +40,7 @@ export const POST = async ({ request, locals }) => {
 						}
 					}
 				},
-				creator: true
+				creator: { columns: safeUserColumns }
 			}
 		});
 

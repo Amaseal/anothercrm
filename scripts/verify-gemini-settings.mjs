@@ -173,6 +173,71 @@ try {
 		'007'
 	);
 	assert.equal(generationCalls, 1);
+	// Simulate provider timing without waiting, network calls or automatic paid retries.
+	const originalTimeout = AbortSignal.timeout;
+	const validProvider = provider;
+	let deadline;
+	let deadlineMs;
+	try {
+		AbortSignal.timeout = (ms) => {
+			deadlineMs = ms;
+			deadline = new AbortController();
+			return deadline.signal;
+		};
+		provider = async (url, options) => {
+			assert.equal(deadlineMs, 180_000);
+			if (deadlineMs <= 90_000) deadline.abort(new DOMException('Deadline', 'TimeoutError'));
+			options.signal.throwIfAborted();
+			return validProvider(url, options);
+		};
+		assert.equal(
+			(
+				await ai.parseWithGemini({ text: 'TEST' }, new AbortController().signal, current.revision)
+			)[0].number,
+			'007',
+			'A 90-second generation must not hit the former 60-second deadline'
+		);
+		for (const phase of ['headers', 'body']) {
+			const before = generationCalls;
+			provider = async () => {
+				const reason = new DOMException('Deadline', 'TimeoutError');
+				if (phase === 'headers') {
+					deadline.abort(reason);
+					throw reason;
+				}
+				return new Response(
+					new ReadableStream({
+						pull(controller) {
+							deadline.abort(reason);
+							controller.error(reason);
+						}
+					})
+				);
+			};
+			await assert.rejects(
+				() => ai.parseWithGemini({ text: 'TEST' }, new AbortController().signal, current.revision),
+				{ status: 504 }
+			);
+			assert.equal(generationCalls, before + 1, 'Timeouts must never retry the provider');
+		}
+		const cancelled = new AbortController();
+		provider = async () =>
+			new Response(
+				new ReadableStream({
+					pull(controller) {
+						cancelled.abort();
+						controller.error(cancelled.signal.reason);
+					}
+				})
+			);
+		await assert.rejects(
+			() => ai.parseWithGemini({ text: 'TEST' }, cancelled.signal, current.revision),
+			{ status: 499 }
+		);
+	} finally {
+		AbortSignal.timeout = originalTimeout;
+		provider = validProvider;
+	}
 	const generationBaseline = generationCalls;
 	await page.actions.updateGemini(event({ apiKey: '', model: 'gemini-updated' }));
 	assert.equal(row.apiKey, 'selfcheck-new-key');

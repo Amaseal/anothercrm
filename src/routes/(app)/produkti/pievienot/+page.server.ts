@@ -5,8 +5,10 @@ import type { Actions } from './$types';
 import * as m from '$lib/paraglide/messages';
 import { locales } from '@/paraglide/runtime';
 import { eq } from 'drizzle-orm';
+import { assertStaff } from '$lib/server/auth';
 
-export const load = async ({ url }) => {
+export const load = async ({ url, locals }) => {
+	assertStaff(locals);
 	// Load all users of type client and their associated client records
 	const usersDb = await db.query.user.findMany({
 		where: eq(user.type, 'client'),
@@ -48,9 +50,7 @@ export const load = async ({ url }) => {
 
 export const actions: Actions = {
 	default: async ({ request, locals }) => {
-		if (locals.user?.type === 'client') {
-			return fail(403, { message: 'Forbidden' });
-		}
+		assertStaff(locals);
 		const form = await request.formData();
 		const cost = form.get('cost');
 		const price = form.get('price');

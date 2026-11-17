@@ -6,21 +6,17 @@ import {
 	taskProduct,
 	file,
 	invoice,
-	userClient,
 	taskAssignee
 } from '$lib/server/db/schema';
-import { fail, redirect } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
 import type { HistoryChange } from '$lib/server/history';
 import { writeFile, unlink } from 'fs/promises';
-import { join } from 'path';
+import { uploadUrlPath } from '$lib/server/file-download';
 import type { Actions, PageServerLoad } from './$types';
 import { eq, and, inArray } from 'drizzle-orm';
-import { assertTaskAccess } from '$lib/server/task-access';
-import {
-	productionFileIds,
-	ordinaryFileCondition,
-	assertOrdinaryStoragePath
-} from '$lib/server/production-projects';
+import { assertTaskAccess, assertClientAccess, getClientScope } from '$lib/server/task-access';
+import { safeUserColumns } from '$lib/server/auth';
+import { productionFileIds, ordinaryFileCondition } from '$lib/server/production-projects';
 import {
 	ensureUploadsDir,
 	getUploadPath,
@@ -31,15 +27,30 @@ import {
 export const load: PageServerLoad = async ({ params, locals }) => {
 	const taskId = Number(params.id);
 	await assertTaskAccess(locals, taskId);
+	const clientScope = await getClientScope(locals);
 
 	// Fetch dropdown data in parallel with restricted columns
 	const [clients, users, materials, products] = await Promise.all([
-		db.query.client.findMany({ columns: { id: true, name: true, email: true, phone: true } }),
-		db.query.user.findMany({ columns: { id: true, name: true, type: true } }),
+		db.query.client.findMany({
+			where: (c, { inArray }) => (clientScope === null ? undefined : inArray(c.id, clientScope)),
+			columns: { id: true, name: true, email: true, phone: true }
+		}),
+		db.query.user.findMany({
+			where: (u, { eq }) => (clientScope === null ? undefined : eq(u.type, 'admin')),
+			columns: { id: true, name: true, type: true }
+		}),
 		db.query.material.findMany({
 			columns: { id: true, title: true, article: true, image: true, remaining: true }
 		}),
-		db.query.product.findMany({ with: { translations: true, clientPrices: true } })
+		db.query.product.findMany({
+			with: {
+				translations: true,
+				clientPrices: {
+					where: (cp, { inArray }) =>
+						clientScope === null ? undefined : inArray(cp.clientId, clientScope)
+				}
+			}
+		})
 	]);
 
 	// Fetch the task to edit
@@ -58,7 +69,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 			},
 			files: true,
 			assignees: {
-				with: { user: true }
+				with: { user: { columns: safeUserColumns } }
 			},
 			history: {
 				with: {
@@ -76,19 +87,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const productionFiles = await productionFileIds(taskId);
 	item.files = item.files.filter((entry) => !productionFiles.has(entry.id));
 
-	let userClientId: number | null = null;
+	const userClientId = clientScope === null ? null : item.clientId;
 	if (locals.user && locals.user.type === 'client') {
-		const { userClient } = await import('$lib/server/db/schema');
-		const result = await db
-			.select({ clientId: userClient.clientId })
-			.from(userClient)
-			.where(eq(userClient.userId, locals.user.id))
-			.limit(1);
-
-		if (result.length > 0) {
-			userClientId = result[0].clientId;
-		}
-
 		// Filter history for clients: hide 'seamstress' changes
 		if (item.history) {
 			item.history = item.history.filter((h) => {
@@ -147,20 +147,35 @@ export const actions: Actions = {
 
 		const taskId = Number(params.id);
 		await assertTaskAccess(locals, taskId);
+		const oldTask = await db.query.task.findFirst({
+			where: eq(task.id, taskId),
+			with: { taskMaterials: true, taskProducts: true, assignees: true }
+		});
+		if (!oldTask) return fail(404, { error: 'Task not found' });
 		const formData = await request.formData();
 		const title = formData.get('title') as string;
 		const description = formData.get('description') as string;
-		const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
+		const clientId = formData.get('clientId') ? Number(formData.get('clientId')) : null;
 		const assignedToUserIdsStr = formData.get('assignedToUserIds') as string;
-		const assignedToUserIds = assignedToUserIdsStr
-			? assignedToUserIdsStr.split(',').filter((id) => id.trim() !== '')
-			: [];
+		await assertClientAccess(locals, clientId);
+		if (user.type === 'client' && clientId !== oldTask.clientId)
+			error(403, 'Customer reassignment requires staff');
+		const assignedToUserIds =
+			user.type === 'client'
+				? oldTask.assignees.map((entry) => entry.userId)
+				: assignedToUserIdsStr
+					? assignedToUserIdsStr.split(',').filter((id) => id.trim() !== '')
+					: [];
 
 		const endDate = formData.get('endDate') as string;
 		// const seamstress = formData.get('seamstress') as string; // User removed seamstress in pievienot? code shows it line 63.
-		const seamstress = formData.get('seamstress') as string;
+		const seamstress =
+			user.type === 'client' ? oldTask.seamstress : (formData.get('seamstress') as string);
 
-		const materialIds = formData.getAll('materials').map((id) => parseInt(id as string));
+		const materialIds =
+			user.type === 'client'
+				? oldTask.taskMaterials.map((entry) => entry.materialId)
+				: formData.getAll('materials').map((id) => parseInt(id as string));
 		// Product list logic
 		const productIds = formData.getAll('productIds').map((id) => parseInt(id as string));
 		const productCounts = formData
@@ -179,18 +194,7 @@ export const actions: Actions = {
 					with: { clientPrices: true }
 				});
 
-				// Resolve clientId for the current user (if type 'client')
-				let userLinkedClientId: number | null = null;
-				if (user.type === 'client') {
-					const ucResult = await db
-						.select({ clientId: userClient.clientId })
-						.from(userClient)
-						.where(eq(userClient.userId, user.id))
-						.limit(1);
-					if (ucResult.length > 0) {
-						userLinkedClientId = ucResult[0].clientId;
-					}
-				}
+				const userLinkedClientId = user.type === 'client' ? clientId : null;
 
 				calculatedPrice = productIds.reduce((total, id, index) => {
 					const prod = selectedProducts.find((p) => p.id === id);
@@ -209,7 +213,7 @@ export const actions: Actions = {
 
 		const customPriceStr = formData.get('customPrice') as string;
 		let finalPrice = calculatedPrice;
-		if (customPriceStr && customPriceStr.trim() !== '') {
+		if (user.type !== 'client' && customPriceStr && customPriceStr.trim() !== '') {
 			const parsed = parseFloat(customPriceStr);
 			if (!isNaN(parsed)) {
 				finalPrice = Math.round(parsed * 100);
@@ -218,20 +222,6 @@ export const actions: Actions = {
 
 		if (!title) {
 			return fail(400, { missing: true, error: 'Title is required' });
-		}
-
-		// Fetch old task data for history and preview deletion - moved to top level
-		const oldTask = await db.query.task.findFirst({
-			where: eq(task.id, taskId),
-			with: {
-				taskMaterials: true,
-				taskProducts: true,
-				assignees: true
-			}
-		});
-
-		if (!oldTask) {
-			return fail(404, { error: 'Task not found' });
 		}
 
 		// Handle Preview Image
@@ -248,10 +238,7 @@ export const actions: Actions = {
 			previewUrl = toUploadsUrl(fileName);
 
 			if (oldTask.preview) {
-				const relativePath = oldTask.preview.startsWith('/')
-					? oldTask.preview.substring(1)
-					: oldTask.preview;
-				await unlink(join(process.cwd(), relativePath)).catch((e) =>
+				await unlink(uploadUrlPath(oldTask.preview)).catch((e) =>
 					console.error('Failed to delete old preview', e)
 				);
 			}
@@ -316,10 +303,7 @@ export const actions: Actions = {
 				const submittedFiles = JSON.parse(filesJson);
 
 				if (Array.isArray(submittedFiles)) {
-					for (const entry of submittedFiles)
-						assertOrdinaryStoragePath(
-							join('uploads', String(entry.path).replace(/^\/uploads\//, ''))
-						);
+					for (const entry of submittedFiles) uploadUrlPath(entry.path);
 					// 1. Get current files from DB
 					const currentDbFiles = await db.query.file.findMany({
 						where: and(eq(file.taskId, taskId), ordinaryFileCondition())

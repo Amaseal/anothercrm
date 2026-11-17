@@ -14,14 +14,20 @@ export const GET: RequestHandler = async ({ params, request, url }) => {
 	}
 	const file = await resolveUpload(path);
 	if (!file) return new Response('Not found', { status: 404 });
+	const type = mime.lookup(file.path) || 'application/octet-stream';
+	const previewable = /^(image\/(png|jpeg|gif|webp|avif|bmp|x-icon)|application\/pdf)$/.test(type);
+	// Sandboxing PDFs can disable the browser's built-in viewer.
 	const headers = new Headers({
-		'Content-Type': mime.lookup(file.path) || 'application/octet-stream',
-		'Cache-Control': 'public, max-age=3600',
+		'Content-Type': type,
+		'Cache-Control': 'private, no-store',
+		'X-Content-Type-Options': 'nosniff',
+		'Content-Security-Policy': `${previewable ? '' : 'sandbox; '}default-src 'none'; script-src 'none'; style-src 'unsafe-inline'`,
 		'Accept-Ranges': 'bytes',
 		'Last-Modified': file.mtime.toUTCString()
 	});
 	const name = url.searchParams.get('download');
-	if (name) headers.set('Content-Disposition', attachment(name));
+	if (name || !previewable)
+		headers.set('Content-Disposition', attachment(name || path.split('/').pop() || 'file'));
 	let start = 0;
 	let end = file.size - 1;
 	let status = 200;

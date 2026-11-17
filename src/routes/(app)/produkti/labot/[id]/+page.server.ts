@@ -8,8 +8,10 @@ import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import { m } from '@/paraglide/messages';
 import { locales } from '@/paraglide/runtime';
+import { assertStaff } from '$lib/server/auth';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	assertStaff(locals);
 	const item = await db.query.product.findFirst({
 		where: eq(product.id, Number(params.id)),
 		with: {
@@ -47,9 +49,7 @@ export const load: PageServerLoad = async ({ params }) => {
 
 export const actions: Actions = {
 	default: async ({ request, params, locals }) => {
-		if (locals.user?.type === 'client') {
-			return fail(403, { message: 'Forbidden' });
-		}
+		assertStaff(locals);
 		const form = await request.formData();
 		const cost = form.get('cost');
 		const price = form.get('price');

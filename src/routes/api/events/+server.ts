@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { db } from '$lib/server/db';
 import { userClient } from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
+import { canAccessTask } from '$lib/server/task-access';
 
 export const GET: RequestHandler = async ({ locals }) => {
 	const user = locals.user;
@@ -38,36 +39,21 @@ export const GET: RequestHandler = async ({ locals }) => {
 				task: Parameters<typeof taskEvents.emitTaskUpdate>[0];
 				assigneeUserIds: string[];
 			}) => {
-				const { task, assigneeUserIds } = data; // Filtering Logic
-				// Admin: Sees everything
-				// Client visibility rules (mirrors getProjectBoardData):
-				//   C1. Creator always sees their own task
-				//   C2. Assignee always sees tasks assigned to them
-				//   C3. Task client matches linked client entry → always visible
-				let shouldSend = false;
-				if (user.type === 'admin') {
-					shouldSend = true;
-				} else {
-					const isAssignedToMe = assigneeUserIds.includes(user.id);
-					const createdByMe = task?.createdById === user.id;
-					const isMyClientTask =
-						typeof task?.clientId === 'number' && linkedClientIds.includes(task.clientId);
-
-					// C1: creator always sees their task
-					if (createdByMe) shouldSend = true;
-					// C2: assigned to me
-					else if (isAssignedToMe) shouldSend = true;
-					// C3: task client matches my linked client (regardless of assignees)
-					else if (isMyClientTask) shouldSend = true;
-				}
-
-				if (shouldSend) {
+				const { task } = data;
+				if (
+					task &&
+					canAccessTask(
+						user,
+						{ clientId: task.clientId ?? null, createdById: task.createdById ?? null },
+						linkedClientIds
+					)
+				) {
 					// Safety check: ensure controller is open
 					// Note: desiredSize check isn't always reliable for immediate closure detection in all envs,
 					// but catching the error is the fallback.
 
 					try {
-						controller.enqueue(`data: ${JSON.stringify(data)}\n\n`);
+						controller.enqueue(`data: ${JSON.stringify({ type: data.type })}\n\n`);
 					} catch {
 						// Check if it's a closed controller error
 					}

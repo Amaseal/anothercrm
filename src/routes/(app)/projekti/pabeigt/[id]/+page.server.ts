@@ -5,10 +5,9 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as m from '$lib/paraglide/messages';
 import { unlink } from 'fs/promises';
-import { join } from 'path';
 import { assertTaskAccess } from '$lib/server/task-access';
 import { ordinaryFileCondition } from '$lib/server/production-projects';
-import { isProductionStoragePath } from '$lib/server/file-download';
+import { ordinaryTaskFilePaths } from '$lib/server/file-download';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	await assertTaskAccess(locals, Number(params.id));
@@ -44,43 +43,12 @@ export const actions: Actions = {
 			// "When task is mared as done we change the property of isDone to true,
 			// and delete all added files and preview images."
 
-			const deletionPromises = [];
-
-			// Task preview image
-			if (
-				item.preview &&
-				!isProductionStoragePath(join('uploads', item.preview.replace(/^\/uploads\//, '')))
-			) {
-				const relativePath = item.preview.startsWith('/')
-					? item.preview.substring(1)
-					: item.preview;
-				deletionPromises.push(
-					unlink(join(process.cwd(), relativePath)).catch((err) =>
-						console.error('Failed to delete preview:', err)
-					)
-				);
-			}
-
-			// Associated files
-			if (item.files && item.files.length > 0) {
-				for (const f of item.files) {
-					if (
-						f.downloadUrl &&
-						!isProductionStoragePath(join('uploads', f.downloadUrl.replace(/^\/uploads\//, '')))
-					) {
-						const relativePath = f.downloadUrl.startsWith('/')
-							? f.downloadUrl.substring(1)
-							: f.downloadUrl;
-						deletionPromises.push(
-							unlink(join(process.cwd(), relativePath)).catch((err) =>
-								console.error('Failed to delete file:', err)
-							)
-						);
-					}
-				}
-			}
-
-			await Promise.all(deletionPromises);
+			const paths = ordinaryTaskFilePaths(item);
+			await Promise.all(
+				paths.map((path) =>
+					unlink(path).catch((err) => console.error('Failed to delete task file:', err))
+				)
+			);
 
 			// Set preview to null
 			// Delete DB files

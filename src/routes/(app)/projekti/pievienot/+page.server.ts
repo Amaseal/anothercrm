@@ -1,17 +1,10 @@
 import { db } from '$lib/server/db';
-import { assertOrdinaryStoragePath } from '$lib/server/production-projects';
-import {
-	task,
-	taskMaterial,
-	taskProduct,
-	file,
-	userClient,
-	taskAssignee
-} from '$lib/server/db/schema';
+import { uploadUrlPath } from '$lib/server/file-download';
+import { safeUserColumns } from '$lib/server/auth';
+import { getClientScope, assertClientAccess } from '$lib/server/task-access';
+import { task, taskMaterial, taskProduct, file, taskAssignee } from '$lib/server/db/schema';
 import { fail, redirect } from '@sveltejs/kit';
 import { writeFile } from 'fs/promises';
-import { join } from 'path';
-import { eq } from 'drizzle-orm';
 import type { Actions, PageServerLoad } from './$types';
 import {
 	ensureUploadsDir,
@@ -21,6 +14,7 @@ import {
 } from '$lib/server/upload-storage';
 
 export const load: PageServerLoad = async ({ locals }) => {
+	const clientScope = await getClientScope(locals);
 	const tabs = await db.query.tab.findMany({
 		with: {
 			translations: true,
@@ -32,22 +26,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		}
 	});
 
-	let userClientId: number | null = null;
-	if (locals.user && locals.user.type === 'client') {
-		const result = await db
-			.select({ clientId: userClient.clientId })
-			.from(userClient)
-			.where(eq(userClient.userId, locals.user.id))
-			.limit(1);
-
-		if (result.length > 0) {
-			userClientId = result[0].clientId;
-		}
-	}
+	const userClientId = clientScope?.[0] ?? null;
 	const clients = await db.query.client.findMany({
+		where: (c, { inArray }) => (clientScope === null ? undefined : inArray(c.id, clientScope)),
 		columns: { id: true, name: true, email: true, phone: true }
 	});
 	const users = await db.query.user.findMany({
+		where: (u, { eq }) => (clientScope === null ? undefined : eq(u.type, 'admin')),
 		columns: { id: true, name: true, type: true }
 	});
 	const materials = await db.query.material.findMany({
@@ -56,7 +41,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const rawProducts = await db.query.product.findMany({
 		with: {
 			translations: true,
-			clientPrices: true
+			clientPrices: {
+				where: (cp, { inArray }) =>
+					clientScope === null ? undefined : inArray(cp.clientId, clientScope)
+			}
 		}
 	});
 
@@ -109,16 +97,21 @@ export const actions: Actions = {
 		const description = formData.get('description') as string;
 		// Tab ID comes from default tab now
 		const tabId = defaultTab.id;
-		const clientId = formData.get('clientId') ? parseInt(formData.get('clientId') as string) : null;
+		const clientId = formData.get('clientId') ? Number(formData.get('clientId')) : null;
 		const assignedToUserIdsStr = formData.get('assignedToUserIds') as string;
-		const assignedToUserIds = assignedToUserIdsStr
-			? assignedToUserIdsStr.split(',').filter((id) => id.trim() !== '')
-			: [];
+		await assertClientAccess(locals, clientId);
+		const assignedToUserIds =
+			user.type !== 'client' && assignedToUserIdsStr
+				? assignedToUserIdsStr.split(',').filter((id) => id.trim() !== '')
+				: [];
 		const endDate = formData.get('endDate') as string;
 
-		const seamstress = formData.get('seamstress') as string;
+		const seamstress = user.type === 'client' ? null : (formData.get('seamstress') as string);
 
-		const materialIds = formData.getAll('materials').map((id) => parseInt(id as string));
+		const materialIds =
+			user.type === 'client'
+				? []
+				: formData.getAll('materials').map((id) => parseInt(id as string));
 		const productIds = formData.getAll('productIds').map((id) => parseInt(id as string));
 		const productCounts = formData
 			.getAll('productCounts')
@@ -136,18 +129,7 @@ export const actions: Actions = {
 					with: { clientPrices: true }
 				});
 
-				// Resolve clientId for the current user (if type 'client')
-				let userLinkedClientId: number | null = null;
-				if (user.type === 'client') {
-					const ucResult = await db
-						.select({ clientId: userClient.clientId })
-						.from(userClient)
-						.where(eq(userClient.userId, user.id))
-						.limit(1);
-					if (ucResult.length > 0) {
-						userLinkedClientId = ucResult[0].clientId;
-					}
-				}
+				const userLinkedClientId = user.type === 'client' ? clientId : null;
 
 				// Build a price map (clientPrice > price > cost fallback)
 				calculatedPrice = productIds.reduce((total, id, index) => {
@@ -165,7 +147,7 @@ export const actions: Actions = {
 
 		const customPriceStr = formData.get('customPrice') as string;
 		let finalPrice = calculatedPrice;
-		if (customPriceStr && customPriceStr.trim() !== '') {
+		if (user.type !== 'client' && customPriceStr && customPriceStr.trim() !== '') {
 			const parsed = parseFloat(customPriceStr);
 			if (!isNaN(parsed)) {
 				finalPrice = Math.round(parsed * 100);
@@ -250,8 +232,8 @@ export const actions: Actions = {
 				with: {
 					tab: true,
 					client: true,
-					creator: true,
-					assignees: { with: { user: true } }
+					creator: { columns: safeUserColumns },
+					assignees: { with: { user: { columns: safeUserColumns } } }
 				}
 			});
 			// Dynamic import to avoid circular dep issues during init if any, though here it's fine.
@@ -268,10 +250,7 @@ export const actions: Actions = {
 				try {
 					const uploadedFiles = JSON.parse(filesJson);
 					if (Array.isArray(uploadedFiles) && uploadedFiles.length > 0) {
-						for (const entry of uploadedFiles)
-							assertOrdinaryStoragePath(
-								join('uploads', String(entry.path).replace(/^\/uploads\//, ''))
-							);
+						for (const entry of uploadedFiles) uploadUrlPath(entry.path);
 						await db.insert(file).values(
 							uploadedFiles.map((f) => ({
 								filename: f.name,

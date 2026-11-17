@@ -1,8 +1,8 @@
-import { redirect } from '@sveltejs/kit';
+import { redirect, error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
-import { invoice } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
+import { invoice, userClient } from '$lib/server/db/schema';
+import { and, eq } from 'drizzle-orm';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) {
@@ -19,6 +19,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	if (!item) {
 		throw redirect(303, '/rekini');
+	}
+
+	if (locals.user.type === 'client') {
+		const linked = await db.query.userClient.findFirst({
+			where: and(eq(userClient.userId, locals.user.id), eq(userClient.clientId, item.clientId)),
+			columns: { userId: true }
+		});
+		if (!linked) error(403, 'Forbidden');
 	}
 
 	const company = await db.query.companySettings.findFirst();

@@ -19,6 +19,41 @@ try {
 	await mkdir('uploads', { recursive: true });
 	await writeFile(`uploads/${name}`, content);
 	cleanup.push(`uploads/${name}`);
+	const storage = await server.ssrLoadModule('/src/lib/server/upload-storage.ts');
+	const filePaths = await server.ssrLoadModule('/src/lib/server/file-download.ts');
+	for (const path of [
+		'/uploads/../package.json',
+		'/uploads/%2e%2e/build/server.js',
+		'/uploads/a/../../package.json',
+		'/uploads/',
+		'/build/server.js',
+		'https://example.invalid/file',
+		'/uploads/a\\..\\file'
+	])
+		assert.throws(() => filePaths.uploadUrlPath(path), { status: 400 });
+	assert.throws(() => storage.assertUploadStoragePath(resolve('package.json')), { status: 400 });
+	assert.throws(() => storage.assertUploadStoragePath(resolve('uploads-other/file')), {
+		status: 400
+	});
+	assert.throws(() => filePaths.uploadUrlPath('/uploads/production/hidden.xlsx'), { status: 409 });
+	assert.deepEqual(
+		filePaths.ordinaryTaskFilePaths({
+			preview: `/uploads/${name}`,
+			files: [
+				{ downloadUrl: `/uploads/${name}` },
+				{ downloadUrl: '/uploads/production/hidden.xlsx' },
+				{ downloadUrl: 'https://example.invalid/file' }
+			]
+		}),
+		[resolve('uploads', name)]
+	);
+	assert.throws(
+		() =>
+			filePaths.ordinaryTaskFilePaths({
+				files: [{ downloadUrl: `/uploads/${name}` }, { downloadUrl: '/uploads/../package.json' }]
+			}),
+		{ status: 400 }
+	);
 	const downloads = await server.ssrLoadModule('/src/routes/uploads/[...path]/+server.ts');
 	const upload = await server.ssrLoadModule('/src/routes/api/upload/+server.ts');
 	const zipRoute = await server.ssrLoadModule('/src/routes/api/taskfiles/download/+server.ts');
@@ -31,7 +66,31 @@ try {
 	let response = await get();
 	assert.equal(response.status, 200);
 	assert.equal(response.headers.get('Content-Length'), String(content.length));
+	assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
+	assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
+	assert.match(response.headers.get('Content-Security-Policy'), /sandbox/);
+	assert.match(response.headers.get('Content-Security-Policy'), /script-src 'none'/);
+	for (const extension of ['html', 'svg']) {
+		const activeName = `transfer-active-${randomUUID()}.${extension}`;
+		await writeFile(
+			`uploads/${activeName}`,
+			'<script>throw new Error("must not execute")</script>'
+		);
+		cleanup.push(`uploads/${activeName}`);
+		const activeResponse = await get({}, 'GET', activeName);
+		assert.match(activeResponse.headers.get('Content-Disposition'), /^attachment;/);
+		await activeResponse.arrayBuffer();
+	}
 	assert.deepEqual(Buffer.from(await response.arrayBuffer()), content);
+	for (const extension of ['png', 'pdf']) {
+		const previewName = `transfer-preview-${randomUUID()}.${extension}`;
+		await writeFile(`uploads/${previewName}`, content);
+		cleanup.push(`uploads/${previewName}`);
+		const previewResponse = await get({}, 'GET', previewName);
+		assert.equal(previewResponse.headers.get('Content-Disposition'), null);
+		assert.ok(!previewResponse.headers.get('Content-Security-Policy').includes('sandbox'));
+		await previewResponse.arrayBuffer();
+	}
 	for (const [range, start, end] of [
 		['bytes=10-19', 10, 20],
 		['bytes=-10', content.length - 10, content.length],

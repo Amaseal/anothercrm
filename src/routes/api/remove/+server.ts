@@ -1,15 +1,11 @@
 import type { RequestHandler } from '@sveltejs/kit';
 import { unlink } from 'fs/promises';
-import path from 'path';
-import { assertOrdinaryStoragePath } from '$lib/server/production-projects';
+import { uploadUrlPath } from '$lib/server/file-download';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
 	if (!locals.user) {
 		return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 	}
-	// Always use uploads folder at project root in both dev and production
-	const uploadDir = 'uploads';
-	const uploadsUrl = '/uploads';
 	const { path: fileName } = await request.json();
 	if (!fileName) {
 		return new Response(JSON.stringify({ success: false, error: 'No file path provided' }), {
@@ -17,18 +13,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		});
 	}
 
-	const sanitizedFileName = fileName
-		.replace(new RegExp(`^${uploadsUrl}/?`), '')
-		.replace(/^\/+/, '');
-	const resolvedUploadDir = path.resolve(uploadDir);
-	const filePath = path.resolve(resolvedUploadDir, sanitizedFileName);
-	if (!filePath.startsWith(resolvedUploadDir + path.sep) && filePath !== resolvedUploadDir) {
-		return new Response(JSON.stringify({ success: false, error: 'Invalid path' }), {
-			status: 400
-		});
-	}
-
-	assertOrdinaryStoragePath(filePath);
+	const filePath = uploadUrlPath(fileName);
 	try {
 		await unlink(filePath);
 		return new Response(JSON.stringify({ success: true }), { status: 200 });

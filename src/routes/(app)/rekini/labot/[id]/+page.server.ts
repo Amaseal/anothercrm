@@ -4,6 +4,7 @@ import { db } from '$lib/server/db';
 import { client, invoice, task, invoiceItems } from '$lib/server/db/schema';
 import { desc, eq, sql } from 'drizzle-orm';
 import { getNewInvoiceClient } from '$lib/server/invoice-client';
+import { assertStaff } from '$lib/server/auth';
 
 interface InvoiceItemInput {
 	description: string;
@@ -15,7 +16,8 @@ interface InvoiceItemInput {
 	section?: string;
 }
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
+	assertStaff(locals);
 	// Fetch the invoice first (needed to redirect early if not found)
 	const item = await db.query.invoice.findFirst({
 		where: eq(invoice.id, Number(params.id)),
@@ -46,7 +48,8 @@ export const load: PageServerLoad = async ({ params }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, params }) => {
+	default: async ({ request, params, locals }) => {
+		assertStaff(locals);
 		const formData = await request.formData();
 		const invoiceId = Number(params.id);
 

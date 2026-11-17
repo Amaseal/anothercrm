@@ -1,5 +1,6 @@
 import { mkdir } from 'fs/promises';
-import { join } from 'path';
+import { resolve, sep } from 'path';
+import { error } from '@sveltejs/kit';
 import { randomUUID } from 'crypto';
 
 export const UPLOADS_DIR = 'uploads';
@@ -9,8 +10,19 @@ export async function ensureUploadsDir(): Promise<string> {
 	return UPLOADS_DIR;
 }
 
+export function assertUploadStoragePath(path: string): string {
+	if (typeof path !== 'string' || path.includes('\0')) error(400, 'Invalid upload path.');
+	const root = resolve(UPLOADS_DIR);
+	const target = resolve(path);
+	const normalizedRoot = process.platform === 'win32' ? root.toLowerCase() : root;
+	const normalizedTarget = process.platform === 'win32' ? target.toLowerCase() : target;
+	if (!normalizedTarget.startsWith(normalizedRoot + sep))
+		error(400, 'Path must stay inside uploads.');
+	return target;
+}
+
 export function getUploadPath(fileName: string): string {
-	return join(UPLOADS_DIR, fileName);
+	return assertUploadStoragePath(resolve(UPLOADS_DIR, fileName));
 }
 
 export function toUploadsUrl(fileName: string): string {

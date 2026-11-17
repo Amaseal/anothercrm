@@ -3,10 +3,12 @@ import { client, task, taskProduct, product, invoice } from '$lib/server/db/sche
 import { eq, sql } from 'drizzle-orm';
 import { error } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
+import { assertClientAccess } from '$lib/server/task-access';
 
-export const load: PageServerLoad = async ({ params }) => {
+export const load: PageServerLoad = async ({ params, locals }) => {
 	const clientId = Number(params.id);
-	if (isNaN(clientId)) error(404, 'Not found');
+	if (!Number.isInteger(clientId) || clientId < 1) error(404, 'Not found');
+	await assertClientAccess(locals, clientId);
 
 	const clientRecord = await db.query.client.findFirst({
 		where: eq(client.id, clientId)

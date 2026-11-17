@@ -2,12 +2,16 @@ import { db } from '$lib/server/db';
 import { taskEditSession } from '$lib/server/db/schema';
 import { json, type RequestEvent } from '@sveltejs/kit';
 import { eq, and, lt } from 'drizzle-orm';
+import { safeUserColumns } from '$lib/server/auth';
+import { assertTaskAccess } from '$lib/server/task-access';
 
 const SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
-export async function GET({ params }: RequestEvent) {
+export async function GET({ params, locals }: RequestEvent) {
 	const taskId = Number(params.id);
 	if (isNaN(taskId)) return json({ error: 'Invalid Task ID' }, { status: 400 });
+
+	await assertTaskAccess(locals, taskId);
 
 	// Clean up expired sessions first (lazy cleanup)
 	const now = new Date();
@@ -16,7 +20,7 @@ export async function GET({ params }: RequestEvent) {
 	const session = await db.query.taskEditSession.findFirst({
 		where: eq(taskEditSession.taskId, taskId),
 		with: {
-			user: true
+			user: { columns: safeUserColumns }
 		}
 	});
 
@@ -41,6 +45,7 @@ export async function POST({ params, locals }: RequestEvent) {
 	const taskId = Number(params.id);
 	if (isNaN(taskId)) return json({ error: 'Invalid Task ID' }, { status: 400 });
 
+	await assertTaskAccess(locals, taskId);
 	const now = new Date();
 	const expiresAt = new Date(now.getTime() + SESSION_TIMEOUT_MS);
 
@@ -94,6 +99,8 @@ export async function DELETE({ params, locals }: RequestEvent) {
 
 	const taskId = Number(params.id);
 	if (isNaN(taskId)) return json({ error: 'Invalid Task ID' }, { status: 400 });
+
+	await assertTaskAccess(locals, taskId);
 
 	// Only delete MY session
 	await db

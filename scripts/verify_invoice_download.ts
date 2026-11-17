@@ -8,9 +8,29 @@ try {
 	const { db } = await server.ssrLoadModule('/src/lib/server/db/index.ts');
 	const schema = await server.ssrLoadModule('/src/lib/server/db/schema.ts');
 	const { GET } = await server.ssrLoadModule('/src/routes/api/invoices/[id]/+server.ts');
-	const { actions } = await server.ssrLoadModule(
+	const editPage = await server.ssrLoadModule(
 		'/src/routes/(app)/rekini/labot/[id]/+page.server.ts'
 	);
+	const { actions } = editPage;
+	const management = await Promise.all(
+		[
+			'/src/routes/(app)/rekini/pievienot/+page.server.ts',
+			'/src/routes/(app)/rekini/izdzest/[id]/+page.server.ts',
+			'/src/routes/(app)/rekini/[id]/send/+page.server.ts'
+		].map((path) => server.ssrLoadModule(path))
+	);
+	const imports = await server.ssrLoadModule('/src/routes/api/invoices/import/+server.ts');
+	const staff = { user: { id: 'fixture-staff', type: 'admin' } };
+	for (const [locals, status] of [
+		[{ user: null }, 401],
+		[{ user: { id: 'fixture-client', type: 'client' } }, 403]
+	] as const) {
+		for (const page of [editPage, ...management]) {
+			await assert.rejects(() => page.load({ locals }), { status });
+			await assert.rejects(() => page.actions.default({ locals }), { status });
+		}
+		await assert.rejects(() => imports.POST({ locals }), { status });
+	}
 	const { buildInvoiceDocDefinition } = await server.ssrLoadModule('/src/lib/server/pdfmake.ts');
 	let invoice = {
 		id: 1,
@@ -65,10 +85,15 @@ try {
 		}))
 			form.set(key, value);
 		await assert.rejects(
-			() => actions.default({ params: { id: '1' }, request: { formData: async () => form } }),
+			() =>
+				actions.default({
+					params: { id: '1' },
+					locals: staff,
+					request: { formData: async () => form }
+				}),
 			{ status: 303, location: '/rekini' }
 		);
-		const response = await GET({ params: { id: '1' } });
+		const response = await GET({ params: { id: '1' }, locals: { user: null } });
 		assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
 		assert.equal(response.headers.get('Content-Type'), 'application/pdf');
 		assert.equal(

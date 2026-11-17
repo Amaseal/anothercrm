@@ -4,8 +4,10 @@ import type { LayoutServerLoad } from './$types';
 import { and, desc, asc, sql, count, or, eq, inArray } from 'drizzle-orm';
 import { handleListParams } from '$lib/server/paramState';
 import { ilikeNormalize } from '$lib/server/dbUtils';
+import { getClientScope } from '$lib/server/task-access';
 
-export const load: LayoutServerLoad = async ({ url, cookies }) => {
+export const load: LayoutServerLoad = async ({ url, cookies, locals }) => {
+	const clientScope = await getClientScope(locals);
 	const activeParams = handleListParams(url, cookies, '/klienti', 'klienti_filters');
 
 	const page = parseInt(activeParams.get('page') || '0');
@@ -19,6 +21,7 @@ export const load: LayoutServerLoad = async ({ url, cookies }) => {
 
 	// Build the filter conditions
 	const filterConditions = [];
+	if (clientScope !== null) filterConditions.push(inArray(client.id, clientScope));
 
 	if (search) {
 		const searchTerm = `%${search}%`;
